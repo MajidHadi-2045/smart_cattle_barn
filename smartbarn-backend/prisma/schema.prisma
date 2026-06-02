@@ -1,0 +1,344 @@
+generator client {
+  provider = "prisma-client-js"
+  engineType = "library"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// ENUMS (Standar Keamanan Data ERP)
+// ==========================================
+// ==========================================
+// ENUMS (Standar Keamanan Data ERP)
+// ==========================================
+// ==========================================
+// HIERARKI LOKASI (Zone -> Section)
+// ==========================================
+model Zone {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique // Contoh: "Kandang A", "Kandang B"
+  description String?
+  sections    Section[]
+  windspeeds  AirCirculation[]
+  envData     EnvironmentData[]
+  wastes      ZoneWaste[]
+  createdAt   DateTime  @default(now())
+}
+
+model Section {
+  id          Int       @id @default(autoincrement())
+  name        String    // Contoh: "Section 1", "Section 2"
+  zoneId      Int
+  zone        Zone      @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  
+  livestock   Livestock[]
+  actuator    ActuatorState?
+  feedingSchedules FeedingSchedule[]
+
+  createdAt   DateTime  @default(now())
+  
+  @@unique([name, zoneId])
+}
+
+enum Role {
+  SUPER_ADMIN
+  MANAGER
+  STAFF
+  VETERINER
+}
+
+enum RequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum LivestockStatus {
+  SEHAT
+  SAKIT
+  HAMIL
+  MATI
+}
+
+enum HealthStatus {
+  DALAM_PERAWATAN
+  SEMBUH
+  KRITIS
+  MATI
+}
+
+enum FeedStatus {
+  AMAN
+  KRITIS
+}
+
+enum ScheduleStatus {
+  TERJADWAL
+  BERLANGSUNG
+  SELESAI
+}
+
+// ==========================================
+// 1. MANAJEMEN PENGGUNA & STAF
+// ==========================================
+model User {
+  id        String   @id
+  name      String
+  email     String   @unique
+  phone     String?
+  password  String
+  role      Role     @default(STAFF) // Menggunakan Enum
+  status    String   @default("AKTIF") // AKTIF, CUTI, NONAKTIF
+  task      String?  
+  photo     String?  // Untuk menyimpan Base64 foto
+  createdAt DateTime @default(now())
+
+  @@index([role, status])
+}
+
+model UserRequest {
+  id          Int           @id @default(autoincrement())
+  requester   String   
+  calonName   String
+  calonEmail  String
+  posisi      String   
+  alasan      String
+  status      RequestStatus @default(PENDING) // Menggunakan Enum
+  createdAt   DateTime      @default(now())
+}
+
+// ==========================================
+// 2. LIVESTOCK & KESEHATAN
+// ==========================================
+model Livestock {
+  id            Int             @id @default(autoincrement())
+  cattleId      String          @unique 
+  breed         String
+  gender        String          // JANTAN, BETINA
+  birthDate     DateTime? 
+  initialWeight Float
+  currentWeight Float?
+  sectionId     Int
+  section       Section         @relation(fields: [sectionId], references: [id])
+  status        LivestockStatus @default(SEHAT) 
+  pregnancyStart DateTime?      
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  // --- Pengaturan Nutrisi Manual ---
+  targetBkPercent     Float?          @default(2.5) // % dari berat badan
+  forageRatio         Float?          @default(60)  // % proporsi hijauan
+  concentrateRatio    Float?          @default(40)  // % proporsi konsentrat
+  forageDM            Float?          @default(20)  // % BK hijauan
+  concentrateDM       Float?          @default(86)  // % BK konsentrat
+  feedingFrequency    Int?            @default(2)   // Frekuensi makan per hari
+  // ---------------------------------
+  
+  healthRecords Health[]
+  vitals        LivestockVital[] 
+  wastes        LivestockWaste[]
+  weightRecords LivestockWeightRecord[]
+  feedRecords   LivestockFeedRecord[]
+}
+
+model Health {
+  id         Int          @id @default(autoincrement())
+  cattleId   String
+  diagnosa   String   
+  penanganan String
+  pemeriksa  String   
+  status     HealthStatus @default(DALAM_PERAWATAN) // Menggunakan Enum
+  createdAt  DateTime     @default(now())
+  
+  livestock  Livestock    @relation(fields: [cattleId], references: [cattleId], onDelete: Cascade)
+
+  @@index([cattleId, createdAt])
+}
+
+// Tabel ini menyimpan data dari sensor IoT yang ada di tiap sapi (High-Velocity)
+model LivestockVital {
+  id              Int      @id @default(autoincrement())
+  cattleId        String
+  heartRate       Float?    // Data Detak Jantung
+  bodyTemperature Float?    // Data Suhu Tubuh Sapi
+  timestamp       DateTime @default(now())
+  
+  livestock       Livestock @relation(fields: [cattleId], references: [cattleId], onDelete: Cascade)
+
+  // INDEX: Wajib untuk kecepatan grafik dan Load Testing
+  @@index([cattleId, timestamp])
+}
+
+// ==========================================
+// 3. LINGKUNGAN & KONTROL (Low-Velocity)
+// ==========================================
+model EnvironmentData {
+  id          Int      @id @default(autoincrement())
+  zoneId      Int?   
+  zone        Zone?    @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  temperature Float
+  humidity    Float
+  ammonia     Float
+  thi         Float?
+  timestamp   DateTime @default(now())
+
+  // INDEX: Wajib untuk kecepatan grafik lingkungan
+  @@index([zoneId, timestamp])
+}
+
+model AirCirculation {
+  id          Int      @id @default(autoincrement())
+  zoneId      Int
+  zone        Zone     @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  windspeed   Float    
+  timestamp   DateTime @default(now())
+
+  @@index([zoneId, timestamp])
+}
+
+model ActuatorState {
+  id          Int      @id @default(autoincrement())
+  sectionId   Int      @unique 
+  section     Section  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  fanOn       Boolean  @default(false)
+  sprinklerOn Boolean  @default(false)
+  lampOn      Boolean  @default(false)
+  updatedAt   DateTime @updatedAt
+}
+
+// ==========================================
+// 4. MANAJEMEN PAKAN / SILO
+// ==========================================
+model Silo {
+  id           Int               @id @default(autoincrement())
+  name         String            @unique
+  feedType     String   
+  capacity     Float    
+  currentStock Float    
+  unit         String   
+  status       FeedStatus        @default(AMAN) // Menggunakan Enum
+  expiryDate   DateTime?         // Tanggal Kadaluarsa (Khusus Vitamin)
+  updatedAt    DateTime          @updatedAt
+  
+  schedules    FeedingSchedule[]
+  transactions SiloTransaction[]
+}
+
+model SiloTransaction {
+  id          Int      @id @default(autoincrement())
+  siloId      Int
+  silo        Silo     @relation(fields: [siloId], references: [id], onDelete: Cascade)
+  type        String   // "MASUK", "KELUAR"
+  weightKg    Float    // Berat/jumlah dalam kg (atau unit)
+  description String?  // Keterangan (misal: "Pengiriman distributor", "Pemberian pakan sapi")
+  expiryDate  DateTime? // Tanggal Kadaluarsa (Khusus Vitamin)
+  creator     String?  // Nama user penginput
+  createdAt   DateTime @default(now())
+
+  @@index([siloId, createdAt])
+}
+
+model FeedingSchedule {
+  id          Int            @id @default(autoincrement())
+  time        String   
+  sectionId   Int
+  section     Section        @relation(fields: [sectionId], references: [id])
+  feedType    String   
+  status      ScheduleStatus @default(TERJADWAL) 
+  
+  siloId      Int?
+  silo        Silo?          @relation(fields: [siloId], references: [id])
+  
+  createdAt   DateTime       @default(now())
+}
+
+// ==========================================
+// 5. LAPORAN OPERASIONAL (Bonus ERD)
+// ==========================================
+model Report {
+  id             Int      @id @default(autoincrement())
+  reportType     String   // Pakan, Kesehatan, Aktivitas, Lingkungan
+  startDate      DateTime
+  endDate        DateTime
+  fileFormat     String   // PDF, CSV, XLSX
+  createdAt      DateTime @default(now())
+}
+
+// ==========================================
+// 6. MANAJEMEN LIMBAH & PENGATURAN SISTEM
+// ==========================================
+model LivestockWaste {
+  id        Int      @id @default(autoincrement())
+  cattleId  String
+  date      DateTime @db.Date // Hanya menyimpan tanggal (tanpa jam) untuk membatasi 1 entri per hari
+  fecesKg   Float
+  urineL    Float
+  isAuto    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  
+  livestock Livestock @relation(fields: [cattleId], references: [cattleId], onDelete: Cascade)
+  
+  // Kombinasi cattleId dan date harus unik agar tidak ada duplikasi input harian
+  @@unique([cattleId, date])
+  @@index([date])
+}
+
+model ZoneWaste {
+  id        Int      @id @default(autoincrement())
+  zoneId    Int
+  zone      Zone     @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  date      DateTime @db.Date
+  fecesKg   Float
+  urineL    Float
+  createdAt DateTime @default(now())
+
+  @@unique([zoneId, date])
+  @@index([date])
+}
+
+model SystemSettings {
+  key       String   @id // Contoh: "DEFAULT_FECES_KG", "DEFAULT_URINE_L"
+  value     String   
+  updatedAt DateTime @updatedAt
+}
+
+model ActivityLog {
+  id        Int      @id @default(autoincrement())
+  userName  String
+  action    String   // "TAMBAH", "EDIT", "HAPUS", "UNDUH"
+  module    String   // "TERNAK", "MEDIS", "SILO", "LAPORAN"
+  details   String
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+// ==========================================
+// 7. RECORD PERTUMBUHAN & KONSUMSI PAKAN
+// ==========================================
+model LivestockWeightRecord {
+  id          Int       @id @default(autoincrement())
+  cattleId    String
+  weight      Float
+  weighDate   DateTime  @default(now())
+  
+  livestock   Livestock @relation(fields: [cattleId], references: [cattleId], onDelete: Cascade)
+  
+  @@index([cattleId, weighDate])
+}
+
+model LivestockFeedRecord {
+  id          Int       @id @default(autoincrement())
+  cattleId    String
+  feedType    String    // Hijauan, Konsentrat, dll.
+  weightKg    Float     // Berat yang diberikan
+  bkPercent   Float?    // Persentase BK (opsional, misal 20% untuk hijauan, 86% konsentrat)
+  asFedWeight Float?    // Berat As-fed
+  feedDate    DateTime  @default(now())
+  
+  livestock   Livestock @relation(fields: [cattleId], references: [cattleId], onDelete: Cascade)
+  
+  @@index([cattleId, feedDate])
+}

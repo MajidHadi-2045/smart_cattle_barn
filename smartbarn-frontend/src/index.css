@@ -1,0 +1,71 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* --- Custom Scrollbar (Dari Desain Dashboard Anda) --- */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1; /* gray-300 */
+    border-radius: 4px;
+}
+::-webkit-scrollbar-track {
+    background-color: #f1f5f9; /* slate-100 */
+}
+.dark ::-webkit-scrollbar-thumb {
+    background-color: #475569; /* slate-600 */
+}
+.dark ::-webkit-scrollbar-track {
+    background-color: #1e293b; /* slate-800 */
+}
+
+/* --- Style Tambahan untuk Toggle Switch --- */
+.toggle-checkbox:checked {
+    background-color: #22c55e; /* green-500 */
+    right: 0;
+    border-color: #22c55e;
+}
+.toggle-checkbox:checked + .toggle-label {
+    background-color: #22c55e;
+}
+
+/* --- Skeleton Shimmer Animation --- */
+@keyframes shimmer {
+    0% {
+        background-position: -468px 0;
+    }
+    100% {
+        background-position: 468px 0;
+    }
+}
+
+.animate-shimmer {
+    background: #f6f7f8;
+    background-image: linear-gradient(to right, #f6f7f8 0%, #edeef1 20%, #f6f7f8 40%, #f6f7f8 100%);
+    background-repeat: no-repeat;
+    background-size: 800px 104px;
+    display: inline-block;
+    position: relative;
+    animation-duration: 1s;
+    animation-fill-mode: forwards;
+    animation-iteration-count: infinite;
+    animation-name: shimmer;
+    animation-timing-function: linear;
+}
+
+.dark .animate-shimmer {
+    background: #1e293b;
+    background-image: linear-gradient(to right, #1e293b 0%, #334155 20%, #1e293b 40%, #1e293b 100%);
+}
+
+/* --- Hide Number Input Spinners --- */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+input[type="number"] {
+    -moz-appearance: textfield;
+}
