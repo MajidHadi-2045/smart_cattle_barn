@@ -2,6 +2,8 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req } from '@nestjs/common';
 import { FeedService } from './feed.service';
 import { AuthGuard } from '../auth/auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
 
 @Controller('feed')
 export class FeedController {
@@ -14,21 +16,24 @@ export class FeedController {
   }
 
   @Post('silo')
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'STAFF')
   createSilo(@Body() data: any, @Req() req: any) {
     const author = req.user?.name ? `${req.user.name} (${req.user.role})` : req.user?.email || 'Admin';
     return this.feedService.createSilo(data, author);
   }
 
   @Patch('silo/:id')
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'STAFF')
   updateSilo(@Param('id') id: string, @Body() data: any, @Req() req: any) {
     const author = req.user?.name ? `${req.user.name} (${req.user.role})` : req.user?.email || 'Admin';
     return this.feedService.updateSilo(+id, data, author);
   }
 
   @Delete('silo/:id')
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'STAFF')
   removeSilo(@Param('id') id: string, @Req() req: any) {
     const author = req.user?.name ? `${req.user.name} (${req.user.role})` : req.user?.email || 'Admin';
     return this.feedService.removeSilo(+id, author);
@@ -36,7 +41,8 @@ export class FeedController {
 
   // Contoh Payload JSON untuk frontend: { "amount": 50, "type": "ADD" }
   @Patch('silo/:id/stock')
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'STAFF')
   updateStock(
     @Param('id') id: string, 
     @Body() body: { amount: number, type: 'ADD' | 'SUBTRACT' },
@@ -53,21 +59,24 @@ export class FeedController {
   }
 
   @Post('schedule')
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'STAFF')
   createSchedule(@Body() data: any, @Req() req: any) {
     const author = req.user?.name ? `${req.user.name} (${req.user.role})` : req.user?.email || 'Admin';
     return this.feedService.createSchedule(data, author);
   }
 
   @Patch('schedule/:id')
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'STAFF')
   updateSchedule(@Param('id') id: string, @Body() data: any, @Req() req: any) {
     const author = req.user?.name ? `${req.user.name} (${req.user.role})` : req.user?.email || 'Admin';
     return this.feedService.updateSchedule(+id, data, author);
   }
 
   @Delete('schedule/:id')
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'STAFF')
   removeSchedule(@Param('id') id: string, @Req() req: any) {
     const author = req.user?.name ? `${req.user.name} (${req.user.role})` : req.user?.email || 'Admin';
     return this.feedService.removeSchedule(+id, author);
@@ -85,7 +94,8 @@ export class FeedController {
   }
 
   @Post('silo/:id/transaction')
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'STAFF')
   createTransaction(
     @Param('id') id: string,
     @Body() body: any,

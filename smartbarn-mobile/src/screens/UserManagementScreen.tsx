@@ -30,6 +30,7 @@ import {
 } from 'lucide-react-native';
 import apiClient from '../api/client';
 import LoadingSpinner from '../components/LoadingSpinner';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const UserManagementScreen = ({ navigation }: any) => {
   const [activeTab, setActiveTab] = useState<'list' | 'requests' | 'form'>('list');
@@ -40,6 +41,9 @@ const UserManagementScreen = ({ navigation }: any) => {
   const [refreshing, setRefreshing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  const [currentUserRole, setCurrentUserRole] = useState('STAFF');
+  const [currentUserName, setCurrentUserName] = useState('');
+
   // Form State
   const [formName, setFormName] = useState('');
   const [formEmail, setFormEmail] = useState('');
@@ -49,24 +53,23 @@ const UserManagementScreen = ({ navigation }: any) => {
 
   const fetchUsersAndRequests = async () => {
     try {
-      // Mengambil daftar staff aktif dan user pending secara paralel
-      const [usersRes, pendingRes] = await Promise.all([
-        apiClient.get('/users/staff'),
-        apiClient.get('/users/pending')
-      ]);
-      
+      const userStr = await AsyncStorage.getItem('user');
+      const currentUser = userStr ? JSON.parse(userStr) : null;
+      const userRole = currentUser?.role || 'STAFF';
+
+      const usersRes = await apiClient.get('/users/staff');
       setUsers(usersRes.data || []);
-      setRequests(pendingRes.data || []);
+
+      if (userRole === 'SUPER_ADMIN') {
+        const pendingRes = await apiClient.get('/users/requests');
+        setRequests(pendingRes.data || []);
+      } else {
+        setRequests([]);
+      }
     } catch (error) {
       console.error('Error fetching users/requests:', error);
-      // Fallback lokal jika server offline
-      setUsers([
-        { id: 'SUPER_001', name: 'Majid Developer', email: 'dev@agritekno.com', role: 'SUPER_ADMIN', status: 'AKTIF', phone: '08123456789' },
-        { id: 'STF_001', name: 'Budi Santoso', email: 'budi@smartcattlebarn.id', role: 'STAFF', status: 'AKTIF', phone: '08567891234' },
-      ]);
-      setRequests([
-        { id: 'TEMP_001', name: 'Dr. Andi', email: 'andi@smartcattlebarn.id', role: 'VETERINER', createdAt: new Date().toISOString() }
-      ]);
+      setUsers([]);
+      setRequests([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -74,6 +77,16 @@ const UserManagementScreen = ({ navigation }: any) => {
   };
 
   useEffect(() => {
+    const loadUser = async () => {
+      const userStr = await AsyncStorage.getItem('user');
+      if (userStr) {
+        const parsed = JSON.parse(userStr);
+        setCurrentUserRole(parsed.role || 'STAFF');
+        setCurrentUserName(parsed.name || 'Staf');
+        setFormRole(parsed.role === 'VETERINER' ? 'VETERINER' : 'STAFF');
+      }
+    };
+    loadUser();
     fetchUsersAndRequests();
   }, []);
 
@@ -84,6 +97,10 @@ const UserManagementScreen = ({ navigation }: any) => {
 
   // 1. Cabut Hak Akses (Delete User)
   const handleDeleteUser = (id: string, name: string) => {
+    if (currentUserRole !== 'SUPER_ADMIN') {
+      Alert.alert('Akses Ditolak', 'Hanya Super Admin yang dapat mencabut hak akses.');
+      return;
+    }
     Alert.alert(
       'Cabut Hak Akses?',
       `Apakah Anda yakin ingin mencabut akses untuk ${name}? Akun ini tidak akan dapat login lagi ke sistem.`,
@@ -108,10 +125,13 @@ const UserManagementScreen = ({ navigation }: any) => {
 
   // 2. Setujui Calon Pendaftar
   const handleApproveRequest = async (id: string, name: string) => {
+    if (currentUserRole !== 'SUPER_ADMIN') {
+      Alert.alert('Akses Ditolak', 'Hanya Super Admin yang dapat menyetujui pendaftaran.');
+      return;
+    }
     try {
-      await apiClient.patch(`/users/approve/${id}`);
+      await apiClient.patch(`/users/requests/${id}/process`, { action: 'TERIMA' });
       Alert.alert('Sukses', `Pendaftaran ${name} telah disetujui!`);
-      // Update state lokal
       setRequests(prev => prev.filter(req => req.id !== id));
       fetchUsersAndRequests();
     } catch (error) {
@@ -121,6 +141,10 @@ const UserManagementScreen = ({ navigation }: any) => {
 
   // 3. Tolak Calon Pendaftar
   const handleRejectRequest = (id: string, name: string) => {
+    if (currentUserRole !== 'SUPER_ADMIN') {
+      Alert.alert('Akses Ditolak', 'Hanya Super Admin yang dapat menolak pendaftaran.');
+      return;
+    }
     Alert.alert(
       'Tolak Permintaan?',
       `Hapus permintaan pendaftaran dari ${name}? Calon pengguna harus mendaftar ulang jika ingin masuk.`,
@@ -131,7 +155,7 @@ const UserManagementScreen = ({ navigation }: any) => {
           style: 'destructive',
           onPress: async () => {
             try {
-              await apiClient.delete(`/users/reject/${id}`);
+              await apiClient.patch(`/users/requests/${id}/process`, { action: 'TOLAK' });
               Alert.alert('Sukses', 'Permintaan pendaftaran telah ditolak.');
               setRequests(prev => prev.filter(req => req.id !== id));
             } catch (error) {
@@ -143,36 +167,54 @@ const UserManagementScreen = ({ navigation }: any) => {
     );
   };
 
-  // 4. Submit Tambah Staff Baru
+  // 4. Submit Tambah Staff / Ajukan Request Baru
   const handleFormSubmit = async () => {
-    if (!formName || !formEmail || !formPassword) {
-      Alert.alert('Error', 'Mohon isi nama lengkap, email, dan password.');
+    const isSuperAdmin = currentUserRole === 'SUPER_ADMIN';
+
+    if (!formName || !formEmail) {
+      Alert.alert('Error', 'Mohon isi nama lengkap dan email.');
+      return;
+    }
+
+    if (isSuperAdmin && !formPassword) {
+      Alert.alert('Error', 'Mohon isi password sementara.');
       return;
     }
 
     setSubmitting(true);
     try {
-      await apiClient.post('/users/staff', {
-        name: formName,
-        email: formEmail,
-        password: formPassword,
-        role: formRole,
-        reason: formReason
-      });
+      if (isSuperAdmin) {
+        await apiClient.post('/users/staff', {
+          name: formName,
+          email: formEmail,
+          password: formPassword,
+          role: formRole.toLowerCase(),
+          reason: formReason
+        });
+        Alert.alert('Sukses', 'Staff baru berhasil terdaftar!');
+      } else {
+        await apiClient.post('/users/requests', {
+          requester: currentUserName,
+          calonName: formName,
+          calonEmail: formEmail,
+          posisi: formRole,
+          alasan: formReason
+        });
+        Alert.alert('Sukses', 'Permintaan akses berhasil diajukan ke Admin!');
+      }
 
-      Alert.alert('Sukses', 'Staff baru berhasil terdaftar!');
       // Reset Form
       setFormName('');
       setFormEmail('');
       setFormPassword('');
-      setFormRole('STAFF');
+      setFormRole(currentUserRole === 'VETERINER' ? 'VETERINER' : 'STAFF');
       setFormReason('');
       
       // Kembalikan ke tab list & refresh data
       setActiveTab('list');
       fetchUsersAndRequests();
     } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.message || 'Gagal menambahkan staf baru.');
+      Alert.alert('Error', error.response?.data?.message || 'Gagal mengirim data.');
     } finally {
       setSubmitting(false);
     }
@@ -214,12 +256,14 @@ const UserManagementScreen = ({ navigation }: any) => {
         </View>
         
         {/* Tombol Cabut Akses (Hapus) */}
-        <TouchableOpacity 
-          style={styles.deleteButton} 
-          onPress={() => handleDeleteUser(item.id, item.name)}
-        >
-          <Trash2 size={18} color={COLORS.danger} />
-        </TouchableOpacity>
+        {currentUserRole === 'SUPER_ADMIN' && (
+          <TouchableOpacity 
+            style={styles.deleteButton} 
+            onPress={() => handleDeleteUser(item.id, item.name)}
+          >
+            <Trash2 size={18} color={COLORS.danger} />
+          </TouchableOpacity>
+        )}
       </View>
 
       <View style={styles.cardBody}>
@@ -242,36 +286,49 @@ const UserManagementScreen = ({ navigation }: any) => {
           <User size={26} color="#d97706" />
         </View>
         <View style={styles.userInfo}>
-          <Text style={styles.userName}>{item.name}</Text>
-          <Text style={styles.userEmail}>{item.email}</Text>
+          <Text style={styles.userName}>{item.calonName}</Text>
+          <Text style={styles.userEmail}>{item.calonEmail}</Text>
           <View style={styles.roleBadgeContainer}>
             <View style={[
               styles.roleBadge, 
-              item.role === 'SUPER_ADMIN' ? styles.badgePurple : 
-              item.role === 'VETERINER' ? styles.badgeBlue : styles.badgeGreen
+              item.posisi === 'SUPER_ADMIN' ? styles.badgePurple : 
+              item.posisi === 'VETERINER' ? styles.badgeBlue : styles.badgeGreen
             ]}>
               <Shield size={10} color={
-                item.role === 'SUPER_ADMIN' ? '#7c3aed' : 
-                item.role === 'VETERINER' ? '#2563eb' : '#16a34a'
+                item.posisi === 'SUPER_ADMIN' ? '#7c3aed' : 
+                item.posisi === 'VETERINER' ? '#2563eb' : '#16a34a'
               } />
               <Text style={[
                 styles.roleText,
                 { color: 
-                  item.role === 'SUPER_ADMIN' ? '#7c3aed' : 
-                  item.role === 'VETERINER' ? '#2563eb' : '#16a34a'
+                  item.posisi === 'SUPER_ADMIN' ? '#7c3aed' : 
+                  item.posisi === 'VETERINER' ? '#2563eb' : '#16a34a'
                 }
               ]}>
-                {item.role === 'SUPER_ADMIN' ? 'SUPER ADMIN' : item.role === 'VETERINER' ? 'DOKTER HEWAN' : 'OPERATOR'}
+                {item.posisi === 'SUPER_ADMIN' ? 'SUPER ADMIN' : item.posisi === 'VETERINER' ? 'DOKTER HEWAN' : 'OPERATOR'}
               </Text>
             </View>
           </View>
         </View>
       </View>
 
+      {item.requester && (
+        <View style={{ paddingHorizontal: 4, marginBottom: 8 }}>
+          <Text style={{ fontSize: 12, color: COLORS.textLight }}>
+            Diajukan oleh: <Text style={{ fontWeight: 'bold' }}>{item.requester}</Text>
+          </Text>
+          {item.alasan && (
+            <Text style={{ fontSize: 12, color: COLORS.textLight, marginTop: 2 }}>
+              Alasan: {item.alasan}
+            </Text>
+          )}
+        </View>
+      )}
+
       <View style={styles.actionButtonsRow}>
         <TouchableOpacity 
           style={[styles.actionBtn, styles.btnReject]}
-          onPress={() => handleRejectRequest(item.id, item.name)}
+          onPress={() => handleRejectRequest(item.id, item.calonName)}
         >
           <X size={16} color={COLORS.danger} />
           <Text style={styles.btnRejectText}>Tolak</Text>
@@ -279,7 +336,7 @@ const UserManagementScreen = ({ navigation }: any) => {
 
         <TouchableOpacity 
           style={[styles.actionBtn, styles.btnApprove]}
-          onPress={() => handleApproveRequest(item.id, item.name)}
+          onPress={() => handleApproveRequest(item.id, item.calonName)}
         >
           <Check size={16} color={COLORS.white} />
           <Text style={styles.btnApproveText}>Setujui</Text>
@@ -308,25 +365,29 @@ const UserManagementScreen = ({ navigation }: any) => {
           <Text style={[styles.tabText, activeTab === 'list' && styles.tabTextActive]}>Daftar</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={[styles.tabButton, activeTab === 'requests' && styles.tabButtonActive]}
-          onPress={() => setActiveTab('requests')}
-        >
-          <Text style={[styles.tabText, activeTab === 'requests' && styles.tabTextActive]}>
-            Antrian
-          </Text>
-          {requests.length > 0 && (
-            <View style={styles.badgeCount}>
-              <Text style={styles.badgeCountText}>{requests.length}</Text>
-            </View>
-          )}
-        </TouchableOpacity>
+        {currentUserRole === 'SUPER_ADMIN' && (
+          <TouchableOpacity 
+            style={[styles.tabButton, activeTab === 'requests' && styles.tabButtonActive]}
+            onPress={() => setActiveTab('requests')}
+          >
+            <Text style={[styles.tabText, activeTab === 'requests' && styles.tabTextActive]}>
+              Antrian
+            </Text>
+            {requests.length > 0 && (
+              <View style={styles.badgeCount}>
+                <Text style={styles.badgeCountText}>{requests.length}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        )}
 
         <TouchableOpacity 
           style={[styles.tabButton, activeTab === 'form' && styles.tabButtonActive]}
           onPress={() => setActiveTab('form')}
         >
-          <Text style={[styles.tabText, activeTab === 'form' && styles.tabTextActive]}>Tambah</Text>
+          <Text style={[styles.tabText, activeTab === 'form' && styles.tabTextActive]}>
+            {currentUserRole === 'SUPER_ADMIN' ? 'Tambah' : 'Ajukan'}
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -370,23 +431,25 @@ const UserManagementScreen = ({ navigation }: any) => {
 
           {activeTab === 'form' && (
             <ScrollView contentContainerStyle={styles.formContainer}>
-              <Text style={styles.sectionHeading}>Undang Staff / Operator Baru</Text>
+              <Text style={styles.sectionHeading}>
+                {currentUserRole === 'SUPER_ADMIN' ? 'Undang Staff / Operator Baru' : 'Ajukan Permintaan Akun Baru'}
+              </Text>
               
               <View style={styles.formField}>
-                <Text style={styles.formLabel}>Nama Lengkap</Text>
+                <Text style={styles.formLabel}>Nama Lengkap Calon</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="Nama lengkap staff"
+                  placeholder="Nama lengkap calon pengguna"
                   value={formName}
                   onChangeText={setFormName}
                 />
               </View>
 
               <View style={styles.formField}>
-                <Text style={styles.formLabel}>Email Utama</Text>
+                <Text style={styles.formLabel}>Email Calon</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="staff@smartcattlebarn.id"
+                  placeholder="email@smartcattlebarn.id"
                   value={formEmail}
                   onChangeText={setFormEmail}
                   autoCapitalize="none"
@@ -394,19 +457,21 @@ const UserManagementScreen = ({ navigation }: any) => {
                 />
               </View>
 
-              <View style={styles.formField}>
-                <Text style={styles.formLabel}>Password Sementara</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Minimal 6 karakter"
-                  value={formPassword}
-                  onChangeText={setFormPassword}
-                  secureTextEntry
-                />
-              </View>
+              {currentUserRole === 'SUPER_ADMIN' && (
+                <View style={styles.formField}>
+                  <Text style={styles.formLabel}>Password Sementara</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Minimal 6 karakter"
+                    value={formPassword}
+                    onChangeText={setFormPassword}
+                    secureTextEntry
+                  />
+                </View>
+              )}
 
               <View style={styles.formField}>
-                <Text style={styles.formLabel}>Pilih Hak Akses / Peran</Text>
+                <Text style={styles.formLabel}>Pilih Peran / Posisi Calon</Text>
                 <View style={styles.roleSelectorRow}>
                   <TouchableOpacity 
                     style={[styles.roleSelectBtn, formRole === 'STAFF' && styles.roleSelectBtnActive]}
@@ -422,20 +487,22 @@ const UserManagementScreen = ({ navigation }: any) => {
                     <Text style={[styles.roleSelectText, formRole === 'VETERINER' && styles.roleSelectTextActive]}>Dokter Hewan</Text>
                   </TouchableOpacity>
 
-                  <TouchableOpacity 
-                    style={[styles.roleSelectBtn, formRole === 'SUPER_ADMIN' && styles.roleSelectBtnActive]}
-                    onPress={() => setFormRole('SUPER_ADMIN')}
-                  >
-                    <Text style={[styles.roleSelectText, formRole === 'SUPER_ADMIN' && styles.roleSelectTextActive]}>Super Admin</Text>
-                  </TouchableOpacity>
+                  {currentUserRole === 'SUPER_ADMIN' && (
+                    <TouchableOpacity 
+                      style={[styles.roleSelectBtn, formRole === 'SUPER_ADMIN' && styles.roleSelectBtnActive]}
+                      onPress={() => setFormRole('SUPER_ADMIN')}
+                    >
+                      <Text style={[styles.roleSelectText, formRole === 'SUPER_ADMIN' && styles.roleSelectTextActive]}>Super Admin</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               </View>
 
               <View style={styles.formField}>
-                <Text style={styles.formLabel}>Alasan Penambahan</Text>
+                <Text style={styles.formLabel}>Alasan / Keterangan</Text>
                 <TextInput
                   style={[styles.input, styles.textArea]}
-                  placeholder="Kenapa staf ini ditambahkan?"
+                  placeholder={currentUserRole === 'SUPER_ADMIN' ? 'Kenapa staf ini ditambahkan?' : 'Jelaskan alasan pengajuan akun baru ini...'}
                   multiline
                   numberOfLines={4}
                   value={formReason}
@@ -453,7 +520,9 @@ const UserManagementScreen = ({ navigation }: any) => {
                 ) : (
                   <>
                     <Send size={18} color={COLORS.white} />
-                    <Text style={styles.submitBtnText}>Kirim Undangan / Tambahkan</Text>
+                    <Text style={styles.submitBtnText}>
+                      {currentUserRole === 'SUPER_ADMIN' ? 'Kirim Undangan / Tambahkan' : 'Kirim Pengajuan Akun'}
+                    </Text>
                   </>
                 )}
               </TouchableOpacity>

@@ -139,107 +139,60 @@ const AuthPage = () => {
                 )}
 
                 {/* --- TAMPILAN LOGIN --- */}
-                {view === 'login' ? (
-                    <div className="animate-fade-in">
-                        <form className="space-y-5" onSubmit={handleLogin}>
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Pilih Peran / Akses</label>
-                                <select
-                                    value={loginRole}
-                                    onChange={(e) => setLoginRole(e.target.value)}
-                                    className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none transition"
-                                    required
-                                >
-                                    <option value="" disabled>-- Kategori Pengguna --</option>
-                                    <option value="super_admin">Super Admin (IT)</option>
-                                    <option value="veteriner">Dokter Hewan (Veteriner)</option>
-                                    <option value="staff">Staf Kandang / Operator</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Email</label>
-                                <input
-                                    type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="email@domain.com"
-                                    className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none transition"
-                                    required
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Kata Sandi</label>
-                                <input
-                                    type="password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    placeholder="••••••••"
-                                    className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none transition"
-                                    required
-                                />
-                            </div>
-
-                            <button
-                                type="submit"
-                                disabled={isLoading}
-                                className={`w-full py-3.5 rounded-xl font-bold text-white transition-all transform ${isLoading ? 'bg-slate-400 cursor-not-allowed' : 'bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-500/30 hover:-translate-y-0.5'}`}
+                <div className="animate-fade-in">
+                    <form className="space-y-5" onSubmit={handleLogin}>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Pilih Peran / Akses</label>
+                            <select
+                                value={loginRole}
+                                onChange={(e) => setLoginRole(e.target.value)}
+                                className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none transition"
+                                required
                             >
-                                {isLoading ? 'Memproses...' : 'Masuk Dashboard'}
-                            </button>
-                        </form>
+                                <option value="" disabled>-- Kategori Pengguna --</option>
+                                <option value="super_admin">Super Admin (IT)</option>
+                                <option value="veteriner">Dokter Hewan (Veteriner)</option>
+                                <option value="staff">Staf Kandang / Operator</option>
+                            </select>
+                        </div>
 
-                        <p className="mt-6 text-center text-sm text-slate-500 dark:text-slate-400">
-                            Belum punya akun?
-                            <button onClick={() => { setView('register'); setError(''); }} className="ml-1 text-primary-600 dark:text-primary-400 font-bold hover:underline transition">
-                                Daftar Baru
-                            </button>
-                        </p>
-                    </div>
-                ) : (
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Email</label>
+                            <input
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="email@domain.com"
+                                className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none transition"
+                                required
+                            />
+                        </div>
 
-                    /* --- TAMPILAN REGISTRASI --- */
-                    <div className="animate-fade-in">
-                        <form className="space-y-5" onSubmit={handleRegister}>
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Pilih Peran</label>
-                                <select value={loginRole} onChange={(e) => setLoginRole(e.target.value)} className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-secondary-500 outline-none transition" required>
-                                    <option value="" disabled>-- Kategori Pengguna --</option>
-                                    <option value="super_admin">Super Admin</option>
-                                    <option value="veteriner">Dokter Hewan</option>
-                                    <option value="staff">Staf Kandang</option>
-                                </select>
-                            </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Kata Sandi</label>
+                            <input
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                placeholder="••••••••"
+                                className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none transition"
+                                required
+                            />
+                        </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nama Lengkap</label>
-                                <input type="text" placeholder="John Doe" value={name} onChange={e => setName(e.target.value)} className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-secondary-500 outline-none transition" required />
-                            </div>
+                        <button
+                            type="submit"
+                            disabled={isLoading}
+                            className={`w-full py-3.5 rounded-xl font-bold text-white transition-all transform ${isLoading ? 'bg-slate-400 cursor-not-allowed' : 'bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-500/30 hover:-translate-y-0.5'}`}
+                        >
+                            {isLoading ? 'Memproses...' : 'Masuk Dashboard'}
+                        </button>
+                    </form>
 
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Email</label>
-                                <input type="email" placeholder="email@domain.com" value={email} onChange={e => setEmail(e.target.value)} className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-secondary-500 outline-none transition" required />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Kata Sandi</label>
-                                <input type="password" placeholder="Minimal 8 karakter" value={password} onChange={e => setPassword(e.target.value)} className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-secondary-500 outline-none transition" required />
-                            </div>
-
-                            <button type="submit" disabled={isLoading} className={`w-full py-3.5 bg-secondary-600 text-white rounded-xl font-bold hover:bg-secondary-700 transition-all transform shadow-lg shadow-secondary-500/30 hover:-translate-y-0.5 ${isLoading ? 'opacity-70' : ''}`}>
-                                {isLoading ? 'Mendaftarkan...' : 'Buat Akun'}
-                            </button>
-                        </form>
-
-                        <p className="mt-6 text-center text-sm text-slate-500 dark:text-slate-400">
-                            Sudah punya akun?
-                            <button onClick={() => { setView('login'); setError(''); }} className="ml-1 text-secondary-600 dark:text-secondary-400 font-bold hover:underline transition">
-                                Kembali ke Login
-                            </button>
-                        </p>
-                    </div>
-                )}
+                    <p className="mt-6 text-center text-sm text-slate-500 dark:text-slate-450 italic">
+                        Akses baru hanya dapat didaftarkan melalui undangan Admin atau melalui Permintaan Akun dari dalam sistem.
+                    </p>
+                </div>
             </div>
         </div>
     );

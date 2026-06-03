@@ -5,6 +5,9 @@ import ConfirmModal from '../../components/common/ConfirmModal';
 import { fetchApi } from '../../utils/api';
 
 const UserManagement = () => {
+    const userRole = localStorage.getItem('userRole');
+    const currentUserName = localStorage.getItem('userName') || 'Staf';
+
     // --- 1. STATE MANAGEMENT ---
     const [activeTab, setActiveTab] = useState('list'); // 'list', 'requests', 'form'
     const [users, setUsers] = useState([]);
@@ -24,7 +27,7 @@ const UserManagement = () => {
         name: '',
         email: '',
         password: '',
-        role: 'staff',
+        role: userRole === 'VETERINER' ? 'veteriner' : 'staff',
         reason: ''
     });
 
@@ -32,19 +35,20 @@ const UserManagement = () => {
     const fetchUserData = async (silent = false) => {
         if (!silent) setIsLoading(true);
         try {
-            // Mengambil daftar user aktif dan antrian pendaftaran mandiri secara paralel
-            const [usersRes, pendingRes] = await Promise.all([
-                fetchApi('/users/staff'),
-                fetchApi('/users/pending')
-            ]);
-
+            // Mengambil daftar user aktif
+            const usersRes = await fetchApi('/users/staff');
             if (!usersRes.ok) throw new Error('Gagal mengambil data pengguna');
 
             const usersData = await usersRes.json();
             setUsers(usersData.filter(u => u.status === 'AKTIF')); // Hanya tampilkan yang sudah aktif
 
-            if (pendingRes.ok) {
-                setRequests(await pendingRes.json());
+            if (userRole === 'SUPER_ADMIN') {
+                const pendingRes = await fetchApi('/users/requests');
+                if (pendingRes.ok) {
+                    setRequests(await pendingRes.json());
+                } else {
+                    setRequests([]);
+                }
             } else {
                 setRequests([]);
             }
@@ -53,20 +57,8 @@ const UserManagement = () => {
         } catch (err) {
             console.error(err);
             setError(err.message);
-            // Fallback data simulasi jika API mati atau sedang masa pengembangan
-            if (import.meta.env.VITE_USE_MOCKS === 'true') {
-                setUsers([
-                    { id: 1, name: 'Majid Developer', role: 'super_admin', email: 'dev@agritekno.com', phone: '0812-3456-7890', joinDate: '2023-01-01' },
-                    { id: 2, name: 'Dr. Andi', role: 'veteriner', email: 'andi@smartcattlebarn.id', phone: '0811-2233-4455', joinDate: '2023-05-20' },
-                    { id: 3, name: 'Budi Santoso', role: 'staff', email: 'budi@smartcattlebarn.id', phone: '0857-9876-5432', joinDate: '2024-02-10' },
-                ]);
-                setRequests([
-                    { id: 101, requester: 'Andi Manajer', name: 'Siti Aminah', email: 'siti@gmail.com', role: 'staff', status: 'Menunggu', date: 'Hari ini, 09:00' }
-                ]);
-            } else {
-                setUsers([]);
-                setRequests([]);
-            }
+            setUsers([]);
+            setRequests([]);
         } finally {
             setIsLoading(false);
         }
@@ -81,29 +73,42 @@ const UserManagement = () => {
         e.preventDefault();
         setIsSubmitting(true);
 
+        const isSuperAdmin = userRole === 'SUPER_ADMIN';
+        const url = isSuperAdmin ? '/users/staff' : '/users/requests';
+        
+        const payload = isSuperAdmin ? formData : {
+            requester: currentUserName,
+            calonName: formData.name,
+            calonEmail: formData.email,
+            posisi: formData.role.toUpperCase(),
+            alasan: formData.alasan
+        };
+
         toast.promise(
-            fetchApi('/users/staff', {
+            fetchApi(url, {
                 method: 'POST',
-                body: JSON.stringify(formData)
+                body: JSON.stringify(payload)
             }).then(async (res) => {
                 if (!res.ok) {
                     const errorData = await res.json();
-                    throw new Error(errorData.message || 'Gagal mengirim undangan');
+                    throw new Error(errorData.message || 'Gagal menyimpan data');
                 }
                 return res.json();
             }),
             {
-                loading: 'Mengirim undangan...',
-                success: (newUser) => {
-                    setFormData({ name: '', email: '', password: '', role: 'staff', reason: '' });
+                loading: isSuperAdmin ? 'Membuat pengguna baru...' : 'Mengirim permintaan akses...',
+                success: (result) => {
+                    setFormData({ name: '', email: '', password: '', role: userRole === 'VETERINER' ? 'veteriner' : 'staff', reason: '' });
                     setActiveTab('list');
                     
-                    // Update state lokal
-                    setUsers(prev => [...prev, newUser]);
-                    
-                    return 'Permintaan akses berhasil dikirim!';
+                    if (isSuperAdmin) {
+                        setUsers(prev => [...prev, result]);
+                        return 'Pengguna baru berhasil ditambahkan!';
+                    } else {
+                        return 'Permintaan akses berhasil diajukan ke Admin!';
+                    }
                 },
-                error: (err) => `Error: ${err.message}`,
+                error: (err) => `Gagal: ${err.message}`,
             }
         ).finally(() => setIsSubmitting(false));
     };
@@ -133,25 +138,30 @@ const UserManagement = () => {
     };
 
     const handleApproveRequest = async (id, roleName) => {
-        const currentUserRole = localStorage.getItem('userRole');
-
-        // Aturan: Veteriner tidak bisa konfirmasi Super Admin
-        if (currentUserRole === 'VETERINER' && roleName === 'SUPER_ADMIN') {
-            toast.error('Dokter Hewan tidak memiliki izin menyetujui akses Super Admin.');
+        if (userRole !== 'SUPER_ADMIN') {
+            toast.error('Hanya Super Admin yang memiliki izin menyetujui akses.');
             return;
         }
 
         toast.promise(
-            fetchApi(`/users/approve/${id}`, { method: 'PATCH' }).then(res => { if (!res.ok) throw new Error(); return res; }),
+            fetchApi(`/users/requests/${id}/process`, {
+                method: 'PATCH',
+                body: JSON.stringify({ action: 'TERIMA' })
+            }).then(async res => { 
+                if (!res.ok) {
+                    const errorData = await res.json();
+                    throw new Error(errorData.message || 'Gagal menyetujui');
+                }
+                return res.json(); 
+            }),
             {
                 loading: 'Menyetujui permintaan...',
                 success: () => {
-                    // Update state lokal segera agar UI terasa responsif
                     setRequests(prev => prev.filter(req => req.id !== id));
-                    fetchUserData(true); // Re-fetch di background tanpa spinner besar
+                    fetchUserData(true);
                     return 'Akun berhasil diaktifkan!';
                 },
-                error: 'Gagal menyetujui pengguna',
+                error: (err) => `Gagal: ${err.message}`,
             }
         );
     };
@@ -169,11 +179,14 @@ const UserManagement = () => {
 
     const confirmRejectRequest = async (id) => {
         try {
-            const response = await fetchApi(`/users/reject/${id}`, { method: 'DELETE' });
+            const response = await fetchApi(`/users/requests/${id}/process`, {
+                method: 'PATCH',
+                body: JSON.stringify({ action: 'TOLAK' })
+            });
             if (!response.ok) throw new Error('Gagal menolak pengguna');
 
             setRequests(prev => prev.filter(req => req.id !== id));
-            toast.success('Permintaan pendaftaran dihapus.');
+            toast.success('Permintaan pendaftaran ditolak.');
             fetchUserData(true);
         } catch (err) {
             toast.error(err.message);
@@ -207,11 +220,15 @@ const UserManagement = () => {
 
                 <div className="flex bg-slate-200 dark:bg-slate-800 p-1 rounded-lg">
                     <button onClick={() => setActiveTab('list')} className={`px-4 py-2 text-sm font-bold rounded-md transition ${activeTab === 'list' ? 'bg-white dark:bg-slate-700 text-primary-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}>Daftar Pengguna</button>
-                    <button onClick={() => setActiveTab('requests')} className={`px-4 py-2 text-sm font-bold rounded-md transition flex items-center gap-2 ${activeTab === 'requests' ? 'bg-white dark:bg-slate-700 text-primary-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}>
-                        Antrian Akses
-                        {requests.length > 0 && <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">{requests.length}</span>}
+                    {userRole === 'SUPER_ADMIN' && (
+                        <button onClick={() => setActiveTab('requests')} className={`px-4 py-2 text-sm font-bold rounded-md transition flex items-center gap-2 ${activeTab === 'requests' ? 'bg-white dark:bg-slate-700 text-primary-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}>
+                            Antrian Akses
+                            {requests.length > 0 && <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">{requests.length}</span>}
+                        </button>
+                    )}
+                    <button onClick={() => setActiveTab('form')} className={`px-4 py-2 text-sm font-bold rounded-md transition ${activeTab === 'form' ? 'bg-white dark:bg-slate-700 text-primary-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}>
+                        {userRole === 'SUPER_ADMIN' ? 'Tambah Akses' : 'Ajukan Akses Baru'}
                     </button>
-                    <button onClick={() => setActiveTab('form')} className={`px-4 py-2 text-sm font-bold rounded-md transition ${activeTab === 'form' ? 'bg-white dark:bg-slate-700 text-primary-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}>Tambah Akses</button>
                 </div>
             </div>
 
@@ -273,9 +290,11 @@ const UserManagement = () => {
                                                 <td className="px-6 py-4">
                                                     <div className="flex items-center justify-center gap-3">
                                                         <button onClick={() => viewUserDetails(user)} className="text-primary-600 hover:text-primary-800 font-medium transition" title="Lihat Profil">Detail</button>
-                                                        <button onClick={() => handleDeleteUser(user.id, user.name)} className="text-red-500 hover:text-red-700 transition" title="Cabut Akses">
-                                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="18" y1="8" x2="23" y2="13"></line><line x1="23" y1="8" x2="18" y2="13"></line></svg>
-                                                        </button>
+                                                        {userRole === 'SUPER_ADMIN' && (
+                                                            <button onClick={() => handleDeleteUser(user.id, user.name)} className="text-red-500 hover:text-red-700 transition" title="Cabut Akses">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="18" y1="8" x2="23" y2="13"></line><line x1="23" y1="8" x2="18" y2="13"></line></svg>
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 </td>
                                             </tr>
@@ -297,19 +316,29 @@ const UserManagement = () => {
                                     <div className="flex justify-between items-start mb-4 pl-2">
                                         <div>
                                             <p className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-1">Permintaan Baru</p>
-                                            <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">{req.name}</h3>
-                                            <p className="text-sm text-slate-500">{req.email}</p>
+                                            <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">{req.calonName}</h3>
+                                            <p className="text-sm text-slate-500">{req.calonEmail}</p>
                                         </div>
                                         <span className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-3 py-1 text-xs font-bold rounded-full">
-                                            Role: {req.role}
+                                            Role: {req.posisi}
                                         </span>
                                     </div>
                                     <div className="bg-slate-50 dark:bg-slate-700/50 p-3 rounded-lg text-sm text-slate-600 dark:text-slate-300 mb-4 pl-2">
                                         <span className="font-bold">Diajukan oleh:</span> {req.requester} <br />
-                                        <span className="text-xs text-slate-400">{req.date}</span>
+                                        {req.alasan && (
+                                            <>
+                                                <span className="font-bold">Alasan:</span> {req.alasan} <br />
+                                            </>
+                                        )}
+                                        <span className="text-xs text-slate-400">
+                                            {new Date(req.createdAt).toLocaleString('id-ID', {
+                                                year: 'numeric', month: 'long', day: 'numeric',
+                                                hour: '2-digit', minute: '2-digit'
+                                            })}
+                                        </span>
                                     </div>
                                     <div className="flex gap-3 pl-2">
-                                        <button onClick={() => handleApproveRequest(req.id, req.role)} className="flex-1 bg-primary-600 text-white py-2 rounded-lg font-bold hover:bg-primary-700 transition">Setujui</button>
+                                        <button onClick={() => handleApproveRequest(req.id, req.posisi)} className="flex-1 bg-primary-600 text-white py-2 rounded-lg font-bold hover:bg-primary-700 transition">Setujui</button>
                                         <button onClick={() => handleRejectRequest(req.id)} className="flex-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 py-2 rounded-lg font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition">Tolak</button>
                                     </div>
                                 </div>
@@ -324,11 +353,13 @@ const UserManagement = () => {
                     {/* --- TAB: FORM TAMBAH PENGGUNA --- */}
                     {activeTab === 'form' && (
                         <div className="max-w-2xl mx-auto bg-white dark:bg-slate-800 p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
-                            <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-6">Undang Pengguna / Staf Baru</h3>
+                            <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-6">
+                                {userRole === 'SUPER_ADMIN' ? 'Undang Pengguna / Staf Baru' : 'Ajukan Permintaan Akses Baru'}
+                            </h3>
                             <form onSubmit={handleFormSubmit} className="space-y-5">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                     <div>
-                                        <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Nama Lengkap</label>
+                                        <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Nama Lengkap Calon Pengguna</label>
                                         <input type="text" className="w-full px-4 py-2 border rounded-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
                                     </div>
                                     <div>
@@ -336,17 +367,26 @@ const UserManagement = () => {
                                         <input type="email" className="w-full px-4 py-2 border rounded-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white" required value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
                                     </div>
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Password Sementara</label>
-                                    <input type="password" placeholder="Min. 6 karakter" className="w-full px-4 py-2 border rounded-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white" required value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} />
-                                </div>
+                                {userRole === 'SUPER_ADMIN' && (
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Password Sementara</label>
+                                        <input type="password" placeholder="Min. 6 karakter" className="w-full px-4 py-2 border rounded-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white" required value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} />
+                                    </div>
+                                )}
                                 <div>
                                     <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Pilih Role Akses</label>
-                                    <select className="w-full px-4 py-2 border rounded-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value })}>
-                                        <option value="staff">Staf Kandang (Operasional)</option>
-                                        <option value="veteriner">Dokter Hewan (Veteriner)</option>
-                                        <option value="super_admin">Super Admin (IT)</option>
-                                    </select>
+                                    {userRole === 'SUPER_ADMIN' ? (
+                                        <select className="w-full px-4 py-2 border rounded-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value })}>
+                                            <option value="staff">Staf Kandang (Operasional)</option>
+                                            <option value="veteriner">Dokter Hewan (Veteriner)</option>
+                                            <option value="super_admin">Super Admin (IT)</option>
+                                        </select>
+                                    ) : (
+                                        <select disabled className="w-full px-4 py-2 border rounded-lg bg-slate-105 dark:bg-slate-700 dark:text-white" value={formData.role}>
+                                            <option value="staff">Staf Kandang (Operasional)</option>
+                                            <option value="veteriner">Dokter Hewan (Veteriner)</option>
+                                        </select>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Alasan Penambahan</label>
@@ -355,7 +395,7 @@ const UserManagement = () => {
                                 <div className="flex gap-3 pt-4">
                                     <button type="button" onClick={() => setActiveTab('list')} className="flex-1 py-2.5 rounded-lg border border-slate-300 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition">Batal</button>
                                     <button type="submit" disabled={isSubmitting} className="flex-1 bg-primary-600 text-white py-2.5 rounded-lg font-bold hover:bg-primary-700 transition shadow-lg shadow-primary-500/30 disabled:opacity-70">
-                                        {isSubmitting ? 'Memproses...' : 'Kirim Undangan'}
+                                        {isSubmitting ? 'Memproses...' : (userRole === 'SUPER_ADMIN' ? 'Buat Pengguna' : 'Ajukan Permintaan')}
                                     </button>
                                 </div>
                             </form>

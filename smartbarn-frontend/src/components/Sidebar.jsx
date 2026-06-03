@@ -112,12 +112,14 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
             <span>Laporan</span>
           </Link>
 
-          {userRole === 'SUPER_ADMIN' && (
+          {(userRole === 'SUPER_ADMIN' || userRole === 'VETERINER' || userRole === 'STAFF') && (
             <>
-              <p className="px-4 pt-4 pb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">Administrator</p>
+              <p className="px-4 pt-4 pb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                {userRole === 'SUPER_ADMIN' ? 'Administrator' : 'Pengguna & Akses'}
+              </p>
               <Link to="/dashboard/users" className={getLinkClass('/dashboard/users')} onClick={() => window.innerWidth < 768 && toggleSidebar()}>
                 <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-                <span>Pengguna</span>
+                <span>Pengguna & Akses</span>
               </Link>
             </>
           )}

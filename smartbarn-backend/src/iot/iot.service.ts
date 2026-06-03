@@ -144,6 +144,11 @@ export class IotService implements OnModuleInit, OnModuleDestroy {
       
       // Hot Path
       try {
+        const latency = Date.now() - messageTimestamp;
+        this.logger.log(
+          `[Telemetry] Cow ${cattleId} - Latency: ${latency}ms, RSSI: ${data.rssi || 'N/A'} dBm, Battery: ${data.batteryVoltage || 'N/A'} V`
+        );
+
         this.redisPub.publish('websocket:vital-update', JSON.stringify({ 
             cattleId, 
             heartRate: data.heartRate,
