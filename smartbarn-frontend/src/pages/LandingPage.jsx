@@ -299,8 +299,8 @@ const LandingPage = () => {
                             <h2 className="text-4xl font-black mb-8 leading-tight">Mobile Application<br/><span className="text-primary-400 font-medium">Dalam Genggaman.</span></h2>
                             <p className="text-lg text-slate-400 mb-12 leading-relaxed max-w-lg mx-auto lg:mx-0">Pantau ternak langsung dari smartphone Anda. Dapatkan notifikasi darurat secara instan.</p>
                             <div className="flex flex-wrap gap-4 justify-center lg:justify-start">
-                                <button className="bg-slate-800 border border-slate-700 text-white px-8 py-4 rounded-2xl font-bold hover:bg-slate-700 transition">Unduh APK (Android)</button>
-                                <button className="bg-white text-slate-900 border border-slate-100 px-8 py-4 rounded-2xl font-bold hover:bg-slate-50 transition shadow-sm">Akses Web App (iOS)</button>
+                                <a href="/smartbarn.apk" download className="bg-slate-800 border border-slate-700 text-white px-8 py-4 rounded-2xl font-bold hover:bg-slate-700 transition">Unduh APK (Android)</a>
+                                <a href="/login" className="bg-white text-slate-900 border border-slate-100 px-8 py-4 rounded-2xl font-bold hover:bg-slate-50 transition shadow-sm">Akses Web App (iOS)</a>
                             </div>
                         </div>
                     </div>
