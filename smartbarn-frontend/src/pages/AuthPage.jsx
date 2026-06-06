@@ -125,7 +125,7 @@ const AuthPage = () => {
                 {/* Header Form */}
                 <div className="text-center mb-8 mt-2">
                     <div className="inline-flex bg-white p-2 rounded-full mb-4 shadow-sm border border-slate-100">
-                        <img src="/public/logoxl.svg" alt="Logo" className="w-12 h-12 object-contain" />
+                        <img src="/logoxl.svg" alt="Logo" className="w-12 h-12 object-contain" />
                     </div>
                     <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Smart Cattle Barn System</h2>
                     <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Silakan masuk untuk mengakses dashboard</p>

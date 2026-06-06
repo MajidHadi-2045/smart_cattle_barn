@@ -92,7 +92,7 @@ const LandingPage = () => {
                     <div className="flex justify-between items-center">
                         <div className="flex items-center gap-3 cursor-pointer" onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})}>
                             <div className="bg-white p-1.5 rounded-xl shadow-sm border border-slate-100">
-                                <img src="/public/logoxl.svg" alt="Logo" className="h-8 w-8" />
+                                <img src="/logoxl.svg" alt="Logo" className="h-8 w-8" />
                             </div>
                             <span className="text-xl font-bold text-slate-900 tracking-tight text-shadow-sm">Smart Cattle Barn</span>
                         </div>
