@@ -94,7 +94,7 @@ const LandingPage = () => {
                             <div className="bg-white p-1.5 rounded-xl shadow-sm border border-slate-100">
                                 <img src="/public/logoxl.svg" alt="Logo" className="h-8 w-8" />
                             </div>
-                            <span className="text-xl font-bold text-slate-900 tracking-tight text-shadow-sm">Smart CattleBarn</span>
+                            <span className="text-xl font-bold text-slate-900 tracking-tight text-shadow-sm">Smart Cattle Barn</span>
                         </div>
 
                         <div className="hidden md:flex items-center space-x-10">
@@ -247,11 +247,31 @@ const LandingPage = () => {
                     </div>
                     <div id="fs" className="flex overflow-x-auto gap-8 pb-10 px-4 snap-x snap-mandatory no-scrollbar scroll-smooth">
                         {[
-                            { title: "Vital Sign Monitor", desc: "Pantau kesehatan secara real-time melalui sensor detak jantung dan suhu tubuh.", icon: <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg> },
-                            { title: "Manajemen Kandang", desc: "Pemantauan kandang ternak secara terintegrasi untuk kenyamanan dan keamanan optimal sapi.", icon: <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg> },
-                            { title: "Manajemen Pakan", desc: "Kontrol stok pakan dan otomatisasi jadwal pemberian pakan ternak secara rutin.", icon: <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg> },
-                            { title: "Suhu Lingkungan", desc: "Otomatisasi kipas dan sprinkler berdasarkan kelembaban dan suhu kandang.", icon: <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 4v10h.2c.4 0 .8-.2 1-.5l1.8-2c.6-.7.6-1.7 0-2.4l-1.8-2c-.3-.2-.6-.5-1-.5H14Z"/><path d="M4 14h6v6H4Z"/></svg> },
-                            { title: "Identitas RFID", desc: "Sistem identifikasi cepat untuk riwayat medis dan kepemilikan setiap individu sapi.", icon: <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 7h10M7 12h10m-10 5h10M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z"/></svg> },
+                            { 
+                                title: "Pemantauan IoT Real-time", 
+                                desc: "Pantau vital sign (suhu tubuh, detak jantung) dan lingkungan (amonia, kelembapan) secara langsung melalui sensor cerdas.", 
+                                icon: <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></svg> 
+                            },
+                            { 
+                                title: "Kalkulator Nutrisi & Pakan", 
+                                desc: "Hitung otomatis kebutuhan Bahan Kering (BK) dan proporsi pakan (TMR, Hijauan, Konsentrat) untuk target pertumbuhan optimal.", 
+                                icon: <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg> 
+                            },
+                            { 
+                                title: "Rekam Medis & Vaksinasi", 
+                                desc: "Catat riwayat penyakit, penanganan, dan lakukan pencatatan vaksinasi massal (Bulk Action) dengan sangat mudah.", 
+                                icon: <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m18 2 4 4"/><path d="m17 7 3-3"/><path d="M19 9 8.7 19.3c-1 1-2.5 1-3.4 0l-.6-.6c-1-1-1-2.5 0-3.4L15 5"/><path d="m9 11 4 4"/><path d="m5 19-3 3"/><path d="m14 4 6 6"/></svg> 
+                            },
+                            { 
+                                title: "Manajemen Limbah", 
+                                desc: "Pantau dan kelola akumulasi feses serta urine per kandang untuk menjaga kebersihan dan kesehatan lingkungan ternak.", 
+                                icon: <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg> 
+                            },
+                            { 
+                                title: "Laporan & Ekspor Otomatis", 
+                                desc: "Hasilkan laporan operasional (medis, pakan, limbah) dalam format PDF yang rapi dan siap untuk dicetak.", 
+                                icon: <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 18v-6"/><path d="M9 15l3 3 3-3"/></svg> 
+                            }
                         ].map((f, i) => <FeatureCard key={i} {...f} />)}
                     </div>
                 </section>
@@ -279,8 +299,8 @@ const LandingPage = () => {
                             <h2 className="text-4xl font-black mb-8 leading-tight">Mobile Application<br/><span className="text-primary-400 font-medium">Dalam Genggaman.</span></h2>
                             <p className="text-lg text-slate-400 mb-12 leading-relaxed max-w-lg mx-auto lg:mx-0">Pantau ternak langsung dari smartphone Anda. Dapatkan notifikasi darurat secara instan.</p>
                             <div className="flex flex-wrap gap-4 justify-center lg:justify-start">
-                                <button className="bg-white text-slate-900 px-8 py-4 rounded-2xl font-bold hover:bg-slate-100 transition shadow-lg">App Store</button>
-                                <button className="bg-slate-800 border border-slate-700 text-white px-8 py-4 rounded-2xl font-bold hover:bg-slate-700 transition">Google Play</button>
+                                <button className="bg-slate-800 border border-slate-700 text-white px-8 py-4 rounded-2xl font-bold hover:bg-slate-700 transition">Unduh APK (Android)</button>
+                                <button className="bg-white text-slate-900 border border-slate-100 px-8 py-4 rounded-2xl font-bold hover:bg-slate-50 transition shadow-sm">Akses Web App (iOS)</button>
                             </div>
                         </div>
                     </div>
@@ -314,40 +334,41 @@ const LandingPage = () => {
                     >
                         <div className="w-full p-12 md:p-20 flex flex-col items-center justify-center bg-white relative">
                             <div className="absolute top-0 right-1/2 translate-x-1/2 p-8 text-[120px] md:text-[180px] font-black text-slate-50 select-none -z-0">DEV</div>
-                            <div className="relative z-10 flex flex-col items-center max-w-2xl mx-auto">
-                                <h4 className="text-primary-600 font-bold uppercase tracking-[0.2em] text-xs mb-4">The Developer</h4>
-                                <h3 className="text-4xl font-black text-slate-900 mb-2">Majid</h3>
-                                <p className="text-slate-400 font-bold mb-10 text-lg">Fullstack Developer</p>
-                                
-                                <div className="space-y-8 mb-12">
-                                    <div className="flex flex-col items-center gap-4 text-center">
-                                        <div className="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 14l9-5-9-5-9 5 9 5z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/></svg></div>
-                                        <div><p className="font-bold text-slate-800">Teknik Informatika</p><p className="text-slate-400 text-sm font-medium">Universitas Lampung (Unila)</p></div>
-                                    </div>
-                                    <div className="flex flex-col items-center gap-4 text-center">
-                                        <div className="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 italic">"</div>
-                                        <p className="text-lg italic text-slate-500 leading-relaxed font-medium">Membangun masa depan agrikultur modern melalui solusi perangkat lunak yang inovatif.</p>
+                            <div className="relative z-10 w-full max-w-5xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-12">
+                                {/* Left Side: Developer Info */}
+                                <div className="flex flex-col items-center lg:items-start text-center lg:text-left">
+                                    <h4 className="text-primary-600 font-bold uppercase tracking-[0.2em] text-xs mb-4">The Developer</h4>
+                                    <h3 className="text-5xl font-black text-slate-900 mb-2">Majid</h3>
+                                    <p className="text-slate-400 font-bold mb-8 text-xl">Full Stack Developer</p>
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 shrink-0">
+                                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 14l9-5-9-5-9 5 9 5z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/></svg>
+                                        </div>
+                                        <div>
+                                            <p className="font-bold text-slate-800 text-left">Teknik Elektro</p>
+                                            <p className="text-slate-400 text-sm font-medium text-left">Universitas Lampung (Unila)</p>
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="flex gap-4 justify-center w-full">
-                                    <a 
-                                        href="https://www.linkedin.com/in/majid-solihin-hadi-100759275/" 
-                                        target="_blank" 
-                                        rel="noopener noreferrer"
-                                        className="px-8 py-3 bg-slate-900 text-white rounded-2xl font-bold hover:bg-primary-600 transition shadow-lg shadow-slate-900/10 flex items-center justify-center gap-2 flex-1 md:flex-none"
-                                    >
-                                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
-                                        LinkedIn
-                                    </a>
-                                    <a 
-                                        href="https://github.com/MajidHadi-2045" 
-                                        target="_blank" 
-                                        rel="noopener noreferrer"
-                                        className="px-8 py-3 border border-slate-100 text-slate-600 rounded-2xl font-bold hover:bg-slate-50 transition shadow-sm flex items-center justify-center gap-2 flex-1 md:flex-none"
-                                    >
-                                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.042-1.416-4.042-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-                                        GitHub
-                                    </a>
+
+                                {/* Right Side: Quotes & Links */}
+                                <div className="flex flex-col items-center lg:items-start max-w-lg">
+                                    <div className="flex items-start gap-4 mb-8">
+                                        <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 italic shrink-0 text-2xl font-serif">"</div>
+                                        <p className="text-xl italic text-slate-500 leading-relaxed font-medium text-center lg:text-left">
+                                            Membangun masa depan agrikultur modern melalui solusi perangkat lunak yang inovatif.
+                                        </p>
+                                    </div>
+                                    <div className="flex flex-wrap gap-4 justify-center lg:justify-start w-full">
+                                        <a href="https://www.linkedin.com/in/majid-solihin-hadi-100759275/" target="_blank" rel="noopener noreferrer" className="px-8 py-3 bg-slate-900 text-white rounded-2xl font-bold hover:bg-primary-600 transition shadow-lg shadow-slate-900/10 flex items-center justify-center gap-2">
+                                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+                                            LinkedIn
+                                        </a>
+                                        <a href="https://github.com/MajidHadi-2045" target="_blank" rel="noopener noreferrer" className="px-8 py-3 border border-slate-100 text-slate-600 rounded-2xl font-bold hover:bg-slate-50 transition shadow-sm flex items-center justify-center gap-2">
+                                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.042-1.416-4.042-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                                            GitHub
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -359,7 +380,7 @@ const LandingPage = () => {
                     <div className="flex flex-col md:flex-row justify-between items-center gap-10">
                         <div className="flex items-center gap-4">
                             <div className="p-2 bg-slate-50 rounded-xl border border-slate-100 shadow-sm"><img src="/public/logoxl.svg" alt="Logo" className="h-6 w-6"/></div>
-                            <span className="text-lg font-bold">Smart CattleBarn</span>
+                            <span className="text-lg font-bold">Smart Cattle Barn</span>
                         </div>
                         <p className="text-slate-400 text-sm font-medium">© 2026 PT AgriTekno Nusantara. All rights reserved.</p>
                         <div className="flex gap-8 text-sm font-bold text-slate-400">

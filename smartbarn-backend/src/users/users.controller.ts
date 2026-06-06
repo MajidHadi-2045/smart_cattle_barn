@@ -1,5 +1,4 @@
-// src/users/users.controller.ts
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { AuthGuard } from '../auth/auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
@@ -82,5 +81,18 @@ export class UsersController {
     @Body('action') action: 'TERIMA' | 'TOLAK'
   ) {
     return this.usersService.processRequest(+id, action);
+  }
+
+  @Patch('change-password')
+  @Roles('SUPER_ADMIN', 'VETERINER', 'STAFF')
+  changePassword(@Req() req: any, @Body() body: any) {
+    return this.usersService.changePassword(req.user.sub, body);
+  }
+
+  // --- ADMIN RESET PASSWORD ---
+  @Patch('force-reset/:id')
+  @Roles('SUPER_ADMIN')
+  forceResetPassword(@Param('id') id: string) {
+    return this.usersService.forceResetPassword(id);
   }
 }

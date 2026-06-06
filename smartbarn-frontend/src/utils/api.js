@@ -35,32 +35,7 @@ export const fetchApi = async (endpoint, options = {}) => {
     apiCache.delete(`GET:/dashboard/summary`);
   }
 
-  // SWR (Stale-While-Revalidate) Logic
-  if (method === 'GET' && apiCache.has(cacheKey)) {
-    const cachedItem = apiCache.get(cacheKey);
-    const isExpired = Date.now() - cachedItem.timestamp > 300000; // 5 Menit
-
-    if (!isExpired) {
-      return cachedItem.response.clone();
-    } else {
-      fetch(`${API_URL}${endpoint}`, { ...options, headers })
-        .then(res => {
-          if (res.ok) {
-            apiCache.set(cacheKey, { timestamp: Date.now(), response: res.clone() });
-          }
-        })
-        .catch(err => console.error("SWR Background Fetch Error:", err));
-      
-      return cachedItem.response.clone();
-    }
-  }
-
   const response = await fetch(`${API_URL}${endpoint}`, { ...options, headers });
-
-  if (method === 'GET' && response.ok) {
-    apiCache.set(cacheKey, { timestamp: Date.now(), response: response.clone() });
-  }
-
   return response;
 };
 

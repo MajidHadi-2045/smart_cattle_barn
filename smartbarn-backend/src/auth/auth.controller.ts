@@ -9,7 +9,8 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @Post('login')
   signIn(@Body() signInDto: Record<string, any>) {
-    return this.authService.login(signInDto.email, signInDto.password, signInDto.role);
+    const identifier = signInDto.username || signInDto.email;
+    return this.authService.login(identifier, signInDto.password, signInDto.role);
   }
 
   @Post('register')

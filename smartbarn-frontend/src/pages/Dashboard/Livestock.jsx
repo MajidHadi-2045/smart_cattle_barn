@@ -2,13 +2,23 @@ import { useState, useEffect, useRef } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Brush } from 'recharts';
 import { socket } from '../../utils/socket';
 import toast from 'react-hot-toast';
+import useSWR from 'swr';
 
-import { fetchApi, mutate } from '../../utils/api';
+import { fetchApi, mutate as globalMutate } from '../../utils/api';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL;
 
+const fetcher = async (url) => {
+    const res = await fetchApi(url);
+    if (!res.ok) throw new Error('Gagal mengambil data ternak');
+    return res.json();
+};
+
 const Livestock = () => {
+    const userRole = localStorage.getItem('userRole');
     // --- 1. STATE MANAGEMENT ---
+    const { data: cowsData, error: swrError, isLoading: swrLoading, mutate: mutateCows } = useSWR('/livestock', fetcher);
+    
     const [cows, setCows] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [zones, setZones] = useState([]);
@@ -16,6 +26,8 @@ const Livestock = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState('ALL'); // ALL, SEHAT, SAKIT
     const [isWsConnected, setIsWsConnected] = useState(socket.connected);
+    const [currentPage, setCurrentPage] = useState(1);
+    const ITEMS_PER_PAGE = 12; // Menampilkan 12 kartu sapi per halaman
 
     // Thresholds
     const VITAL_THRESHOLDS = {
@@ -85,14 +97,12 @@ const Livestock = () => {
 
     // --- 2. FUNGSI MENGAMBIL DATA (READ) ---
     const fetchLivestock = async () => {
-        setIsLoading(true);
-        try {
-            const response = await fetchApi('/livestock');
-            if (!response.ok) throw new Error('Gagal mengambil data ternak');
-            const data = await response.json();
-            // Inisialisasi vitals ke 0 agar tidak menampilkan data lama dari backend (sesuai req user)
-            // Data akan terisi otomatis saat socket mengirimkan update real-time
-            const initializedData = data.map(cow => ({
+        await mutateCows();
+    };
+
+    useEffect(() => {
+        if (cowsData) {
+            const initializedData = cowsData.map(cow => ({
                 ...cow,
                 heartRate: 0,
                 temp: 0,
@@ -101,12 +111,10 @@ const Livestock = () => {
             }));
             setCows(initializedData);
             setError(null);
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setIsLoading(false);
         }
-    };
+        if (swrError) setError(swrError.message);
+        setIsLoading(swrLoading);
+    }, [cowsData, swrError, swrLoading]);
 
     const fetchWasteSummary = async () => {
         try {
@@ -142,7 +150,6 @@ const Livestock = () => {
     };
 
     useEffect(() => {
-        fetchLivestock();
         fetchWasteSummary();
         fetchWasteSettings();
         fetchZones();
@@ -736,6 +743,14 @@ const Livestock = () => {
         return matchesSearch && matchesStatus;
     });
 
+    // Reset pagination ketika filter/search berubah
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, filterStatus]);
+
+    const totalPages = Math.ceil(filteredCows.length / ITEMS_PER_PAGE);
+    const paginatedCows = filteredCows.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+
     return (
         <div className="space-y-6 animate-fade-in pb-20">
             {/* Header & Quick Action Row */}
@@ -746,42 +761,44 @@ const Livestock = () => {
                 </div>
                 
                 {/* Clean, Unified Action Buttons Deck */}
-                <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
-                    <button 
-                        onClick={() => setShowWasteModal(true)} 
-                        className="flex-1 lg:flex-none px-4 py-2.5 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/30 dark:hover:bg-amber-950/50 text-amber-700 dark:text-amber-400 border border-amber-200/60 dark:border-amber-900/50 rounded-xl font-semibold text-sm transition flex items-center justify-center gap-2"
-                    >
-                        <span>Manajemen Limbah</span>
-                    </button>
-                    <button 
-                        onClick={() => { setSelectedFeedWeightCows([]); setShowBulkWeightModal(true); }} 
-                        className="flex-1 lg:flex-none px-4 py-2.5 bg-sky-50 hover:bg-sky-100 dark:bg-sky-950/30 dark:hover:bg-sky-950/50 text-sky-700 dark:text-sky-400 border border-sky-200/60 dark:border-sky-900/50 rounded-xl font-semibold text-sm transition flex items-center justify-center gap-2"
-                    >
-                        <span>⚖️ Timbang Kelompok</span>
-                    </button>
-                    <button 
-                        onClick={() => { setSelectedFeedWeightCows([]); setShowBulkFeedModal(true); }} 
-                        className="flex-1 lg:flex-none px-4 py-2.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:hover:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-900/50 rounded-xl font-semibold text-sm transition flex items-center justify-center gap-2"
-                    >
-                        <span>🌾 Pakan Kelompok</span>
-                    </button>
-                    <button 
-                        onClick={() => setShowZoneModal(true)} 
-                        className="flex-1 lg:flex-none px-4 py-2.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/30 dark:hover:bg-indigo-950/50 text-indigo-700 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-900/50 rounded-xl font-semibold text-sm transition flex items-center justify-center gap-2"
-                    >
-                        <span>Kelola Kandang</span>
-                    </button>
-                    <button 
-                        onClick={() => { 
-                            setCowFormData({ id: null, cattleId: '', breed: '', gender: 'Betina', birthDate: '', initialWeight: '', sectionId: '', status: 'SEHAT' }); 
-                            setFormSelectedZoneId('');
-                            setShowCowModal(true); 
-                        }} 
-                        className="flex-1 lg:flex-none px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold text-sm transition shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2"
-                    >
-                        <span>+ Tambah Sapi</span>
-                    </button>
-                </div>
+                {userRole !== 'VETERINER' && (
+                    <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+                        <button 
+                            onClick={() => setShowWasteModal(true)} 
+                            className="flex-1 lg:flex-none px-4 py-2.5 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/30 dark:hover:bg-amber-950/50 text-amber-700 dark:text-amber-400 border border-amber-200/60 dark:border-amber-900/50 rounded-xl font-semibold text-sm transition flex items-center justify-center gap-2"
+                        >
+                            <span>Manajemen Limbah</span>
+                        </button>
+                        <button 
+                            onClick={() => { setSelectedFeedWeightCows([]); setShowBulkWeightModal(true); }} 
+                            className="flex-1 lg:flex-none px-4 py-2.5 bg-sky-50 hover:bg-sky-100 dark:bg-sky-950/30 dark:hover:bg-sky-950/50 text-sky-700 dark:text-sky-400 border border-sky-200/60 dark:border-sky-900/50 rounded-xl font-semibold text-sm transition flex items-center justify-center gap-2"
+                        >
+                            <span>⚖️ Timbang Kelompok</span>
+                        </button>
+                        <button 
+                            onClick={() => { setSelectedFeedWeightCows([]); setShowBulkFeedModal(true); }} 
+                            className="flex-1 lg:flex-none px-4 py-2.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:hover:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-900/50 rounded-xl font-semibold text-sm transition flex items-center justify-center gap-2"
+                        >
+                            <span>🌾 Pakan Kelompok</span>
+                        </button>
+                        <button 
+                            onClick={() => setShowZoneModal(true)} 
+                            className="flex-1 lg:flex-none px-4 py-2.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/30 dark:hover:bg-indigo-950/50 text-indigo-700 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-900/50 rounded-xl font-semibold text-sm transition flex items-center justify-center gap-2"
+                        >
+                            <span>Kelola Kandang</span>
+                        </button>
+                        <button 
+                            onClick={() => { 
+                                setCowFormData({ id: null, cattleId: '', breed: '', gender: 'Betina', birthDate: '', initialWeight: '', sectionId: '', status: 'SEHAT' }); 
+                                setFormSelectedZoneId('');
+                                setShowCowModal(true); 
+                            }} 
+                            className="flex-1 lg:flex-none px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold text-sm transition shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2"
+                        >
+                            <span>+ Tambah Sapi</span>
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* Modern Filter & Search Toolbar */}
@@ -810,8 +827,11 @@ const Livestock = () => {
                         className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-emerald-500/30 transition text-sm font-semibold shadow-sm cursor-pointer"
                     >
                         <option value="ALL">Semua Status Sapi</option>
-                        <option value="SEHAT">🟢 Sehat</option>
-                        <option value="SAKIT">🔴 Sakit</option>
+                        <option value="SEHAT" className="text-green-600 font-semibold">Sehat</option>
+                        <option value="SAKIT" className="text-red-600 font-semibold">Sakit</option>
+                        <option value="DALAM_PERAWATAN" className="text-blue-600 font-semibold">Dalam Perawatan</option>
+                        <option value="KRITIS" className="text-orange-600 font-semibold">Kritis</option>
+                        <option value="MATI" className="text-slate-600 font-semibold">Mati</option>
                     </select>
                 </div>
             </div>
@@ -854,9 +874,15 @@ const Livestock = () => {
                     ))}
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-6 items-start">
-                    {filteredCows.map((cow) => (
-                        <div key={cow.id} className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-5 hover:shadow-md transition group">
+                <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-6 items-start">
+                        {paginatedCows.length === 0 ? (
+                            <div className="col-span-full py-12 text-center text-slate-500">
+                                Tidak ada data ternak yang cocok dengan pencarian Anda.
+                            </div>
+                        ) : (
+                            paginatedCows.map((cow) => (
+                                <div key={cow.id} className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-5 hover:shadow-md transition group">
                         <div className="flex justify-between items-start mb-4">
                             <div className="flex items-center gap-3 cursor-pointer group" onClick={() => openCowDetail(cow)}>
                                 <div className="h-12 w-12 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-xl font-bold shadow-sm group-hover:scale-110 transition-transform">🐮</div>
@@ -865,8 +891,13 @@ const Livestock = () => {
                                     <p className="text-xs font-medium text-slate-500 dark:text-slate-400">{cow.breed || cow.gender}</p>
                                 </div>
                             </div>
-                            <span className={`px-2.5 py-1 text-xs font-bold rounded-full border ${cow.status === 'SEHAT' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
-                                {cow.status}
+                            <span className={`px-2.5 py-1 text-xs font-bold rounded-full border ${
+                                cow.status === 'SEHAT' ? 'bg-green-50 text-green-700 border-green-200' : 
+                                cow.status === 'DALAM_PERAWATAN' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                cow.status === 'KRITIS' ? 'bg-orange-50 text-orange-700 border-orange-200' :
+                                cow.status === 'MATI' ? 'bg-slate-50 text-slate-700 border-slate-200' :
+                                'bg-red-50 text-red-700 border-red-200'}`}>
+                                {cow.status.replace('_', ' ')}
                             </span>
                         </div>
 
@@ -902,11 +933,13 @@ const Livestock = () => {
                         </div>
 
                         {/* Always Visible Actions */}
-                        <div className="mb-2">
-                            <button onClick={() => openNutritionConfig(cow)} className="w-full bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 dark:border-slate-600 transition flex items-center justify-center gap-1 shadow-sm">
-                                ⚙️ Parameter Target Nutrisi
-                            </button>
-                        </div>
+                        {userRole !== 'VETERINER' && (
+                            <div className="mb-2">
+                                <button onClick={() => openNutritionConfig(cow)} className="w-full bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 dark:border-slate-600 transition flex items-center justify-center gap-1 shadow-sm">
+                                    ⚙️ Parameter Target Nutrisi
+                                </button>
+                            </div>
+                        )}
 
                         {/* Hidden Actions (Hover to reveal sensors & edit) */}
                         <div className="border-t border-slate-100 dark:border-slate-700 pt-2 hidden group-hover:flex items-center justify-between transition-all">
@@ -926,10 +959,12 @@ const Livestock = () => {
                                     ❤️ <span className="text-xs font-bold">{cow.heartRate > 0 ? cow.heartRate : '--'}</span>
                                 </button>
                             </div>
-                            <div className="flex gap-1 opacity-60 hover:opacity-100 transition-opacity">
-                                <button onClick={() => openEditCow(cow)} className="p-1 text-slate-400 hover:text-blue-500 transition" title="Edit Sapi">✏️</button>
-                                <button onClick={() => handleDelete(cow.id)} className="p-1 text-slate-400 hover:text-red-500 transition" title="Hapus">🗑️</button>
-                            </div>
+                            {userRole !== 'VETERINER' && (
+                                <div className="flex gap-1 opacity-60 hover:opacity-100 transition-opacity">
+                                    <button onClick={() => openEditCow(cow)} className="p-1 text-slate-400 hover:text-blue-500 transition" title="Edit Sapi">✏️</button>
+                                    <button onClick={() => handleDelete(cow.id)} className="p-1 text-slate-400 hover:text-red-500 transition" title="Hapus">🗑️</button>
+                                </div>
+                            )}
                         </div>
                         
                         {/* Warning Label */}
@@ -937,10 +972,45 @@ const Livestock = () => {
                             <div className="mt-3 py-1 px-3 bg-red-600 text-white text-[10px] font-black rounded-lg text-center uppercase tracking-widest animate-bounce">
                                 ⚠️ Bahaya: Kondisi Kritis
                             </div>
+                            )}
+                        </div>
+                            ))
                         )}
                     </div>
-                ))}
-            </div>
+                    
+                    {/* Pagination Controls */}
+                    {totalPages > 1 && (
+                        <div className="flex justify-center items-center gap-2 mt-8">
+                            <button 
+                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                disabled={currentPage === 1}
+                                className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 disabled:opacity-50 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                            >
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+                            </button>
+                            
+                            <div className="flex gap-1">
+                                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                                    <button
+                                        key={page}
+                                        onClick={() => setCurrentPage(page)}
+                                        className={`w-10 h-10 rounded-lg font-bold transition ${currentPage === page ? 'bg-primary-600 text-white shadow-md' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+                                    >
+                                        {page}
+                                    </button>
+                                ))}
+                            </div>
+
+                            <button 
+                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                disabled={currentPage === totalPages}
+                                className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 disabled:opacity-50 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                            >
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                            </button>
+                        </div>
+                    )}
+                </>
             )}
 
             {/* --- MODAL TAMBAH/EDIT SAPI --- */}
@@ -970,6 +1040,9 @@ const Livestock = () => {
                                     <select value={cowFormData.status} onChange={e=>setCowFormData({...cowFormData, status: e.target.value})} className="w-full p-2 border rounded-lg">
                                         <option value="SEHAT">Sehat</option>
                                         <option value="SAKIT">Sakit</option>
+                                        <option value="DALAM_PERAWATAN">Dalam Perawatan</option>
+                                        <option value="KRITIS">Kritis</option>
+                                        <option value="MATI">Mati</option>
                                     </select>
                                 </div>
                                 <div>
@@ -1194,8 +1267,13 @@ const Livestock = () => {
                                 </div>
                                 <h3 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tight">{selectedCow.id}</h3>
                                 <div className="flex items-center gap-2 mt-1">
-                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase border ${selectedCow.status === 'SEHAT' ? 'bg-green-50 text-green-600 border-green-200' : 'bg-red-50 text-red-600 border-red-200'}`}>
-                                        {selectedCow.status}
+                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase border ${
+                                        selectedCow.status === 'SEHAT' ? 'bg-green-50 text-green-600 border-green-200' : 
+                                        selectedCow.status === 'DALAM_PERAWATAN' ? 'bg-blue-50 text-blue-600 border-blue-200' :
+                                        selectedCow.status === 'KRITIS' ? 'bg-orange-50 text-orange-600 border-orange-200' :
+                                        selectedCow.status === 'MATI' ? 'bg-slate-50 text-slate-600 border-slate-200' :
+                                        'bg-red-50 text-red-600 border-red-200'}`}>
+                                        {selectedCow.status.replace('_', ' ')}
                                     </span>
                                     <span className="text-slate-400 text-xs">•</span>
                                     <span className="text-slate-500 dark:text-slate-400 text-xs font-medium uppercase tracking-widest">{selectedCow.breed}</span>
@@ -1220,9 +1298,11 @@ const Livestock = () => {
                                 <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">
                                     <div className="flex justify-between items-center mb-1">
                                         <p className="text-[10px] text-slate-400 font-bold uppercase">Kebutuhan Nutrisi</p>
-                                        <button onClick={() => setShowNutritionConfig(!showNutritionConfig)} className="text-[10px] text-primary-600 font-bold hover:underline">
-                                            {showNutritionConfig ? 'Batal' : 'Pengaturan Manual'}
-                                        </button>
+                                        {userRole !== 'VETERINER' && (
+                                            <button onClick={() => setShowNutritionConfig(!showNutritionConfig)} className="text-[10px] text-primary-600 font-bold hover:underline">
+                                                {showNutritionConfig ? 'Batal' : 'Pengaturan Manual'}
+                                            </button>
+                                        )}
                                     </div>
                                     
                                     {showNutritionConfig ? (
@@ -1296,7 +1376,7 @@ const Livestock = () => {
                                             {/* Pembagian Porsi */}
                                             {feedingMethod === 'CAMPURAN' && (
                                                 <div>
-                                                    <p className="font-bold text-slate-700 dark:text-slate-300 mb-2">⚖️ Proporsi (Rasio)</p>
+                                                    <p className="font-bold text-slate-700 dark:text-slate-300 mb-2">Proporsi (Rasio)</p>
                                                     <div className="grid grid-cols-2 gap-3">
                                                         <div>
                                                             <label className="block text-[10px] text-slate-500 mb-1 uppercase tracking-wider font-bold">Hijauan</label>
@@ -1319,7 +1399,7 @@ const Livestock = () => {
                                             {/* Kandungan Air (Dry Matter) */}
                                             <div>
                                                 <p className="font-bold text-slate-700 dark:text-slate-300 mb-2">
-                                                    {feedingMethod === 'TMR' ? '💧 Kualitas TMR' : '💧 Kualitas (Kandungan BK)'}
+                                                    {feedingMethod === 'TMR' ? 'Kualitas TMR' : 'Kualitas (Kandungan BK)'}
                                                 </p>
                                                 <div className="grid grid-cols-2 gap-3">
                                                     {feedingMethod !== 'KONSENTRAT_SAJA' && (
@@ -1465,18 +1545,22 @@ const Livestock = () => {
                             </div>
 
                             <div className="mt-6 flex gap-3">
-                                <button 
-                                    onClick={() => { setShowDetailModal(false); setShowNutritionModal(true); }}
-                                    className="flex-1 bg-amber-500 text-white py-3 rounded-xl font-bold hover:bg-amber-600 shadow-lg shadow-amber-500/30 transition"
-                                >
-                                    ⚖️ Timbang & Pakan
-                                </button>
-                                <button 
-                                    onClick={() => { setShowDetailModal(false); openEditCow(selectedCow); }}
-                                    className="flex-1 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 py-3 rounded-xl font-bold hover:bg-slate-200 transition"
-                                >
-                                    Edit Data
-                                </button>
+                                {userRole !== 'VETERINER' && (
+                                    <>
+                                        <button 
+                                            onClick={() => { setShowDetailModal(false); setShowNutritionModal(true); }}
+                                            className="flex-1 bg-amber-500 text-white py-3 rounded-xl font-bold hover:bg-amber-600 shadow-lg shadow-amber-500/30 transition"
+                                        >
+                                            ⚖️ Timbang & Pakan
+                                        </button>
+                                        <button 
+                                            onClick={() => { setShowDetailModal(false); openEditCow(selectedCow); }}
+                                            className="flex-1 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 py-3 rounded-xl font-bold hover:bg-slate-200 transition"
+                                        >
+                                            Edit Data
+                                        </button>
+                                    </>
+                                )}
                                 <button 
                                     onClick={() => { setShowDetailModal(false); openChartModal(selectedCow.id); }}
                                     className="flex-1 bg-primary-600 text-white py-3 rounded-xl font-bold hover:bg-primary-700 shadow-lg shadow-primary-500/30 transition"

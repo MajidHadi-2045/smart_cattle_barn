@@ -21,6 +21,8 @@ const FeedScreen = () => {
   const [cows, setCows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
   const fetchFeedData = async () => {
     try {
@@ -50,7 +52,15 @@ const FeedScreen = () => {
 
   const SiloCard = ({ item: silo }: { item: any }) => {
     const percentage = Math.round((silo.currentStock / silo.capacity) * 100);
-    const isKritis = silo.status === 'KRITIS' || percentage < 25;
+    const isKritis = silo.status === 'KRITIS' || percentage <= 20;
+    const isWarning = percentage > 20 && percentage <= 50 && !isKritis;
+    
+    let barColor = COLORS.primary; // Hijau
+    if (isKritis) {
+      barColor = COLORS.danger; // Merah
+    } else if (isWarning) {
+      barColor = '#f59e0b'; // Kuning (Amber 500)
+    }
 
     // Kalkulasi Estimasi Berdasarkan Data Nutrisi Sapi (As-Fed Sinkron dengan Web)
     const totalWeight = cows.reduce((acc, cow) => acc + (cow.weight || 0), 0);
@@ -124,7 +134,7 @@ const FeedScreen = () => {
 
         <View style={styles.stockContainer}>
           <View style={styles.progressBarBg}>
-            <View style={[styles.progressBarFill, { width: `${Math.min(percentage, 100)}%`, backgroundColor: isKritis ? COLORS.danger : COLORS.primary }]} />
+            <View style={[styles.progressBarFill, { width: `${Math.min(percentage, 100)}%`, backgroundColor: barColor }]} />
           </View>
           <View style={styles.stockInfo}>
             <Text style={styles.stockValue}>{silo.currentStock} / {silo.capacity} {silo.unit}</Text>
@@ -200,15 +210,32 @@ const FeedScreen = () => {
         <View style={styles.centerContainer}>
           <LoadingSpinner message="Memuat Data Silo Pakan..." />
         </View>
-      ) : (
+      ) : (() => {
+        const totalPages = Math.ceil(silos.length / ITEMS_PER_PAGE);
+        const paginatedSilos = silos.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+        return (
         <FlatList
-          data={silos}
+          data={paginatedSilos}
           renderItem={SiloCard}
           keyExtractor={item => item.id.toString()}
           contentContainerStyle={styles.listContent}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchFeedData(); }} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchFeedData(); setCurrentPage(1); }} />}
+          ListFooterComponent={
+            totalPages > 1 ? (
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 15, paddingHorizontal: 10 }}>
+                <Text style={{ color: COLORS.primary, fontWeight: 'bold' }} onPress={() => setCurrentPage(prev => Math.max(prev - 1, 1))}>
+                  {currentPage > 1 ? 'Mundur' : ''}
+                </Text>
+                <Text style={{ color: COLORS.text, fontWeight: 'bold' }}>{currentPage} / {totalPages}</Text>
+                <Text style={{ color: COLORS.primary, fontWeight: 'bold' }} onPress={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}>
+                  {currentPage < totalPages ? 'Lanjut' : ''}
+                </Text>
+              </View>
+            ) : null
+          }
         />
-      )}
+        );
+      })()}
     </SafeAreaView>
   );
 };

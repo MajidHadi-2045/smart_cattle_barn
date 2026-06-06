@@ -151,6 +151,8 @@ const LivestockFormModal = ({
               options={[
                 { label: 'Sehat', value: 'SEHAT' },
                 { label: 'Sakit', value: 'SAKIT' },
+                { label: 'Perawatan', value: 'DALAM_PERAWATAN' },
+                { label: 'Kritis', value: 'KRITIS' },
                 { label: 'Mati', value: 'MATI' }
               ]}
             />

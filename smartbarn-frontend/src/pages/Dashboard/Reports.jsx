@@ -47,7 +47,7 @@ const Reports = () => {
 
             // 4. Tetapkan nama file otomatis berdasarkan tanggal hari ini
             const today = new Date().toISOString().split('T')[0];
-            a.download = `Laporan_${reportType}_SmartCattleBarn_${today}.pdf`;
+            a.download = `Laporan_${reportType}_Smart_Cattle_Barn_${today}.pdf`;
 
             // 5. Eksekusi proses unduh
             document.body.appendChild(a);

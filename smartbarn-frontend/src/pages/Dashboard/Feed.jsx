@@ -1,17 +1,33 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
+import useSWR from 'swr';
 import { fetchApi } from '../../utils/api';
+
+const fetcher = async (url) => {
+    const res = await fetchApi(url);
+    if (!res.ok) throw new Error('Gagal mengambil data dari server');
+    return res.json();
+};
 
 const Feed = () => {
     // --- 1. STATE MANAGEMENT ---
     const [activeTab, setActiveTab] = useState('overview'); // 'overview' atau 'schedule'
     const [silos, setSilos] = useState([]);
     const [schedules, setSchedules] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
     const [zones, setZones] = useState([]);
     const [cows, setCows] = useState([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState(null);
+
+    // SWR Hooks
+    const { data: silosData, mutate: mutateSilos, isLoading: isSilosLoading } = useSWR('/feed/silo', fetcher);
+    const { data: schedulesData, mutate: mutateSchedules, isLoading: isSchedulesLoading } = useSWR('/feed/schedule', fetcher);
+    const { data: cowsData, isLoading: isCowsLoading } = useSWR('/livestock', fetcher);
+    const { data: zonesData, isLoading: isZonesLoading } = useSWR('/zones', fetcher);
+    const { data: reportData, mutate: mutateReport, isLoading: isReportLoading } = useSWR('/feed/report', fetcher);
+    
+    // Gunakan SWR isLoading agar spinner hanya muncul di load awal (belum ada cache)
+    const isLoading = isSilosLoading || isSchedulesLoading || isCowsLoading || isZonesLoading;
 
     // State untuk Form Jadwal Baru
     const [selectedZoneId, setSelectedZoneId] = useState('');
@@ -60,63 +76,25 @@ const Feed = () => {
         cows: { total: 0, breeds: [] }
     });
 
-    // --- 2. FUNGSI MENGAMBIL DATA (GET) ---
-    const fetchFeedReport = async () => {
-        try {
-            const res = await fetchApi('/feed/report');
-            if (res.ok) {
-                const data = await res.json();
-                setFeedReport(data);
-            }
-        } catch (err) {
-            console.error('Error fetching feed report:', err);
-        }
-    };
+    // State Pagination Transaksi
+    const [currentTxPage, setCurrentTxPage] = useState(1);
+    const TX_PER_PAGE = 10;
 
-    const fetchFeedData = async () => {
-        setIsLoading(true);
-        try {
-            const [silosRes, schedulesRes, cowsRes] = await Promise.all([
-                fetchApi('/feed/silo'),
-                fetchApi('/feed/schedule'),
-                fetchApi('/livestock')
-            ]);
-            if (!silosRes.ok || !schedulesRes.ok) throw new Error('Gagal mengambil data pakan');
-            const silosData = await silosRes.json();
+    // --- 2. EFFECT UNTUK SINKRONISASI CACHE SWR KE STATE ---
+    useEffect(() => {
+        if (silosData) {
             setSilos(silosData.map(s => ({
                 ...s,
                 current: s.currentStock,
                 max: s.capacity,
                 isCritical: s.status === 'KRITIS'
             })));
-            setSchedules(await schedulesRes.json());
-            
-            if (cowsRes.ok) {
-                setCows(await cowsRes.json());
-            }
-
-            await fetchFeedReport();
-
-            setError(null);
-        } catch (err) {
-            console.error(err);
-            setError(err.message);
-        } finally {
-            setIsLoading(false);
         }
-    };
-
-    const fetchZones = async () => {
-        try {
-            const res = await fetchApi('/zones');
-            if (res.ok) setZones(await res.json());
-        } catch (err) { console.error(err); }
-    };
-
-    useEffect(() => {
-        fetchFeedData();
-        fetchZones();
-    }, []);
+        if (schedulesData) setSchedules(schedulesData);
+        if (cowsData) setCows(cowsData);
+        if (zonesData) setZones(zonesData);
+        if (reportData) setFeedReport(reportData);
+    }, [silosData, schedulesData, cowsData, zonesData, reportData]);
 
     // --- 3. FUNGSI MENYIMPAN JADWAL (POST) ---
     const handleScheduleSubmit = async (e) => {
@@ -134,7 +112,7 @@ const Feed = () => {
             {
                 loading: 'Menyimpan jadwal...',
                 success: (savedSchedule) => {
-                    setSchedules([...schedules, savedSchedule]);
+                    mutateSchedules(); // Update Cache SWR
                     setNewSchedule({ time: '', sectionId: '', feedType: '', status: 'TERJADWAL' });
                     setSelectedZoneId('');
                     setActiveTab('overview');
@@ -166,22 +144,7 @@ const Feed = () => {
                 loading: 'Menyimpan data silo...',
                 success: (savedSilo) => {
                     setShowSiloModal(false);
-                    if (isEdit) {
-                        setSilos(prev => prev.map(s => s.id === savedSilo.id ? {
-                            ...s,
-                            ...savedSilo,
-                            current: savedSilo.currentStock,
-                            max: savedSilo.capacity,
-                            isCritical: savedSilo.status === 'KRITIS'
-                        } : s));
-                    } else {
-                        setSilos(prev => [...prev, {
-                            ...savedSilo,
-                            current: savedSilo.currentStock,
-                            max: savedSilo.capacity,
-                            isCritical: savedSilo.status === 'KRITIS'
-                        }]);
-                    }
+                    mutateSilos(); // Update Cache SWR
                     return isEdit ? 'Silo berhasil diperbarui' : 'Silo baru berhasil ditambahkan';
                 },
                 error: 'Gagal menyimpan data silo',
@@ -193,7 +156,7 @@ const Feed = () => {
         if (!window.confirm('Hapus silo ini? Seluruh data stok akan hilang.')) return;
         try {
             await fetchApi(`/feed/silo/${id}`, { method: 'DELETE' });
-            setSilos(silos.filter(s => s.id !== id));
+            mutateSilos(); // Update Cache SWR
             toast.success('Silo berhasil dihapus');
         } catch (err) {
             toast.error('Gagal menghapus: ' + err.message);
@@ -243,16 +206,8 @@ const Feed = () => {
                 loading: 'Mencatat transaksi pakan...',
                 success: (updatedSilo) => {
                     setShowTransactionModal(false);
-                    // update silos list
-                    setSilos(prev => prev.map(s => s.id === updatedSilo.id ? {
-                        ...s,
-                        ...updatedSilo,
-                        current: updatedSilo.currentStock,
-                        max: updatedSilo.capacity,
-                        isCritical: updatedSilo.status === 'KRITIS'
-                    } : s));
-                    // refresh report
-                    fetchFeedReport();
+                    mutateSilos(); // update silos list cache
+                    mutateReport(); // refresh report cache
                     return 'Transaksi pakan berhasil disimpan!';
                 },
                 error: (err) => `Gagal: ${err.message}`
@@ -267,7 +222,7 @@ const Feed = () => {
             await fetchApi(`/feed/schedule/${id}`, {
                 method: 'DELETE'
             });
-            setSchedules(schedules.filter(sch => sch.id !== id));
+            mutateSchedules(); // Update Cache SWR
             toast.success('Jadwal berhasil dihapus');
         } catch (err) {
             toast.error('Gagal menghapus: ' + err.message);
@@ -302,7 +257,7 @@ const Feed = () => {
             {
                 loading: 'Memperbarui jadwal...',
                 success: (updatedSchedule) => {
-                    setSchedules(schedules.map(s => s.id === updatedSchedule.id ? updatedSchedule : s));
+                    mutateSchedules(); // Update Cache SWR
                     setShowScheduleModal(false);
                     return 'Jadwal berhasil diperbarui!';
                 },
@@ -362,7 +317,12 @@ const Feed = () => {
                             {/* Kartu Status Silo */}
                             {silos.map(silo => {
                                 const percentage = Math.round((silo.current / silo.max) * 100);
-                                const barColor = silo.isCritical || percentage < 20 ? 'bg-red-500' : 'bg-green-500';
+                                let barColor = 'bg-green-500';
+                                if (percentage <= 20 || silo.isCritical) {
+                                    barColor = 'bg-red-500';
+                                } else if (percentage <= 50) {
+                                    barColor = 'bg-amber-400'; // Kuning/Amber untuk peringatan
+                                }
                                 
                                 // Kalkulasi Estimasi Berdasarkan Data Nutrisi Sapi (As-Fed Sinkron)
                                 const totalWeight = cows.reduce((acc, cow) => acc + (cow.weight || 0), 0);
@@ -647,6 +607,11 @@ const Feed = () => {
 
                              {/* Tabel Riwayat Transaksi */}
                              <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+                                 {(() => {
+                                     const totalTxPages = Math.ceil((feedReport.transactions?.length || 0) / TX_PER_PAGE);
+                                     const paginatedTx = (feedReport.transactions || []).slice((currentTxPage - 1) * TX_PER_PAGE, currentTxPage * TX_PER_PAGE);
+                                     return (
+                                     <>
                                  <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
                                      <div>
                                          <h3 className="font-bold text-slate-800 dark:text-slate-100">Riwayat Catatan Stok Pakan Masuk & Keluar</h3>
@@ -669,8 +634,8 @@ const Feed = () => {
                                              </tr>
                                          </thead>
                                          <tbody className="divide-y divide-slate-100 dark:divide-slate-700 text-sm">
-                                             {feedReport.transactions?.length > 0 ? (
-                                                 feedReport.transactions.map((tx) => (
+                                             {paginatedTx.length > 0 ? (
+                                                 paginatedTx.map((tx) => (
                                                      <tr key={tx.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors">
                                                          <td className="px-6 py-4 whitespace-nowrap text-slate-500">
                                                              {new Date(tx.createdAt).toLocaleString('id-ID', {
@@ -724,9 +689,39 @@ const Feed = () => {
                                         </tbody>
                                     </table>
                                 </div>
-                            </div>
-                        </div>
-                    )}
+                                
+                                {/* Pagination Controls */}
+                                {totalTxPages > 1 && (
+                                    <div className="flex justify-between items-center px-6 py-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+                                        <span className="text-xs text-slate-500 dark:text-slate-400">
+                                            Menampilkan {(currentTxPage - 1) * TX_PER_PAGE + 1} - {Math.min(currentTxPage * TX_PER_PAGE, feedReport.transactions.length)} dari {feedReport.transactions.length} data
+                                        </span>
+                                        <div className="flex gap-1">
+                                            <button 
+                                                onClick={() => setCurrentTxPage(prev => Math.max(prev - 1, 1))}
+                                                disabled={currentTxPage === 1}
+                                                className="px-3 py-1 text-xs font-bold rounded-lg border border-slate-200 dark:border-slate-700 disabled:opacity-50 hover:bg-slate-100 dark:hover:bg-slate-700 transition text-slate-600 dark:text-slate-300"
+                                            >
+                                                Mundur
+                                            </button>
+                                            <div className="flex items-center px-3 py-1 text-xs font-bold bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 rounded-lg">
+                                                Halaman {currentTxPage} / {totalTxPages}
+                                            </div>
+                                            <button 
+                                                onClick={() => setCurrentTxPage(prev => Math.min(prev + 1, totalTxPages))}
+                                                disabled={currentTxPage === totalTxPages}
+                                                className="px-3 py-1 text-xs font-bold rounded-lg border border-slate-200 dark:border-slate-700 disabled:opacity-50 hover:bg-slate-100 dark:hover:bg-slate-700 transition text-slate-600 dark:text-slate-300"
+                                            >
+                                                Lanjut
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                                </>
+                                )})()}
+                             </div>
+                         </div>
+                     )}
                 </>
             )}
 

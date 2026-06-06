@@ -14,10 +14,16 @@ export class AuthService {
   // ==========================================
   // FUNGSI LOGIN DENGAN VALIDASI EKSTRA
   // ==========================================
-  async login(email: string, pass: string, role: string) {
-    const user = await this.prisma.user.findUnique({ where: { email } });
-    if (!user) throw new UnauthorizedException('Email tidak ditemukan');
-
+  async login(identifier: string, pass: string, role: string) {
+    const user = await this.prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: identifier },
+          { username: identifier }
+        ]
+      }
+    });
+    if (!user) throw new UnauthorizedException('Email atau Username tidak ditemukan');
     // VALIDASI ROLE: Pastikan peran yang dipilih di aplikasi sesuai dengan database
     if (user.role !== role) {
       throw new UnauthorizedException(`Akses ditolak. Anda terdaftar sebagai ${user.role}, bukan ${role}.`);
@@ -58,6 +64,7 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(data.password, 10);
     const tempId = `REQ_${Date.now()}`; // ID sementara untuk pendaftaran mandiri
+    const upperRole = (data.role || 'STAFF').toUpperCase();
 
     return this.prisma.user.create({
       data: {
@@ -65,7 +72,7 @@ export class AuthService {
         email: data.email,
         password: hashedPassword,
         name: data.name,
-        role: data.role || 'STAFF',
+        role: upperRole as any,
         status: 'MENUNGGU_KONFIRMASI'
       },
     });

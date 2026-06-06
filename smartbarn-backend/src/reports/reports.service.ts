@@ -30,6 +30,7 @@ export class ReportsService {
 
     let data: any[] = [];
     let columns: any[] = [];
+    let ringkasanTeks = '';
 
     // 2. Tarik Data Sesuai Pilihan
     switch (jenisLaporan) {
@@ -50,13 +51,15 @@ export class ReportsService {
         }));
 
         columns = [
-          { header: 'Waktu', key: 'timestamp', width: 20 },
-          { header: 'Zona', key: 'zone', width: 20 },
-          { header: 'Suhu', key: 'temperature', width: 15 },
-          { header: 'Kelembapan', key: 'humidity', width: 15 },
-          { header: 'Amonia', key: 'ammonia', width: 15 },
-          { header: 'THI', key: 'thi', width: 15 },
+          { header: 'Waktu', key: 'timestamp', width: 120 },
+          { header: 'Zona', key: 'zone', width: 95 },
+          { header: 'Suhu', key: 'temperature', width: 70 },
+          { header: 'Kelembapan', key: 'humidity', width: 70 },
+          { header: 'Amonia', key: 'ammonia', width: 70 },
+          { header: 'THI', key: 'thi', width: 70 },
         ];
+
+        ringkasanTeks = 'Laporan Lingkungan Kandang memuat data sensor real-time (suhu, kelembapan, amonia, dan THI) dari berbagai zona selama periode yang dipilih. Rata-rata parameter lingkungan membantu mendeteksi tingkat stres panas (heat stress) pada ternak secara dini guna menjaga kenyamanan termal sapi.';
         break;
 
       case 'Kesehatan':
@@ -79,13 +82,15 @@ export class ReportsService {
         }));
 
         columns = [
-          { header: 'Tanggal', key: 'createdAt', width: 15 },
-          { header: 'ID Sapi', key: 'cattleId', width: 15 },
-          { header: 'Diagnosa', key: 'diagnosa', width: 20 },
-          { header: 'Penanganan', key: 'penanganan', width: 20 },
-          { header: 'Pemeriksa', key: 'pemeriksa', width: 15 },
-          { header: 'Status', key: 'status', width: 15 },
+          { header: 'Tanggal', key: 'createdAt', width: 80 },
+          { header: 'ID Sapi', key: 'cattleId', width: 60 },
+          { header: 'Diagnosa', key: 'diagnosa', width: 110 },
+          { header: 'Penanganan', key: 'penanganan', width: 110 },
+          { header: 'Pemeriksa', key: 'pemeriksa', width: 75 },
+          { header: 'Status', key: 'status', width: 60 },
         ];
+
+        ringkasanTeks = `Laporan Kesehatan & Medis Ternak mencatat seluruh diagnosis dan penanganan medis oleh dokter hewan. Selama periode ini, tercatat ${rawHealth.length} pemeriksaan kesehatan. Memantau laporan ini sangat penting untuk menekan angka penularan penyakit di kandang.`;
         break;
 
       case 'Populasi':
@@ -101,13 +106,17 @@ export class ReportsService {
           status: item.status
         }));
         columns = [
-          { header: 'ID Sapi', key: 'cattleId', width: 15 },
-          { header: 'Breed', key: 'breed', width: 20 },
-          { header: 'Gender', key: 'gender', width: 15 },
-          { header: 'Berat', key: 'weight', width: 15 },
-          { header: 'Zona', key: 'zone', width: 20 },
-          { header: 'Status', key: 'status', width: 15 },
+          { header: 'ID Sapi', key: 'cattleId', width: 70 },
+          { header: 'Breed', key: 'breed', width: 100 },
+          { header: 'Gender', key: 'gender', width: 75 },
+          { header: 'Berat', key: 'weight', width: 70 },
+          { header: 'Zona', key: 'zone', width: 110 },
+          { header: 'Status', key: 'status', width: 70 },
         ];
+
+        const totalSehat = rawPop.filter(item => item.status === 'SEHAT').length;
+        const totalHamil = rawPop.filter(item => item.status === 'HAMIL').length;
+        ringkasanTeks = `Laporan Total Populasi Ternak memberikan gambaran menyeluruh mengenai sebaran jenis sapi, berat badan, serta status kesehatan populasi saat ini. Saat ini, terdapat ${rawPop.length} sapi aktif, dengan rincian status kesehatan: ${totalSehat} Sehat, ${totalHamil} Hamil.`;
         break;
 
       case 'Pakan':
@@ -123,12 +132,15 @@ export class ReportsService {
           bkPercent: item.bkPercent + ' %'
         }));
         columns = [
-          { header: 'Waktu', key: 'date', width: 20 },
-          { header: 'ID Sapi', key: 'cattleId', width: 20 },
-          { header: 'Jenis Pakan', key: 'feedType', width: 20 },
-          { header: 'Berat (As-Fed)', key: 'weightKg', width: 20 },
-          { header: 'BK', key: 'bkPercent', width: 20 },
+          { header: 'Waktu', key: 'date', width: 120 },
+          { header: 'ID Sapi', key: 'cattleId', width: 90 },
+          { header: 'Jenis Pakan', key: 'feedType', width: 95 },
+          { header: 'Berat (As-Fed)', key: 'weightKg', width: 100 },
+          { header: 'BK', key: 'bkPercent', width: 90 },
         ];
+
+        const totalBeratPakan = rawFeed.reduce((acc, item) => acc + item.weightKg, 0);
+        ringkasanTeks = `Laporan Konsumsi Pakan merekam total distribusi pakan (As-Fed) beserta kadar Bahan Kering (BK) untuk pemantauan nutrisi harian. Total pakan yang didistribusikan dalam periode ini adalah ${totalBeratPakan.toFixed(1)} kg. Keseimbangan nutrisi sangat menentukan tingkat pertumbuhan bobot harian sapi.`;
         break;
 
       case 'Limbah':
@@ -164,11 +176,15 @@ export class ReportsService {
 
         data = combinedWaste.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
         columns = [
-          { header: 'Waktu', key: 'date', width: 25 },
-          { header: 'Sumber', key: 'source', width: 25 },
-          { header: 'Feses Padat', key: 'feces', width: 25 },
-          { header: 'Urine Cair', key: 'urine', width: 25 },
+          { header: 'Waktu', key: 'date', width: 120 },
+          { header: 'Sumber', key: 'source', width: 125 },
+          { header: 'Feses Padat', key: 'feces', width: 125 },
+          { header: 'Urine Cair', key: 'urine', width: 125 },
         ];
+
+        const totalFeses = rawWaste.reduce((acc, item) => acc + item.fecesKg, 0) + rawZoneWaste.reduce((acc, item) => acc + item.fecesKg, 0);
+        const totalUrine = rawWaste.reduce((acc, item) => acc + item.urineL, 0) + rawZoneWaste.reduce((acc, item) => acc + item.urineL, 0);
+        ringkasanTeks = `Laporan Manajemen Limbah mencatat akumulasi feses padat dan urine cair yang dihasilkan baik oleh individu sapi maupun zona kandang. Total limbah tercatat pada periode ini: Feses Padat ${totalFeses.toFixed(1)} kg dan Urine Cair ${totalUrine.toFixed(1)} L. Berguna untuk perencanaan pengolahan biogas dan pupuk organik.`;
         break;
 
       default:
@@ -187,6 +203,16 @@ export class ReportsService {
 
     await this.activityService.log(author, 'UNDUH', 'LAPORAN', `Mengunduh laporan ${jenisLaporan} format PDF`);
 
+    // 5. Query Metadata Populasi Ternak untuk Summary Card
+    const totalSapi = await this.prisma.livestock.count();
+    const breedData = await this.prisma.livestock.groupBy({
+      by: ['breed'],
+      _count: {
+        id: true,
+      },
+    });
+    const breedSummary = breedData.map((b) => `${b.breed} (${b._count.id} ekor)`).join(', ');
+
     // IMPLEMENTASI PDF MENGGUNAKAN PDFKIT
     const doc = new PDFDocument({ margin: 50, size: 'A4' });
     const chunks: any[] = [];
@@ -204,7 +230,30 @@ export class ReportsService {
     // Judul Dokumen
     doc.fillColor('#0f172a').fontSize(20).font('Helvetica-Bold').text(`Laporan: ${jenisLaporan.toUpperCase()}`, 50);
     doc.fontSize(11).font('Helvetica').fillColor('#64748b').text(`Periode: ${startDate} s/d ${endDate}`);
-    doc.moveDown(2);
+    doc.moveDown(1.5);
+
+    // Summary Card Box
+    const summaryTop = doc.y;
+    const cardHeight = 105;
+    
+    // Draw card background
+    doc.rect(50, summaryTop, doc.page.width - 100, cardHeight).fill('#f8fafc');
+    doc.rect(50, summaryTop, 4, cardHeight).fill('#0ea5e9'); // Left blue accent border
+    
+    // Draw text inside the card
+    doc.fillColor('#0f172a').font('Helvetica-Bold').fontSize(10).text('RINGKASAN & INFORMASI POPULASI', 65, summaryTop + 10);
+    
+    doc.font('Helvetica-Bold').fontSize(8.5).fillColor('#475569');
+    doc.text('Total Populasi Sapi:', 65, summaryTop + 26);
+    doc.font('Helvetica').text(`${totalSapi} Ekor`, 180, summaryTop + 26);
+
+    doc.font('Helvetica-Bold').text('Sebaran Jenis (Breed):', 65, summaryTop + 40);
+    doc.font('Helvetica').text(breedSummary || '-', 180, summaryTop + 40, { width: doc.page.width - 240 });
+
+    doc.font('Helvetica-Bold').text('Ringkasan Laporan:', 65, summaryTop + 58);
+    doc.font('Helvetica').fillColor('#64748b').text(ringkasanTeks, 180, summaryTop + 58, { width: doc.page.width - 240, align: 'justify' });
+
+    doc.y = summaryTop + cardHeight + 20;
 
     // Table Header
     const tableTop = doc.y;
@@ -212,19 +261,19 @@ export class ReportsService {
     doc.fillColor('#334155').font('Helvetica-Bold').fontSize(9);
     let currentX = 55;
     columns.forEach(col => {
-      doc.text(col.header, currentX, tableTop + 2);
-      currentX += col.width * 5; 
+      doc.text(col.header, currentX, tableTop + 2, { width: col.width - 5, truncate: true });
+      currentX += col.width; 
     });
     doc.font('Helvetica');
-    doc.moveDown(1.5);
+    doc.y = tableTop + 20;
     
     // Rows
     let isEven = false;
     data.forEach((row) => {
         let x = 55;
-        const y = doc.y;
+        const rowY = doc.y;
         
-        if (y > doc.page.height - 100) {
+        if (rowY > doc.page.height - 100) {
             doc.addPage();
             // Header table di halaman baru
             const newTableTop = doc.y;
@@ -232,23 +281,24 @@ export class ReportsService {
             doc.fillColor('#334155').font('Helvetica-Bold').fontSize(9);
             let cx = 55;
             columns.forEach(col => {
-              doc.text(col.header, cx, newTableTop + 2);
-              cx += col.width * 5; 
+              doc.text(col.header, cx, newTableTop + 2, { width: col.width - 5, truncate: true });
+              cx += col.width; 
             });
             doc.font('Helvetica');
-            doc.moveDown(1.5);
+            doc.y = newTableTop + 20;
         }
 
+        const y = doc.y;
         if (isEven) {
-            doc.rect(50, doc.y - 3, doc.page.width - 100, 18).fill('#f8fafc');
+            doc.rect(50, y - 3, doc.page.width - 100, 18).fill('#f8fafc');
         }
         doc.fillColor('#475569');
 
         columns.forEach(col => {
-            doc.fontSize(8).text(row[col.key] || '-', x, doc.y, { width: col.width * 5, truncate: true });
-            x += col.width * 5;
+            doc.fontSize(8).text(row[col.key] || '-', x, y, { width: col.width - 5, truncate: true });
+            x += col.width;
         });
-        doc.moveDown(1);
+        doc.y = y + 15;
         isEven = !isEven;
     });
 
@@ -263,7 +313,5 @@ export class ReportsService {
     });
 
     return { buffer, extension: 'pdf', contentType: 'application/pdf' };
-
-    throw new BadRequestException('Format tidak didukung');
   }
 }

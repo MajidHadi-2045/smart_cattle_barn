@@ -5,6 +5,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import toast from 'react-hot-toast';
 
 const DashboardHome = () => {
+    const userRole = localStorage.getItem('userRole');
     // --- 1. STATE MANAGEMENT ---
     const [zones, setZones] = useState([]);
     const [selectedZoneId, setSelectedZoneId] = useState(null);
@@ -548,16 +549,18 @@ const DashboardHome = () => {
                 
                 <div className="flex items-center gap-3 flex-wrap">
                     {/* Button to open Checklist & Koreksi Modal */}
-                    <button 
-                        onClick={() => setIsChecklistModalOpen(true)}
-                        className="flex items-center gap-2 px-4 py-2 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:hover:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-900/50 rounded-xl font-semibold text-sm transition shadow-sm"
-                        title="Tugas Harian & Koreksi"
-                    >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
-                        </svg>
-                        <span>Tugas Harian Operator</span>
-                    </button>
+                    {userRole !== 'VETERINER' && (
+                        <button 
+                            onClick={() => setIsChecklistModalOpen(true)}
+                            className="flex items-center gap-2 px-4 py-2 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:hover:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-900/50 rounded-xl font-semibold text-sm transition shadow-sm"
+                            title="Tugas Harian & Koreksi"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                            </svg>
+                            <span>Tugas Harian Operator</span>
+                        </button>
+                    )}
 
                     {/* Indikator Status Sistem */}
                     <div className="flex items-center gap-2 bg-white dark:bg-slate-800 px-4 py-2 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">

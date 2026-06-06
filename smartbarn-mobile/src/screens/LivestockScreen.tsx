@@ -29,16 +29,35 @@ import {
   Calendar
 } from 'lucide-react-native';
 import apiClient from '../api/client';
+import useSWR from 'swr';
 import LivestockFormModal from '../components/LivestockFormModal';
 import CustomModal from '../components/CustomModal';
 import { useToast } from '../context/ToastContext';
 import Skeleton from '../components/Skeleton';
 
+const fetcherMulti = async () => {
+  const [liveRes, checklistRes, zonesRes] = await Promise.all([
+    apiClient.get('/livestock'),
+    apiClient.get('/dashboard/daily-checklist').catch(() => null),
+    apiClient.get('/zones').catch(() => ({ data: [] }))
+  ]);
+  return {
+    livestock: liveRes.data,
+    checklist: checklistRes?.data?.config,
+    zones: zonesRes.data || []
+  };
+};
+
 const LivestockScreen = ({ navigation }: any) => {
+  const { data: swrData, isLoading: swrLoading, mutate: mutateLivestock } = useSWR('/livestock-bundle', fetcherMulti);
+
   const [livestock, setLivestock] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
+
   const [formVisible, setFormVisible] = useState(false);
   const [modalConfig, setModalConfig] = useState<any>({ visible: false, type: 'success', title: '', message: '' });
   const { showToast } = useToast();
@@ -60,33 +79,29 @@ const LivestockScreen = ({ navigation }: any) => {
   const [selectFeedWeightAll, setSelectFeedWeightAll] = useState(false);
   const [feedGoal, setFeedGoal] = useState(1);
 
-  const fetchLivestock = async () => {
-    try {
-      const [liveRes, checklistRes, zonesRes] = await Promise.all([
-        apiClient.get('/livestock'),
-        apiClient.get('/dashboard/daily-checklist').catch(() => null),
-        apiClient.get('/zones').catch(() => ({ data: [] }))
-      ]);
-      setLivestock(liveRes.data);
-      if (checklistRes && checklistRes.data?.config) {
-        setFeedGoal(checklistRes.data.config.feedGoal || 1);
+  useEffect(() => {
+    if (swrData) {
+      setLivestock(swrData.livestock);
+      setZones(swrData.zones);
+      if (swrData.checklist) {
+        setFeedGoal(swrData.checklist.feedGoal || 1);
       }
-      setZones(zonesRes.data || []);
-    } catch (error) {
-      console.error('Error fetching livestock:', error);
-    } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [swrData]);
 
   useEffect(() => {
-    fetchLivestock();
-  }, []);
+    setLoading(swrLoading);
+  }, [swrLoading]);
 
-  const onRefresh = () => {
+  const fetchLivestock = async () => {
+    await mutateLivestock();
+  };
+
+  const onRefresh = async () => {
     setRefreshing(true);
-    fetchLivestock();
+    await fetchLivestock();
   };
 
   const handleAdd = async (data: any) => {
@@ -108,10 +123,19 @@ const LivestockScreen = ({ navigation }: any) => {
     item.cattleId?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const totalPages = Math.ceil(filteredLivestock.length / ITEMS_PER_PAGE);
+  const paginatedLivestock = filteredLivestock.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
+
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
       case 'sehat': return COLORS.success;
       case 'sakit': return COLORS.danger;
+      case 'dalam_perawatan': return '#3b82f6';
+      case 'kritis': return '#f97316';
       case 'mati': return '#64748b';
       default: return COLORS.textLight;
     }
@@ -345,7 +369,7 @@ const LivestockScreen = ({ navigation }: any) => {
         </View>
         <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.healthStatus) + '20' }]}>
           <Text style={[styles.statusText, { color: getStatusColor(item.healthStatus) }]}>
-            {item.healthStatus || 'N/A'}
+            {item.healthStatus ? item.healthStatus.replace('_', ' ') : 'N/A'}
           </Text>
         </View>
       </View>
@@ -466,7 +490,7 @@ const LivestockScreen = ({ navigation }: any) => {
         </View>
       ) : (
         <FlatList
-          data={filteredLivestock}
+          data={paginatedLivestock}
           renderItem={LivestockCard}
           keyExtractor={item => item.id.toString()}
           contentContainerStyle={styles.listContent}
@@ -475,6 +499,27 @@ const LivestockScreen = ({ navigation }: any) => {
             <View style={styles.centerContainer}>
               <Text style={styles.emptyText}>Tidak ada data sapi ditemukan</Text>
             </View>
+          }
+          ListFooterComponent={
+            totalPages > 1 ? (
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 15, paddingHorizontal: 10 }}>
+                <TouchableOpacity 
+                  disabled={currentPage === 1}
+                  onPress={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  style={{ paddingVertical: 8, paddingHorizontal: 15, backgroundColor: currentPage === 1 ? '#e2e8f0' : COLORS.primary, borderRadius: 8 }}
+                >
+                  <Text style={{ color: currentPage === 1 ? '#94a3b8' : COLORS.white, fontWeight: 'bold' }}>Mundur</Text>
+                </TouchableOpacity>
+                <Text style={{ color: COLORS.text, fontWeight: 'bold' }}>{currentPage} / {totalPages}</Text>
+                <TouchableOpacity 
+                  disabled={currentPage === totalPages}
+                  onPress={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  style={{ paddingVertical: 8, paddingHorizontal: 15, backgroundColor: currentPage === totalPages ? '#e2e8f0' : COLORS.primary, borderRadius: 8 }}
+                >
+                  <Text style={{ color: currentPage === totalPages ? '#94a3b8' : COLORS.white, fontWeight: 'bold' }}>Lanjut</Text>
+                </TouchableOpacity>
+              </View>
+            ) : null
           }
         />
       )}

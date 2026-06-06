@@ -17,6 +17,8 @@ const HealthScreen = () => {
   const [records, setRecords] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
   const fetchRecords = async () => {
     try {
@@ -96,20 +98,37 @@ const HealthScreen = () => {
         <View style={styles.centerContainer}>
           <LoadingSpinner message="Memuat Rekam Medis..." />
         </View>
-      ) : (
+      ) : (() => {
+        const totalPages = Math.ceil(records.length / ITEMS_PER_PAGE);
+        const paginatedRecords = records.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+        return (
         <FlatList
-          data={records}
+          data={paginatedRecords}
           renderItem={HealthCard}
           keyExtractor={item => item.id.toString()}
           contentContainerStyle={styles.listContent}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchRecords(); }} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchRecords(); setCurrentPage(1); }} />}
           ListEmptyComponent={
             <View style={styles.centerContainer}>
               <Text style={styles.emptyText}>Tidak ada riwayat kesehatan</Text>
             </View>
           }
+          ListFooterComponent={
+            totalPages > 1 ? (
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 15, paddingHorizontal: 10 }}>
+                <Text style={{ color: COLORS.primary, fontWeight: 'bold' }} onPress={() => setCurrentPage(prev => Math.max(prev - 1, 1))}>
+                  {currentPage > 1 ? 'Mundur' : ''}
+                </Text>
+                <Text style={{ color: COLORS.text, fontWeight: 'bold' }}>{currentPage} / {totalPages}</Text>
+                <Text style={{ color: COLORS.primary, fontWeight: 'bold' }} onPress={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}>
+                  {currentPage < totalPages ? 'Lanjut' : ''}
+                </Text>
+              </View>
+            ) : null
+          }
         />
-      )}
+        );
+      })()}
     </SafeAreaView>
   );
 };

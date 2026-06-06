@@ -56,12 +56,31 @@ export class HealthService {
     return result;
   }
 
+  private async clearHealthAndLivestockCache() {
+    try {
+      await this.redis.del('health:summary');
+      await this.redis.del('health:list:all');
+      await this.redis.del('dashboard:farm-summary');
+      await this.redis.del('livestock:list:all');
+      const keys = await this.redis.keys('livestock:list:section:*');
+      const statsKeys = await this.redis.keys('livestock:stats:section:*');
+      if (keys.length) await this.redis.del(...keys);
+      if (statsKeys.length) await this.redis.del(...statsKeys);
+      await this.redis.del('users:staff-list');
+    } catch (err) {}
+  }
+
   // ==========================================
-  // 2. RIWAYAT PEMERIKSAAN (DIRECT DATABASE)
+  // 2. RIWAYAT PEMERIKSAAN (CACHE-ASIDE)
   // ==========================================
   async findAllRecords() {
+    const cacheKey = 'health:list:all';
     try {
-      return await this.prisma.health.findMany({
+      const cached = await this.redis.get(cacheKey);
+      if (cached) return JSON.parse(cached);
+    } catch (err) {}
+    try {
+      const data = await this.prisma.health.findMany({
         orderBy: { createdAt: 'desc' }, 
         include: {
           livestock: { 
@@ -71,6 +90,10 @@ export class HealthService {
           }
         }
       });
+      try {
+        await this.redis.set(cacheKey, JSON.stringify(data), 'EX', 3600); // 1 Hour TTL
+      } catch (err) {}
+      return data;
     } catch (err) {
       console.warn('Database Connection Down in findAllRecords. Returning empty list.');
       return [];
@@ -96,9 +119,9 @@ export class HealthService {
     if (data.status === 'Mati') healthStatus = 'MATI';
 
     // Status untuk tabel Livestock
-    let livestockStatus: any = 'SAKIT';
+    let livestockStatus: any = 'DALAM_PERAWATAN';
     if (healthStatus === 'SEMBUH') livestockStatus = 'SEHAT';
-    if (healthStatus === 'KRITIS') livestockStatus = 'SAKIT';
+    if (healthStatus === 'KRITIS') livestockStatus = 'KRITIS';
     if (healthStatus === 'MATI') livestockStatus = 'MATI';
 
     const [newRecord] = await this.prisma.$transaction([
@@ -121,11 +144,7 @@ export class HealthService {
 
     await this.activityService.log(author, 'TAMBAH', 'MEDIS', `Menambah rekam medis untuk sapi: ${data.cattleId}`);
 
-    try {
-      await this.redis.del('health:summary');
-      await this.redis.del('dashboard:farm-summary');
-      await this.redis.del('users:staff-list'); // Invalidate related cache
-    } catch (err) {}
+    await this.clearHealthAndLivestockCache();
 
     return newRecord;
   }
@@ -153,9 +172,9 @@ export class HealthService {
     if (healthStatus) healthUpdate.status = healthStatus;
 
     // Tentukan status ternak
-    let livestockStatus: any = 'SAKIT';
+    let livestockStatus: any = 'DALAM_PERAWATAN';
     if (healthStatus === 'SEMBUH') livestockStatus = 'SEHAT';
-    if (healthStatus === 'KRITIS') livestockStatus = 'SAKIT';
+    if (healthStatus === 'KRITIS') livestockStatus = 'KRITIS';
     if (healthStatus === 'MATI') livestockStatus = 'MATI';
 
     // Jalankan transaksi
@@ -174,10 +193,7 @@ export class HealthService {
 
     await this.activityService.log(author, 'EDIT', 'MEDIS', `Memperbarui rekam medis sapi: ${data.cattleId}`);
 
-    try {
-      await this.redis.del('health:summary');
-      await this.redis.del('dashboard:farm-summary');
-    } catch (err) {}
+    await this.clearHealthAndLivestockCache();
     return updatedRecord;
   }
 
@@ -185,9 +201,7 @@ export class HealthService {
     const record = await this.prisma.health.findUnique({ where: { id: Number(id) } });
     await this.prisma.health.delete({ where: { id: Number(id) } });
     await this.activityService.log(author, 'HAPUS', 'MEDIS', `Menghapus rekam medis sapi: ${record?.cattleId || id}`);
-    try {
-      await this.redis.del('health:summary');
-    } catch (err) {}
+    await this.clearHealthAndLivestockCache();
     return { message: 'Rekam medis dihapus' };
   }
 
@@ -209,7 +223,8 @@ export class HealthService {
     // Status untuk tabel Livestock
     let livestockStatus: any = 'SEHAT'; // default sehat untuk vaksin
     if (healthStatus === 'SEMBUH') livestockStatus = 'SEHAT';
-    if (healthStatus === 'KRITIS') livestockStatus = 'SAKIT';
+    if (healthStatus === 'KRITIS') livestockStatus = 'KRITIS';
+    if (healthStatus === 'DALAM_PERAWATAN') livestockStatus = 'DALAM_PERAWATAN';
     if (healthStatus === 'MATI') livestockStatus = 'MATI';
 
     // Ambil daftar cattleId yang akan divaksin
@@ -262,10 +277,7 @@ export class HealthService {
 
     await this.activityService.log(author, 'TAMBAH', 'MEDIS', `Mencatat vaksinasi massal untuk ${targetCattleIds.length} sapi`);
 
-    try {
-      await this.redis.del('health:summary');
-      await this.redis.del('dashboard:farm-summary');
-    } catch (err) {}
+    await this.clearHealthAndLivestockCache();
 
     return { success: true, count: targetCattleIds.length, records: createdRecords };
   }

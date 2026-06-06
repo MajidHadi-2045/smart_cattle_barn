@@ -70,8 +70,12 @@ npm start
 node index.js
 
 -----------------------------------
+# check URL repo GitHub
 git remote -v
+# push
+git push origin main
 git push -u origin main
+# update repo
 git add .
 git commit -m "Initial commit SmartCattleBarn"
 git push

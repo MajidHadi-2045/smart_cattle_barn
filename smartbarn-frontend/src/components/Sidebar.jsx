@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import UserProfileModal from './dashboard/UserProfileModal';
 import ConfirmModal from './common/ConfirmModal';
+import { fetchApi } from '../utils/api';
+import toast from 'react-hot-toast';
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
   const location = useLocation();
@@ -10,6 +12,45 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
+  const [isPasswordSubmitting, setIsPasswordSubmitting] = useState(false);
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    if (passwordForm.newPassword.length < 6) {
+      toast.error('Password baru minimal harus 6 karakter');
+      return;
+    }
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      toast.error('Konfirmasi password baru tidak cocok');
+      return;
+    }
+
+    setIsPasswordSubmitting(true);
+    try {
+      const response = await fetchApi('/users/change-password', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          oldPassword: passwordForm.oldPassword,
+          newPassword: passwordForm.newPassword
+        })
+      });
+
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.message || 'Gagal mengganti password');
+      }
+
+      toast.success('Password Anda berhasil diperbarui!');
+      setIsChangePasswordModalOpen(false);
+      setPasswordForm({ oldPassword: '', newPassword: '', confirmPassword: '' });
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setIsPasswordSubmitting(false);
+    }
+  };
 
   const [userRole, setUserRole] = useState('');
   const [userName, setUserName] = useState('');
@@ -76,7 +117,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
             <div className="bg-white p-1 rounded-lg">
               <img src="/logoxl.svg" alt="Logo" className="h-8 w-8 object-contain" />
             </div>
-            <span className="text-xl font-bold text-slate-800 dark:text-slate-100">Smart CattleBarn</span>
+            <span className="text-xl font-bold text-slate-800 dark:text-slate-100">Smart Cattle Barn</span>
           </Link>
 
           <button className="md:hidden text-slate-400" onClick={toggleSidebar}>
@@ -102,10 +143,12 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
             <span>Rekam Medis</span>
           </Link>
 
-          <Link to="/dashboard/feed" className={getLinkClass('/dashboard/feed')} onClick={() => window.innerWidth < 768 && toggleSidebar()}>
-            <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
-            <span>Silo Pakan</span>
-          </Link>
+          {userRole !== 'VETERINER' && (
+            <Link to="/dashboard/feed" className={getLinkClass('/dashboard/feed')} onClick={() => window.innerWidth < 768 && toggleSidebar()}>
+              <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
+              <span>Silo Pakan</span>
+            </Link>
+          )}
 
           <Link to="/dashboard/reports" className={getLinkClass('/dashboard/reports')} onClick={() => window.innerWidth < 768 && toggleSidebar()}>
             <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
@@ -115,11 +158,11 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
           {(userRole === 'SUPER_ADMIN' || userRole === 'VETERINER' || userRole === 'STAFF') && (
             <>
               <p className="px-4 pt-4 pb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                {userRole === 'SUPER_ADMIN' ? 'Administrator' : 'Pengguna & Akses'}
+                {userRole === 'SUPER_ADMIN' ? 'Administrator' : 'Akses'}
               </p>
               <Link to="/dashboard/users" className={getLinkClass('/dashboard/users')} onClick={() => window.innerWidth < 768 && toggleSidebar()}>
                 <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-                <span>Pengguna & Akses</span>
+                <span>{userRole === 'SUPER_ADMIN' ? 'Pengguna & Akses' : 'Ajukan Akses'}</span>
               </Link>
             </>
           )}
@@ -138,6 +181,16 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                 >
                   <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
                   <span className="font-medium">Lihat Profil</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setIsProfileMenuOpen(false);
+                    setIsChangePasswordModalOpen(true);
+                  }}
+                  className="flex items-center gap-3 w-full px-3 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg transition-colors text-left"
+                >
+                  <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                  <span className="font-medium">Ganti Password</span>
                 </button>
                 <div className="h-px bg-slate-100 dark:bg-slate-700 my-1 mx-2"></div>
                 <button
@@ -193,6 +246,87 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         onConfirm={executeLogout}
         onCancel={() => setIsLogoutModalOpen(false)}
       />
+
+      {/* Modal Ganti Password */}
+      {isChangePasswordModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700 animate-scale-up">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                <svg className="w-5 h-5 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                Ganti Password
+              </h3>
+              <button 
+                onClick={() => {
+                  setIsChangePasswordModalOpen(false);
+                  setPasswordForm({ oldPassword: '', newPassword: '', confirmPassword: '' });
+                }} 
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+              </button>
+            </div>
+
+            <form onSubmit={handleChangePassword} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1 text-slate-600 dark:text-slate-300">Password Lama</label>
+                <input 
+                  type="password" 
+                  required
+                  placeholder="Masukkan password lama Anda"
+                  className="w-full px-4 py-2.5 border rounded-xl dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-2 focus:ring-primary-500 focus:outline-none" 
+                  value={passwordForm.oldPassword} 
+                  onChange={e => setPasswordForm({ ...passwordForm, oldPassword: e.target.value })} 
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1 text-slate-600 dark:text-slate-300">Password Baru</label>
+                <input 
+                  type="password" 
+                  required
+                  placeholder="Minimal 6 karakter"
+                  className="w-full px-4 py-2.5 border rounded-xl dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-2 focus:ring-primary-500 focus:outline-none" 
+                  value={passwordForm.newPassword} 
+                  onChange={e => setPasswordForm({ ...passwordForm, newPassword: e.target.value })} 
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1 text-slate-600 dark:text-slate-300">Konfirmasi Password Baru</label>
+                <input 
+                  type="password" 
+                  required
+                  placeholder="Ulangi password baru Anda"
+                  className="w-full px-4 py-2.5 border rounded-xl dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-2 focus:ring-primary-500 focus:outline-none" 
+                  value={passwordForm.confirmPassword} 
+                  onChange={e => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })} 
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    setIsChangePasswordModalOpen(false);
+                    setPasswordForm({ oldPassword: '', newPassword: '', confirmPassword: '' });
+                  }} 
+                  className="flex-1 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 font-medium transition"
+                >
+                  Batal
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={isPasswordSubmitting}
+                  className="flex-1 bg-primary-600 hover:bg-primary-700 text-white py-2.5 rounded-xl font-bold transition disabled:opacity-75"
+                >
+                  {isPasswordSubmitting ? 'Menyimpan...' : 'Ganti Password'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </>
   );
 };

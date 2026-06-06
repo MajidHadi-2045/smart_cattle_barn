@@ -105,9 +105,34 @@ export class LivestockService {
   };
 
   /**
+   * Helper untuk menghapus semua cache terkait livestock jika ada pembaruan
+   */
+  private async clearLivestockCache(sectionId?: number) {
+    try {
+      await this.redis.del('dashboard:farm-summary');
+      await this.redis.del('livestock:list:all');
+      if (sectionId) {
+        await this.redis.del(`livestock:stats:section:${sectionId}`);
+        await this.redis.del(`livestock:list:section:${sectionId}`);
+      } else {
+        const keys = await this.redis.keys('livestock:list:section:*');
+        const statsKeys = await this.redis.keys('livestock:stats:section:*');
+        if (keys.length) await this.redis.del(...keys);
+        if (statsKeys.length) await this.redis.del(...statsKeys);
+      }
+    } catch (err) {}
+  }
+
+  /**
    * 2. TAMPILKAN DAFTAR SAPI BERDASARKAN ZONA
    */
   async findAllBySection(sectionId: number) {
+    const cacheKey = `livestock:list:section:${sectionId}`;
+    try {
+      const cached = await this.redis.get(cacheKey);
+      if (cached) return JSON.parse(cached);
+    } catch (err) {}
+
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
     try {
@@ -122,15 +147,19 @@ export class LivestockService {
             select: { bodyTemperature: true, heartRate: true }
           },
           feedRecords: {
-            where: {
-              feedDate: { gte: todayStart }
-            },
+            where: { feedDate: { gte: todayStart } },
             select: { id: true }
           }
         }
       });
       const config = this.loadChecklistConfig();
-      return data.map(cow => this.mapToFrontendDTO(cow, config));
+      const result = data.map(cow => this.mapToFrontendDTO(cow, config));
+      
+      try {
+        await this.redis.set(cacheKey, JSON.stringify(result), 'EX', 3600); // Cache 1 Jam
+      } catch (err) {}
+      
+      return result;
     } catch (err) {
       console.warn('Database Connection Down in findAllBySection. Returning empty list.');
       return [];
@@ -155,10 +184,8 @@ export class LivestockService {
 
     await this.activityService.log(author, 'TAMBAH', 'TERNAK', `Menambah ternak baru: ${newLivestock.cattleId}`);
 
-    // Invalidasi cache dashboard
-    try {
-      await this.redis.del('dashboard:farm-summary');
-    } catch (err) {}
+    // Invalidasi cache
+    await this.clearLivestockCache(newLivestock.sectionId);
 
     return newLivestock;
   }
@@ -167,6 +194,12 @@ export class LivestockService {
    * 4. TAMPILKAN SEMUA SAPI (GLOBAL)
    */
   async findAll() {
+    const cacheKey = 'livestock:list:all';
+    try {
+      const cached = await this.redis.get(cacheKey);
+      if (cached) return JSON.parse(cached);
+    } catch (err) {}
+
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
     try {
@@ -180,15 +213,19 @@ export class LivestockService {
             select: { bodyTemperature: true, heartRate: true }
           },
           feedRecords: {
-            where: {
-              feedDate: { gte: todayStart }
-            },
+            where: { feedDate: { gte: todayStart } },
             select: { id: true }
           }
         }
       });
       const config = this.loadChecklistConfig();
-      return data.map(cow => this.mapToFrontendDTO(cow, config));
+      const result = data.map(cow => this.mapToFrontendDTO(cow, config));
+      
+      try {
+        await this.redis.set(cacheKey, JSON.stringify(result), 'EX', 3600); // Cache 1 Jam
+      } catch (err) {}
+      
+      return result;
     } catch (err) {
       console.warn('Database Connection Down in findAll. Returning empty list.');
       return [];
@@ -245,9 +282,7 @@ export class LivestockService {
 
     await this.activityService.log(author, 'EDIT', 'TERNAK', `Memperbarui data ternak: ${updated.cattleId}`);
 
-    try {
-      await this.redis.del('dashboard:farm-summary');
-    } catch (err) {}
+    await this.clearLivestockCache(updated.sectionId);
     return updated;
   }
 
@@ -259,10 +294,7 @@ export class LivestockService {
       where: { id: parseInt(id as any) },
     });
     await this.activityService.log(author, 'HAPUS', 'TERNAK', `Menghapus ternak: ${deleted.cattleId}`);
-    try {
-      await this.redis.del(`livestock:stats:section:${deleted.sectionId}`);
-      await this.redis.del('dashboard:farm-summary');
-    } catch (err) {}
+    await this.clearLivestockCache(deleted.sectionId);
     return deleted;
   }
 
@@ -271,10 +303,7 @@ export class LivestockService {
       where: { cattleId },
     });
     await this.activityService.log(author, 'HAPUS', 'TERNAK', `Menghapus ternak: ${deleted.cattleId}`);
-    try {
-      await this.redis.del(`livestock:stats:section:${deleted.sectionId}`);
-      await this.redis.del('dashboard:farm-summary');
-    } catch (err) {}
+    await this.clearLivestockCache(deleted.sectionId);
     return deleted;
   }
 

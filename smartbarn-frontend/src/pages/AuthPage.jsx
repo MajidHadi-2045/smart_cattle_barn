@@ -127,7 +127,7 @@ const AuthPage = () => {
                     <div className="inline-flex bg-white p-2 rounded-full mb-4 shadow-sm border border-slate-100">
                         <img src="/public/logoxl.svg" alt="Logo" className="w-12 h-12 object-contain" />
                     </div>
-                    <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Smart CattleBarn System</h2>
+                    <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Smart Cattle Barn System</h2>
                     <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Silakan masuk untuk mengakses dashboard</p>
                 </div>
 
@@ -157,12 +157,15 @@ const AuthPage = () => {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Email</label>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Username atau Email</label>
                             <input
-                                type="email"
+                                type="text"
                                 value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                placeholder="email@domain.com"
+                                onChange={(e) => {
+                                    // Hilangkan spasi jika user mencoba mengetik spasi
+                                    setEmail(e.target.value.replace(/\s/g, ''));
+                                }}
+                                placeholder="budi_123 atau email@domain.com"
                                 className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none transition"
                                 required
                             />

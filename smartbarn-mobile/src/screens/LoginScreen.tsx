@@ -18,7 +18,7 @@ import apiClient from '../api/client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const LoginScreen = ({ navigation }: any) => {
-  const [email, setEmail] = useState('');
+  const [usernameOrEmail, setUsernameOrEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('STAFF');
   const [loading, setLoading] = useState(false);
@@ -30,14 +30,14 @@ const LoginScreen = ({ navigation }: any) => {
   ];
 
   const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert('Error', 'Silakan masukkan email dan password');
+    if (!usernameOrEmail || !password) {
+      Alert.alert('Error', 'Silakan masukkan Username/Email dan password');
       return;
     }
 
     setLoading(true);
     try {
-      const response = await apiClient.post('/auth/login', { email, password, role });
+      const response = await apiClient.post('/auth/login', { email: usernameOrEmail, password, role });
       const { access_token, user } = response.data;
       
       await AsyncStorage.setItem('token', access_token);
@@ -62,7 +62,7 @@ const LoginScreen = ({ navigation }: any) => {
           <View style={styles.logoContainer}>
             <LogIn size={40} color={COLORS.white} />
           </View>
-          <Text style={styles.title}>SmartBarn Mobile</Text>
+          <Text style={styles.title}>Smart Cattle Barn</Text>
           <Text style={styles.subtitle}>Monitoring peternakan dalam genggaman</Text>
         </View>
 
@@ -71,9 +71,9 @@ const LoginScreen = ({ navigation }: any) => {
             <User size={20} color={COLORS.textLight} style={styles.inputIcon} />
             <TextInput
               style={styles.input}
-              placeholder="Email"
-              value={email}
-              onChangeText={setEmail}
+              placeholder="Username atau Email"
+              value={usernameOrEmail}
+              onChangeText={(text) => setUsernameOrEmail(text.replace(/\s/g, ''))}
               autoCapitalize="none"
               keyboardType="email-address"
             />

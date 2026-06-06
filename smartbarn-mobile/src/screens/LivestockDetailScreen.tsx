@@ -329,7 +329,7 @@ const LivestockDetailScreen = ({ route, navigation }: any) => {
             <View style={styles.infoItem}>
               <Activity size={18} color={COLORS.textLight} />
               <Text style={styles.infoLabel}>Status: </Text>
-              <Text style={[styles.infoValue, { color: COLORS.success }]}>{item.healthStatus}</Text>
+              <Text style={[styles.infoValue, { color: item.healthStatus === 'SEHAT' ? COLORS.success : item.healthStatus === 'DALAM_PERAWATAN' ? '#3b82f6' : item.healthStatus === 'KRITIS' ? '#f97316' : item.healthStatus === 'MATI' ? '#64748b' : COLORS.danger }]}>{item.healthStatus ? item.healthStatus.replace('_', ' ') : 'N/A'}</Text>
             </View>
             <View style={styles.infoItem}>
               <MapPin size={18} color={COLORS.textLight} />

@@ -9,9 +9,13 @@ const UserManagement = () => {
     const currentUserName = localStorage.getItem('userName') || 'Staf';
 
     // --- 1. STATE MANAGEMENT ---
-    const [activeTab, setActiveTab] = useState('list'); // 'list', 'requests', 'form'
+    const [activeTab, setActiveTab] = useState(userRole === 'SUPER_ADMIN' ? 'list' : 'form'); // 'list', 'requests', 'form'
     const [users, setUsers] = useState([]);
     const [requests, setRequests] = useState([]);
+
+    // State Pagination
+    const [currentUserPage, setCurrentUserPage] = useState(1);
+    const USERS_PER_PAGE = 8;
 
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -22,9 +26,9 @@ const UserManagement = () => {
     const [selectedUser, setSelectedUser] = useState(null);
     const [confirmModal, setConfirmModal] = useState({ isOpen: false, type: '', id: null, title: '', message: '', isDanger: true });
 
-    // State untuk Form Tambah User
     const [formData, setFormData] = useState({
         name: '',
+        username: '',
         email: '',
         password: '',
         role: userRole === 'VETERINER' ? 'veteriner' : 'staff',
@@ -33,6 +37,10 @@ const UserManagement = () => {
 
     // --- 2. FUNGSI MENGAMBIL DATA (GET) ---
     const fetchUserData = async (silent = false) => {
+        if (userRole !== 'SUPER_ADMIN') {
+            setIsLoading(false);
+            return;
+        }
         if (!silent) setIsLoading(true);
         try {
             // Mengambil daftar user aktif
@@ -71,6 +79,16 @@ const UserManagement = () => {
     // --- 3. FUNGSI TAMBAH USER / REQUEST (POST) ---
     const handleFormSubmit = async (e) => {
         e.preventDefault();
+        
+        // Validasi Username Khusus Admin
+        if (userRole === 'SUPER_ADMIN') {
+            const usernameRegex = /^[a-zA-Z0-9_-]{3,20}$/;
+            if (!usernameRegex.test(formData.username)) {
+                toast.error("Username tidak valid! Hanya boleh huruf, angka, _ dan -, tanpa spasi. Panjang 3-20 karakter.");
+                return;
+            }
+        }
+
         setIsSubmitting(true);
 
         const isSuperAdmin = userRole === 'SUPER_ADMIN';
@@ -81,7 +99,7 @@ const UserManagement = () => {
             calonName: formData.name,
             calonEmail: formData.email,
             posisi: formData.role.toUpperCase(),
-            alasan: formData.alasan
+            alasan: formData.reason
         };
 
         toast.promise(
@@ -98,7 +116,7 @@ const UserManagement = () => {
             {
                 loading: isSuperAdmin ? 'Membuat pengguna baru...' : 'Mengirim permintaan akses...',
                 success: (result) => {
-                    setFormData({ name: '', email: '', password: '', role: userRole === 'VETERINER' ? 'veteriner' : 'staff', reason: '' });
+                    setFormData({ name: '', username: '', email: '', password: '', role: userRole === 'VETERINER' ? 'veteriner' : 'staff', reason: '' });
                     setActiveTab('list');
                     
                     if (isSuperAdmin) {
@@ -132,6 +150,28 @@ const UserManagement = () => {
 
             setUsers(users.filter(u => u.id !== id));
             toast.success('Akses pengguna berhasil dicabut.');
+        } catch (err) {
+            toast.error(err.message);
+        }
+    };
+
+    const handleResetPassword = (id, name) => {
+        setConfirmModal({
+            isOpen: true,
+            type: 'reset_password',
+            id: id,
+            title: 'Reset Password Pengguna?',
+            message: `Apakah Anda yakin ingin me-reset password untuk ${name}? Password barunya akan menjadi "SmartBarn2026!" dan disarankan untuk segera diubah oleh pengguna.`,
+            isDanger: false
+        });
+    };
+
+    const confirmResetPassword = async (id) => {
+        try {
+            const response = await fetchApi(`/users/force-reset/${id}`, { method: 'PATCH' });
+            if (!response.ok) throw new Error('Gagal mereset password');
+            const data = await response.json();
+            toast.success(`Berhasil! Password baru: ${data.defaultPassword || 'SmartBarn2026!'}`, { duration: 6000 });
         } catch (err) {
             toast.error(err.message);
         }
@@ -200,6 +240,7 @@ const UserManagement = () => {
 
         if (type === 'delete_user') confirmDeleteUser(id);
         else if (type === 'reject_request') confirmRejectRequest(id);
+        else if (type === 'reset_password') confirmResetPassword(id);
     };
 
     // Helper untuk menampilkan Modal Detail User
@@ -214,22 +255,26 @@ const UserManagement = () => {
             {/* Header & Tabs */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Manajemen Pengguna</h2>
-                    <p className="text-slate-500 dark:text-slate-400 text-sm">Kelola hak akses, peran staf, dan persetujuan akun baru</p>
+                    <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100">
+                        {userRole === 'SUPER_ADMIN' ? 'Manajemen Pengguna' : 'Ajukan Akses Baru'}
+                    </h2>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm">
+                        {userRole === 'SUPER_ADMIN' ? 'Kelola hak akses, peran staf, dan persetujuan akun baru' : 'Ajukan permohonan penambahan akses pengguna/staf baru ke Admin'}
+                    </p>
                 </div>
 
-                <div className="flex bg-slate-200 dark:bg-slate-800 p-1 rounded-lg">
-                    <button onClick={() => setActiveTab('list')} className={`px-4 py-2 text-sm font-bold rounded-md transition ${activeTab === 'list' ? 'bg-white dark:bg-slate-700 text-primary-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}>Daftar Pengguna</button>
-                    {userRole === 'SUPER_ADMIN' && (
+                {userRole === 'SUPER_ADMIN' && (
+                    <div className="flex bg-slate-200 dark:bg-slate-800 p-1 rounded-lg">
+                        <button onClick={() => setActiveTab('list')} className={`px-4 py-2 text-sm font-bold rounded-md transition ${activeTab === 'list' ? 'bg-white dark:bg-slate-700 text-primary-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}>Daftar Pengguna</button>
                         <button onClick={() => setActiveTab('requests')} className={`px-4 py-2 text-sm font-bold rounded-md transition flex items-center gap-2 ${activeTab === 'requests' ? 'bg-white dark:bg-slate-700 text-primary-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}>
                             Antrian Akses
                             {requests.length > 0 && <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">{requests.length}</span>}
                         </button>
-                    )}
-                    <button onClick={() => setActiveTab('form')} className={`px-4 py-2 text-sm font-bold rounded-md transition ${activeTab === 'form' ? 'bg-white dark:bg-slate-700 text-primary-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}>
-                        {userRole === 'SUPER_ADMIN' ? 'Tambah Akses' : 'Ajukan Akses Baru'}
-                    </button>
-                </div>
+                        <button onClick={() => setActiveTab('form')} className={`px-4 py-2 text-sm font-bold rounded-md transition ${activeTab === 'form' ? 'bg-white dark:bg-slate-700 text-primary-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}>
+                            Tambah Akses
+                        </button>
+                    </div>
+                )}
             </div>
 
             {error && (
@@ -245,7 +290,10 @@ const UserManagement = () => {
             ) : (
                 <>
                     {/* --- TAB: DAFTAR PENGGUNA --- */}
-                    {activeTab === 'list' && (
+                    {activeTab === 'list' && (() => {
+                        const totalUserPages = Math.ceil(users.length / USERS_PER_PAGE);
+                        const paginatedUsers = users.slice((currentUserPage - 1) * USERS_PER_PAGE, currentUserPage * USERS_PER_PAGE);
+                        return (
                         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left text-sm">
@@ -258,7 +306,7 @@ const UserManagement = () => {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100 dark:divide-slate-700 text-slate-700 dark:text-slate-300">
-                                        {users.length > 0 ? users.map(user => (
+                                        {paginatedUsers.length > 0 ? paginatedUsers.map(user => (
                                             <tr key={user.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition">
                                                 <td className="px-6 py-4">
                                                     <div className="flex items-center gap-3">
@@ -291,9 +339,14 @@ const UserManagement = () => {
                                                     <div className="flex items-center justify-center gap-3">
                                                         <button onClick={() => viewUserDetails(user)} className="text-primary-600 hover:text-primary-800 font-medium transition" title="Lihat Profil">Detail</button>
                                                         {userRole === 'SUPER_ADMIN' && (
-                                                            <button onClick={() => handleDeleteUser(user.id, user.name)} className="text-red-500 hover:text-red-700 transition" title="Cabut Akses">
-                                                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="18" y1="8" x2="23" y2="13"></line><line x1="23" y1="8" x2="18" y2="13"></line></svg>
-                                                            </button>
+                                                            <>
+                                                                <button onClick={() => handleResetPassword(user.id, user.name)} className="text-amber-500 hover:text-amber-700 transition" title="Reset Password">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                                                                </button>
+                                                                <button onClick={() => handleDeleteUser(user.id, user.name)} className="text-red-500 hover:text-red-700 transition" title="Cabut Akses">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="18" y1="8" x2="23" y2="13"></line><line x1="23" y1="8" x2="18" y2="13"></line></svg>
+                                                                </button>
+                                                            </>
                                                         )}
                                                     </div>
                                                 </td>
@@ -304,8 +357,37 @@ const UserManagement = () => {
                                     </tbody>
                                 </table>
                             </div>
+                            
+                            {/* Pagination Controls */}
+                            {totalUserPages > 1 && (
+                                <div className="flex justify-between items-center px-6 py-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+                                    <span className="text-xs text-slate-500 dark:text-slate-400">
+                                        Menampilkan {(currentUserPage - 1) * USERS_PER_PAGE + 1} - {Math.min(currentUserPage * USERS_PER_PAGE, users.length)} dari {users.length} pengguna
+                                    </span>
+                                    <div className="flex gap-1">
+                                        <button 
+                                            onClick={() => setCurrentUserPage(prev => Math.max(prev - 1, 1))}
+                                            disabled={currentUserPage === 1}
+                                            className="px-3 py-1 text-xs font-bold rounded-lg border border-slate-200 dark:border-slate-700 disabled:opacity-50 hover:bg-slate-100 dark:hover:bg-slate-700 transition text-slate-600 dark:text-slate-300"
+                                        >
+                                            Mundur
+                                        </button>
+                                        <div className="flex items-center px-3 py-1 text-xs font-bold bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 rounded-lg">
+                                            Halaman {currentUserPage} / {totalUserPages}
+                                        </div>
+                                        <button 
+                                            onClick={() => setCurrentUserPage(prev => Math.min(prev + 1, totalUserPages))}
+                                            disabled={currentUserPage === totalUserPages}
+                                            className="px-3 py-1 text-xs font-bold rounded-lg border border-slate-200 dark:border-slate-700 disabled:opacity-50 hover:bg-slate-100 dark:hover:bg-slate-700 transition text-slate-600 dark:text-slate-300"
+                                        >
+                                            Lanjut
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
-                    )}
+                        );
+                    })()}
 
                     {/* --- TAB: REQUESTS (ANTRIAN AKSES) --- */}
                     {activeTab === 'requests' && (
@@ -359,9 +441,15 @@ const UserManagement = () => {
                             <form onSubmit={handleFormSubmit} className="space-y-5">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                     <div>
-                                        <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Nama Lengkap Calon Pengguna</label>
+                                        <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Nama Lengkap</label>
                                         <input type="text" className="w-full px-4 py-2 border rounded-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
                                     </div>
+                                    {userRole === 'SUPER_ADMIN' && (
+                                        <div>
+                                            <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Username (Tanpa Spasi)</label>
+                                            <input type="text" className="w-full px-4 py-2 border rounded-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white" required value={formData.username} onChange={e => setFormData({ ...formData, username: e.target.value.replace(/\s/g, '') })} placeholder="budi_123" />
+                                        </div>
+                                    )}
                                     <div>
                                         <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Email Utama</label>
                                         <input type="email" className="w-full px-4 py-2 border rounded-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white" required value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
@@ -393,7 +481,16 @@ const UserManagement = () => {
                                     <textarea className="w-full px-4 py-2 border rounded-lg h-24 dark:bg-slate-700 dark:border-slate-600 dark:text-white" placeholder="Mengapa akun ini diperlukan?" required value={formData.reason} onChange={e => setFormData({ ...formData, reason: e.target.value })}></textarea>
                                 </div>
                                 <div className="flex gap-3 pt-4">
-                                    <button type="button" onClick={() => setActiveTab('list')} className="flex-1 py-2.5 rounded-lg border border-slate-300 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition">Batal</button>
+                                    <button 
+                                        type="button" 
+                                        onClick={() => {
+                                            setFormData({ name: '', email: '', password: '', role: userRole === 'VETERINER' ? 'veteriner' : 'staff', reason: '' });
+                                            if (userRole === 'SUPER_ADMIN') setActiveTab('list');
+                                        }} 
+                                        className="flex-1 py-2.5 rounded-lg border border-slate-300 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition"
+                                    >
+                                        Batal
+                                    </button>
                                     <button type="submit" disabled={isSubmitting} className="flex-1 bg-primary-600 text-white py-2.5 rounded-lg font-bold hover:bg-primary-700 transition shadow-lg shadow-primary-500/30 disabled:opacity-70">
                                         {isSubmitting ? 'Memproses...' : (userRole === 'SUPER_ADMIN' ? 'Buat Pengguna' : 'Ajukan Permintaan')}
                                     </button>
@@ -416,7 +513,7 @@ const UserManagement = () => {
                 isOpen={confirmModal.isOpen}
                 title={confirmModal.title}
                 message={confirmModal.message}
-                confirmText={confirmModal.type === 'reject_request' ? "Tolak Permintaan" : "Ya, Cabut Akses"}
+                confirmText={confirmModal.type === 'reject_request' ? "Tolak Permintaan" : confirmModal.type === 'reset_password' ? "Ya, Reset Password" : "Ya, Cabut Akses"}
                 isDanger={confirmModal.isDanger}
                 onConfirm={handleConfirmAction}
                 onCancel={() => setConfirmModal({ ...confirmModal, isOpen: false })}

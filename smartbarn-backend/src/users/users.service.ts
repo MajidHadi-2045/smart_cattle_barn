@@ -49,7 +49,8 @@ export class UsersService {
   }
 
   private async generateUserId(role: string) {
-    const prefix = role === 'SUPER_ADMIN' ? 'ADM' : role === 'VETERINER' ? 'VET' : 'STF';
+    const upperRole = role ? role.toUpperCase() : 'STAFF';
+    const prefix = upperRole === 'SUPER_ADMIN' ? 'ADM' : upperRole === 'VETERINER' ? 'VET' : 'STF';
     
     // Cari user terakhir dengan prefix tersebut untuk menentukan nomor urut
     const lastUser = await this.prisma.user.findFirst({
@@ -70,15 +71,17 @@ export class UsersService {
   async createStaff(data: any) {
     const passwordToHash = data.password || 'SmartBarn123!';
     const hashedPassword = await bcrypt.hash(passwordToHash, 10);
-    const customId = await this.generateUserId(data.role);
+    const upperRole = data.role ? data.role.toUpperCase() : 'STAFF';
+    const customId = await this.generateUserId(upperRole);
 
     const newStaff = await this.prisma.user.create({
       data: {
         id: customId,
         name: data.name,
+        username: data.username,
         email: data.email,
         password: hashedPassword,
-        role: data.role,
+        role: upperRole as any,
         task: data.task,
         phone: data.phone,
         status: 'AKTIF'
@@ -137,11 +140,11 @@ export class UsersService {
   async createRequest(data: any) {
     return this.prisma.userRequest.create({
       data: {
-        requester: data.requester,
-        calonName: data.calonName,
-        calonEmail: data.calonEmail,
-        posisi: data.posisi,
-        alasan: data.alasan,
+        requester: data.requester || 'Unknown',
+        calonName: data.calonName || 'Unknown',
+        calonEmail: data.calonEmail || 'unknown@example.com',
+        posisi: data.posisi ? data.posisi.toUpperCase() : 'STAFF',
+        alasan: data.alasan || '-',
       },
     });
   }
@@ -160,7 +163,8 @@ export class UsersService {
     // Jika 'TERIMA', buat password sementara & enkripsi
     const defaultPassword = 'SmartBarn123!';
     const hashedPassword = await bcrypt.hash(defaultPassword, 10);
-    const customId = await this.generateUserId(request.posisi as any);
+    const upperRole = request.posisi ? request.posisi.toUpperCase() : 'STAFF';
+    const customId = await this.generateUserId(upperRole);
 
     // STABILITAS: Gunakan Prisma Transaction agar aksi ini berjalan atomik
     const [newUser, updatedRequest] = await this.prisma.$transaction([
@@ -170,7 +174,7 @@ export class UsersService {
           name: request.calonName,
           email: request.calonEmail,
           password: hashedPassword, 
-          role: request.posisi as any, 
+          role: upperRole as any, 
           status: 'AKTIF',
         },
       }),
@@ -250,5 +254,45 @@ export class UsersService {
     } catch (err) {}
     
     return { message: 'Foto berhasil diperbarui', photoUrl: userWithoutPassword.photo };
+  }
+
+  async changePassword(userId: string, data: any) {
+    const { oldPassword, newPassword } = data;
+    if (!oldPassword || !newPassword) {
+      throw new BadRequestException('Password lama dan password baru wajib diisi');
+    }
+
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new BadRequestException('Pengguna tidak ditemukan');
+
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch) throw new BadRequestException('Password lama yang Anda masukkan salah');
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword }
+    });
+
+    return { message: 'Password berhasil diperbarui' };
+  }
+
+  async forceResetPassword(userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new BadRequestException('Pengguna tidak ditemukan');
+
+    // Password standar untuk reset: SmartBarn2026!
+    const defaultPassword = 'SmartBarn2026!';
+    const hashedPassword = await bcrypt.hash(defaultPassword, 10);
+    
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword }
+    });
+
+    return { 
+      message: 'Password pengguna berhasil direset.', 
+      defaultPassword: defaultPassword 
+    };
   }
 }

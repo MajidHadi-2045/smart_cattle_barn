@@ -59,6 +59,8 @@ enum RequestStatus {
 enum LivestockStatus {
   SEHAT
   SAKIT
+  DALAM_PERAWATAN
+  KRITIS
   HAMIL
   MATI
 }
@@ -87,6 +89,7 @@ enum ScheduleStatus {
 model User {
   id        String   @id
   name      String
+  username  String?  @unique
   email     String   @unique
   phone     String?
   password  String

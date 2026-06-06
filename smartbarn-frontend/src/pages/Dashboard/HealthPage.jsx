@@ -1,9 +1,21 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
+import useSWR from 'swr';
 import { fetchApi } from '../../utils/api';
 import ConfirmModal from '../../components/common/ConfirmModal';
 
+const fetcher = async (url) => {
+    const res = await fetchApi(url);
+    if (!res.ok) throw new Error('Gagal mengambil data dari server');
+    return res.json();
+};
+
 const HealthPage = () => {
+  const userRole = localStorage.getItem('userRole');
+  
+  const { data: healthData, error: swrError, isLoading: swrLoading, mutate: mutateHealth } = useSWR('/health', fetcher);
+  const { data: livestockData } = useSWR('/livestock', fetcher);
+
   // --- 1. STATE MANAGEMENT ---
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [healthRecords, setHealthRecords] = useState([]);
@@ -12,6 +24,8 @@ const HealthPage = () => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('ALL');
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
   // Bulk / Vaccination States
   const [livestock, setLivestock] = useState([]);
@@ -36,48 +50,23 @@ const HealthPage = () => {
 
   // --- 2. FUNGSI MENGAMBIL DATA (GET) ---
   const fetchHealthRecords = async () => {
-    setIsLoading(true);
-    try {
-        const response = await fetchApi('/health');
-
-        if (!response.ok) throw new Error('Gagal mengambil data rekam medis');
-        
-        const data = await response.json();
-        setHealthRecords(data);
-        setError(null);
-    } catch (err) {
-        console.error(err);
-        setError(err.message);
-        // Fallback data lokal jika API mati (untuk uji coba UI)
-        if (import.meta.env.VITE_USE_MOCKS === 'true') {
-            setHealthRecords([
-                { id: 1, cattleId: 'C-302', date: new Date().toISOString().split('T')[0], diagnosis: 'Flu Bovine', treatment: 'Pemberian Vitamin C', vet: 'Dr. Budi', status: 'Sembuh' },
-                { id: 2, cattleId: 'C-305', date: new Date().toISOString().split('T')[0], diagnosis: 'Cedera Kaki', treatment: 'Perban & Istirahat', vet: 'Dr. Siti', status: 'Dalam Perawatan' }
-            ]);
-        } else {
-            setHealthRecords([]);
-        }
-    } finally {
-        setIsLoading(false);
-    }
-  };
-
-  const fetchLivestock = async () => {
-    try {
-        const response = await fetchApi('/livestock');
-        if (response.ok) {
-            const data = await response.json();
-            setLivestock(data);
-        }
-    } catch (err) {
-        console.error('Error fetching livestock:', err);
-    }
+    await mutateHealth();
   };
 
   useEffect(() => {
-    fetchHealthRecords();
-    fetchLivestock();
-  }, []);
+    if (healthData) {
+        setHealthRecords(healthData);
+        setError(null);
+    }
+    if (swrError) setError(swrError.message);
+    setIsLoading(swrLoading);
+  }, [healthData, swrError, swrLoading]);
+
+  useEffect(() => {
+    if (livestockData) {
+        setLivestock(livestockData);
+    }
+  }, [livestockData]);
 
   // --- 3. HANDLERS FORM ---
   const handleInputChange = (e) => {
@@ -220,6 +209,14 @@ const HealthPage = () => {
     return matchesSearch && matchesStatus;
   });
 
+  // Reset pagination on filter change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterStatus]);
+
+  const totalPages = Math.ceil(filteredRecords.length / ITEMS_PER_PAGE);
+  const paginatedRecords = filteredRecords.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+
   // --- 5. RENDER UI ---
   return (
     <div className="space-y-6 animate-fade-in">
@@ -248,20 +245,22 @@ const HealthPage = () => {
                 <option value="KRITIS">Kritis</option>
                 <option value="MATI">Mati</option>
             </select>
-            <button 
-                onClick={() => {
-                    setFormData({ id: null, cattleId: '', diagnosis: '', treatment: '', vet: '', notes: '', status: 'Dalam Perawatan' });
-                    setIsBulkMode(false);
-                    setSelectedCattleIds([]);
-                    setIsSelectAll(true);
-                    setCattleSearchTerm('');
-                    setIsModalOpen(true);
-                }}
-                className="bg-gradient-to-r from-primary-500 to-indigo-600 hover:from-primary-600 hover:to-indigo-700 text-white px-6 py-2.5 rounded-xl font-bold transition-all duration-300 hover:scale-105 shadow-lg shadow-primary-500/30 flex items-center gap-2"
-            >
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
-                Catat Pemeriksaan Baru
-            </button>
+            {userRole !== 'STAFF' && (
+                <button 
+                    onClick={() => {
+                        setFormData({ id: null, cattleId: '', diagnosis: '', treatment: '', vet: '', notes: '', status: 'Dalam Perawatan' });
+                        setIsBulkMode(false);
+                        setSelectedCattleIds([]);
+                        setIsSelectAll(true);
+                        setCattleSearchTerm('');
+                        setIsModalOpen(true);
+                    }}
+                    className="bg-gradient-to-r from-primary-500 to-indigo-600 hover:from-primary-600 hover:to-indigo-700 text-white px-6 py-2.5 rounded-xl font-bold transition-all duration-300 hover:scale-105 shadow-lg shadow-primary-500/30 flex items-center gap-2"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+                    Catat Pemeriksaan Baru
+                </button>
+            )}
         </div>
       </div>
 
@@ -288,11 +287,11 @@ const HealthPage = () => {
                             <th className="px-6 py-4">Penanganan</th>
                             <th className="px-6 py-4">Dokter</th>
                              <th className="px-6 py-4">Status</th>
-                             <th className="px-6 py-4 text-center">Aksi</th>
+                             {userRole !== 'STAFF' && <th className="px-6 py-4 text-center">Aksi</th>}
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                        {filteredRecords.length > 0 ? filteredRecords.map((record) => (
+                        {paginatedRecords.length > 0 ? paginatedRecords.map((record) => (
                             <tr key={record.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition">
                                 <td className="px-6 py-4 font-bold text-slate-800 dark:text-slate-100">{record.cattleId}</td>
                                 <td className="px-6 py-4">{record.createdAt ? new Date(record.createdAt).toLocaleDateString('id-ID') : '-'}</td>
@@ -313,25 +312,55 @@ const HealthPage = () => {
                                         {record.status === 'DALAM_PERAWATAN' ? 'DALAM PERAWATAN' : record.status}
                                     </span>
                                 </td>
-                                <td className="px-6 py-4 text-center">
-                                    <div className="flex justify-center gap-2">
-                                        <button onClick={() => handleEdit(record)} className="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition" title="Edit">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                                        </button>
-                                        <button onClick={() => handleDelete(record.id)} className="p-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition" title="Hapus">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                                        </button>
-                                    </div>
-                                </td>
+                                {userRole !== 'STAFF' && (
+                                    <td className="px-6 py-4 text-center">
+                                        <div className="flex justify-center gap-2">
+                                            <button onClick={() => handleEdit(record)} className="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition" title="Edit">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                            </button>
+                                            <button onClick={() => handleDelete(record.id)} className="p-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition" title="Hapus">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                                            </button>
+                                        </div>
+                                    </td>
+                                )}
                             </tr>
                         )) : (
                             <tr>
-                                <td colSpan="7" className="px-6 py-8 text-center text-slate-500">Belum ada data rekam medis.</td>
-                            </tr>
+                                 <td colSpan={userRole === 'STAFF' ? 6 : 7} className="px-6 py-8 text-center text-slate-500">Belum ada data rekam medis.</td>
+                             </tr>
                         )}
                     </tbody>
                 </table>
             </div>
+          )}
+          
+          {/* Pagination Controls */}
+          {!isLoading && totalPages > 1 && (
+              <div className="flex justify-between items-center px-6 py-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+                  <span className="text-xs text-slate-500 dark:text-slate-400">
+                      Menampilkan {(currentPage - 1) * ITEMS_PER_PAGE + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, filteredRecords.length)} dari {filteredRecords.length} data
+                  </span>
+                  <div className="flex gap-1">
+                      <button 
+                          onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                          disabled={currentPage === 1}
+                          className="px-3 py-1 text-xs font-bold rounded-lg border border-slate-200 dark:border-slate-700 disabled:opacity-50 hover:bg-slate-100 dark:hover:bg-slate-700 transition text-slate-600 dark:text-slate-300"
+                      >
+                          Mundur
+                      </button>
+                      <div className="flex items-center px-3 py-1 text-xs font-bold bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 rounded-lg">
+                          Halaman {currentPage} / {totalPages}
+                      </div>
+                      <button 
+                          onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                          disabled={currentPage === totalPages}
+                          className="px-3 py-1 text-xs font-bold rounded-lg border border-slate-200 dark:border-slate-700 disabled:opacity-50 hover:bg-slate-100 dark:hover:bg-slate-700 transition text-slate-600 dark:text-slate-300"
+                      >
+                          Lanjut
+                      </button>
+                  </div>
+              </div>
           )}
       </div>
 
