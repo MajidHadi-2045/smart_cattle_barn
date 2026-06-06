@@ -261,7 +261,7 @@ export class ReportsService {
     doc.fillColor('#334155').font('Helvetica-Bold').fontSize(9);
     let currentX = 55;
     columns.forEach(col => {
-      doc.text(col.header, currentX, tableTop + 2, { width: col.width - 5, truncate: true });
+      doc.text(col.header, currentX, tableTop + 2, { width: col.width - 5, lineBreak: false } as any);
       currentX += col.width; 
     });
     doc.font('Helvetica');
@@ -281,7 +281,7 @@ export class ReportsService {
             doc.fillColor('#334155').font('Helvetica-Bold').fontSize(9);
             let cx = 55;
             columns.forEach(col => {
-              doc.text(col.header, cx, newTableTop + 2, { width: col.width - 5, truncate: true });
+              doc.text(col.header, cx, newTableTop + 2, { width: col.width - 5, lineBreak: false } as any);
               cx += col.width; 
             });
             doc.font('Helvetica');
@@ -295,7 +295,7 @@ export class ReportsService {
         doc.fillColor('#475569');
 
         columns.forEach(col => {
-            doc.fontSize(8).text(row[col.key] || '-', x, y, { width: col.width - 5, truncate: true });
+            doc.fontSize(8).text(row[col.key] || '-', x, y, { width: col.width - 5, lineBreak: false } as any);
             x += col.width;
         });
         doc.y = y + 15;

@@ -2,7 +2,7 @@ import axios, { AxiosError } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // IP Local komputer Anda (otomatis terdeteksi dari log Expo)
-const BASE_URL = 'http://10.208.196.115:3000'; 
+const BASE_URL = 'http://10.208.196.115:4000'; 
 
 const apiClient = axios.create({
   baseURL: `${BASE_URL}/api`,
