@@ -135,8 +135,8 @@ export class LivestockController {
   // ==========================================
   
   @Get('performance-chart')
-  getPerformanceChart(@Query('period') period?: string) {
-    return this.livestockService.getPerformanceChartData(period || 'minggu');
+  getPerformanceChart(@Query('period') period?: string, @Query('cowId') cowId?: string) {
+    return this.livestockService.getPerformanceChartData(period || 'minggu', cowId);
   }
 
   @Post('weight')

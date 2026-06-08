@@ -32,10 +32,11 @@ const Feed = () => {
     // State untuk Form Jadwal Baru
     const [selectedZoneId, setSelectedZoneId] = useState('');
     const [newSchedule, setNewSchedule] = useState({
-        time: '',
-        sectionId: '', 
+        timeStart: '',
+        timeEnd: '',
+        zoneId: '', 
         feedType: '', 
-        status: 'TERJADWAL'
+        status: 'BELUM'
     });
 
     // State untuk Edit Jadwal
@@ -43,8 +44,9 @@ const Feed = () => {
     const [editingSchedule, setEditingSchedule] = useState(null);
     const [editZoneId, setEditZoneId] = useState('');
     const [editFormData, setEditFormData] = useState({
-        time: '',
-        sectionId: '',
+        timeStart: '',
+        timeEnd: '',
+        zoneId: '',
         feedType: '',
         status: ''
     });
@@ -104,7 +106,12 @@ const Feed = () => {
         toast.promise(
             fetchApi('/feed/schedule', {
                 method: 'POST',
-                body: JSON.stringify(newSchedule)
+                body: JSON.stringify({
+                    time: `${newSchedule.timeStart} - ${newSchedule.timeEnd}`,
+                    zoneId: newSchedule.zoneId,
+                    feedType: newSchedule.feedType,
+                    status: newSchedule.status
+                })
             }).then(async (res) => {
                 if (!res.ok) throw new Error('Gagal menyimpan jadwal');
                 return res.json();
@@ -113,8 +120,7 @@ const Feed = () => {
                 loading: 'Menyimpan jadwal...',
                 success: (savedSchedule) => {
                     mutateSchedules(); // Update Cache SWR
-                    setNewSchedule({ time: '', sectionId: '', feedType: '', status: 'TERJADWAL' });
-                    setSelectedZoneId('');
+                    setNewSchedule({ timeStart: '', timeEnd: '', zoneId: '', feedType: '', status: 'BELUM' });
                     setActiveTab('overview');
                     return 'Jadwal berhasil ditambahkan!';
                 },
@@ -231,11 +237,12 @@ const Feed = () => {
 
     // --- 4.1 FUNGSI EDIT JADWAL (UPDATE) ---
     const openEditSchedule = (sch) => {
+        const [timeStart, timeEnd] = (sch.time || '').split(' - ');
         setEditingSchedule(sch);
-        setEditZoneId(sch.section?.zoneId || '');
         setEditFormData({
-            time: sch.time,
-            sectionId: sch.sectionId,
+            timeStart: timeStart || '',
+            timeEnd: timeEnd || '',
+            zoneId: sch.zoneId,
             feedType: sch.feedType,
             status: sch.status
         });
@@ -249,7 +256,12 @@ const Feed = () => {
         toast.promise(
             fetchApi(`/feed/schedule/${editingSchedule.id}`, {
                 method: 'PATCH',
-                body: JSON.stringify(editFormData)
+                body: JSON.stringify({
+                    time: `${editFormData.timeStart} - ${editFormData.timeEnd}`,
+                    zoneId: editFormData.zoneId,
+                    feedType: editFormData.feedType,
+                    status: editFormData.status
+                })
             }).then(async (res) => {
                 if (!res.ok) throw new Error('Gagal memperbarui jadwal');
                 return res.json();
@@ -493,14 +505,13 @@ const Feed = () => {
                                                 <div>
                                                     <p className="font-bold text-slate-800 dark:text-slate-100">{sch.feedType}</p>
                                                     <p className="text-sm text-slate-500">
-                                                        {sch.section ? `${sch.section.zone.name} - ${sch.section.name}` : sch.location || 'Lokasi tidak diketahui'}
+                                                        {sch.zone ? sch.zone.name : sch.location || 'Lokasi tidak diketahui'}
                                                     </p>
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <span className={`px-3 py-1 text-xs font-bold rounded-full ${
-                                                    sch.status === 'Selesai' ? 'bg-green-100 text-green-700' :
-                                                    sch.status === 'Berlangsung' ? 'bg-blue-100 text-blue-700 animate-pulse' :
+                                                    sch.status === 'SUDAH' ? 'bg-green-100 text-green-700' :
                                                     'bg-slate-200 text-slate-600 dark:bg-slate-600 dark:text-slate-300'
                                                 }`}>
                                                     {sch.status}
@@ -530,10 +541,14 @@ const Feed = () => {
                             <form onSubmit={handleScheduleSubmit} className="space-y-5">
                                 <div className="grid grid-cols-2 gap-5">
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Waktu Pemberian</label>
-                                        <input type="time" required value={newSchedule.time} onChange={e => setNewSchedule({...newSchedule, time: e.target.value})} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none dark:text-white" />
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Waktu Mulai</label>
+                                        <input type="time" required value={newSchedule.timeStart} onChange={e => setNewSchedule({...newSchedule, timeStart: e.target.value})} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none dark:text-white" />
                                     </div>
                                     <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Waktu Selesai</label>
+                                        <input type="time" required value={newSchedule.timeEnd} onChange={e => setNewSchedule({...newSchedule, timeEnd: e.target.value})} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none dark:text-white" />
+                                    </div>
+                                    <div className="col-span-2">
                                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Jenis Pakan</label>
                                         <input type="text" required placeholder="Cth: Rumput Kering" value={newSchedule.feedType} onChange={e => setNewSchedule({...newSchedule, feedType: e.target.value})} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none dark:text-white" />
                                     </div>
@@ -542,32 +557,15 @@ const Feed = () => {
                                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Pilih Kandang</label>
                                     <select 
                                         required 
-                                        value={selectedZoneId} 
+                                        value={newSchedule.zoneId} 
                                         onChange={e => {
-                                            setSelectedZoneId(e.target.value);
-                                            setNewSchedule({...newSchedule, sectionId: ''}); // Reset section
+                                            setNewSchedule({...newSchedule, zoneId: e.target.value});
                                         }} 
                                         className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none dark:text-white"
                                     >
                                         <option value="">-- Pilih Kandang --</option>
                                         {zones.map(z => (
                                             <option key={z.id} value={z.id}>{z.name}</option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Pilih Section (Kandang)</label>
-                                    <select 
-                                        required 
-                                        disabled={!selectedZoneId}
-                                        value={newSchedule.sectionId} 
-                                        onChange={e => setNewSchedule({...newSchedule, sectionId: e.target.value})} 
-                                        className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none dark:text-white disabled:opacity-50"
-                                    >
-                                        <option value="">-- Pilih Kandang --</option>
-                                        {zones.find(z => z.id == selectedZoneId)?.sections?.map(s => (
-                                            <option key={s.id} value={s.id}>{s.name}</option>
                                         ))}
                                     </select>
                                 </div>
@@ -806,22 +804,27 @@ const Feed = () => {
                         <form onSubmit={handleScheduleUpdate} className="p-6 space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium mb-1">Waktu</label>
-                                    <input type="time" required value={editFormData.time} onChange={e => setEditFormData({...editFormData, time: e.target.value})} className="w-full px-4 py-2 border rounded-lg dark:bg-slate-900 dark:border-slate-700 outline-none" />
+                                    <label className="block text-sm font-medium mb-1">Waktu Mulai</label>
+                                    <input type="time" required value={editFormData.timeStart} onChange={e => setEditFormData({...editFormData, timeStart: e.target.value})} className="w-full px-4 py-2 border rounded-lg dark:bg-slate-900 dark:border-slate-700 outline-none" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">Waktu Selesai</label>
+                                    <input type="time" required value={editFormData.timeEnd} onChange={e => setEditFormData({...editFormData, timeEnd: e.target.value})} className="w-full px-4 py-2 border rounded-lg dark:bg-slate-900 dark:border-slate-700 outline-none" />
+                                </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">Jenis Pakan</label>
+                                    <input type="text" required value={editFormData.feedType} onChange={e => setEditFormData({...editFormData, feedType: e.target.value})} className="w-full px-4 py-2 border rounded-lg dark:bg-slate-900 dark:border-slate-700 outline-none" />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium mb-1">Status</label>
                                     <select value={editFormData.status} onChange={e => setEditFormData({...editFormData, status: e.target.value})} className="w-full px-4 py-2 border rounded-lg dark:bg-slate-900 dark:border-slate-700 outline-none">
-                                        <option value="TERJADWAL">TERJADWAL</option>
-                                        <option value="Berlangsung">Berlangsung</option>
-                                        <option value="Selesai">Selesai</option>
+                                        <option value="BELUM">BELUM</option>
+                                        <option value="SUDAH">SUDAH</option>
                                     </select>
                                 </div>
-                            </div>
-                            
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Jenis Pakan</label>
-                                <input type="text" required value={editFormData.feedType} onChange={e => setEditFormData({...editFormData, feedType: e.target.value})} className="w-full px-4 py-2 border rounded-lg dark:bg-slate-900 dark:border-slate-700 outline-none" />
                             </div>
 
                             <div className="grid grid-cols-1 gap-4">
@@ -829,31 +832,15 @@ const Feed = () => {
                                     <label className="block text-sm font-medium mb-1">Pilih Kandang</label>
                                     <select 
                                         required 
-                                        value={editZoneId} 
+                                        value={editFormData.zoneId} 
                                         onChange={e => {
-                                            setEditZoneId(e.target.value);
-                                            setEditFormData({...editFormData, sectionId: ''});
+                                            setEditFormData({...editFormData, zoneId: e.target.value});
                                         }} 
                                         className="w-full px-4 py-2 border rounded-lg dark:bg-slate-900 dark:border-slate-700 outline-none"
                                     >
                                         <option value="">-- Pilih Kandang --</option>
                                         {zones.map(z => (
                                             <option key={z.id} value={z.id}>{z.name}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Pilih Kandang</label>
-                                    <select 
-                                        required 
-                                        disabled={!editZoneId}
-                                        value={editFormData.sectionId} 
-                                        onChange={e => setEditFormData({...editFormData, sectionId: e.target.value})} 
-                                        className="w-full px-4 py-2 border rounded-lg dark:bg-slate-900 dark:border-slate-700 outline-none"
-                                    >
-                                        <option value="">-- Pilih Kandang --</option>
-                                        {zones.find(z => z.id == editZoneId)?.sections?.map(s => (
-                                            <option key={s.id} value={s.id}>{s.name}</option>
                                         ))}
                                     </select>
                                 </div>

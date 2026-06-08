@@ -170,14 +170,53 @@ export class FeedService {
 
     let schedules: any[] = [];
     try {
-      // 2. Ambil dari PostgreSQL jika cache kosong (Sertakan nama section & zone)
-      schedules = await this.prisma.feedingSchedule.findMany({
+      // 2. Ambil dari PostgreSQL jika cache kosong
+      const rawSchedules = await this.prisma.feedingSchedule.findMany({
         include: {
-          section: {
-            select: { name: true, zone: { select: { name: true } } }
+          zone: {
+            select: { name: true }
           }
         },
         orderBy: { time: 'asc' },
+      });
+
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+
+      const allCows = await this.prisma.livestock.findMany({
+        where: { status: { not: 'MATI' } },
+        select: {
+          id: true,
+          section: { select: { zoneId: true } },
+          feedRecords: {
+            where: { feedDate: { gte: todayStart } },
+            select: { id: true }
+          }
+        }
+      });
+
+      const cowsByZone: Record<number, any[]> = {};
+      allCows.forEach(cow => {
+        const zId = cow.section?.zoneId;
+        if (zId !== undefined) {
+          if (!cowsByZone[zId]) cowsByZone[zId] = [];
+          cowsByZone[zId].push(cow);
+        }
+      });
+
+      schedules = rawSchedules.map(schedule => {
+        const zId = schedule.zoneId;
+        const cowsInZone = cowsByZone[zId] || [];
+        
+        let isDone = false;
+        if (cowsInZone.length > 0) {
+          isDone = cowsInZone.every(cow => cow.feedRecords && cow.feedRecords.length > 0);
+        }
+        
+        return {
+          ...schedule,
+          status: isDone ? 'SUDAH' : 'BELUM'
+        };
       });
 
       // 3. Simpan ke Cache selama 1 jam (3600 detik)
@@ -193,22 +232,22 @@ export class FeedService {
   }
 
   async createSchedule(data: any, author: string = 'Admin') {
-    const sectionId = parseInt(data.sectionId || data.location);
+    const zoneId = parseInt(data.zoneId || data.location);
     
-    if (isNaN(sectionId)) {
-      throw new BadRequestException('ID Section tidak valid atau belum dipilih');
+    if (isNaN(zoneId)) {
+      throw new BadRequestException('ID Kandang tidak valid atau belum dipilih');
     }
 
     const newSchedule = await this.prisma.feedingSchedule.create({
       data: {
         time: data.time,
-        sectionId: sectionId,
+        zoneId: zoneId,
         feedType: data.feedType,
-        status: data.status || 'TERJADWAL',
+        status: data.status || 'BELUM',
       },
       include: {
-        section: {
-          select: { name: true, zone: { select: { name: true } } }
+        zone: {
+          select: { name: true }
         }
       }
     });
@@ -223,13 +262,13 @@ export class FeedService {
   async updateSchedule(id: number, data: any, author: string = 'Admin') {
     const updateData: any = { ...data };
     
-    // Jika ada perubahan lokasi/section, validasi dulu
-    if (data.sectionId || data.location) {
-      const sectionId = parseInt(data.sectionId || data.location);
-      if (isNaN(sectionId)) {
-        throw new BadRequestException('ID Section tidak valid');
+    // Jika ada perubahan lokasi/kandang, validasi dulu
+    if (data.zoneId || data.location) {
+      const zoneId = parseInt(data.zoneId || data.location);
+      if (isNaN(zoneId)) {
+        throw new BadRequestException('ID Kandang tidak valid');
       }
-      updateData.sectionId = sectionId;
+      updateData.zoneId = zoneId;
       delete updateData.location; // Hapus field lama jika ada
     }
 
@@ -237,8 +276,8 @@ export class FeedService {
       where: { id: parseInt(id as any) },
       data: updateData,
       include: {
-        section: {
-          select: { name: true, zone: { select: { name: true } } }
+        zone: {
+          select: { name: true }
         }
       }
     });

@@ -25,6 +25,7 @@ model Zone {
   windspeeds  AirCirculation[]
   envData     EnvironmentData[]
   wastes      ZoneWaste[]
+  feedingSchedules FeedingSchedule[]
   createdAt   DateTime  @default(now())
 }
 
@@ -36,7 +37,6 @@ model Section {
   
   livestock   Livestock[]
   actuator    ActuatorState?
-  feedingSchedules FeedingSchedule[]
 
   createdAt   DateTime  @default(now())
   
@@ -78,9 +78,8 @@ enum FeedStatus {
 }
 
 enum ScheduleStatus {
-  TERJADWAL
-  BERLANGSUNG
-  SELESAI
+  BELUM
+  SUDAH
 }
 
 // ==========================================
@@ -246,10 +245,10 @@ model SiloTransaction {
 model FeedingSchedule {
   id          Int            @id @default(autoincrement())
   time        String   
-  sectionId   Int
-  section     Section        @relation(fields: [sectionId], references: [id])
+  zoneId      Int            @default(1)
+  zone        Zone           @relation(fields: [zoneId], references: [id])
   feedType    String   
-  status      ScheduleStatus @default(TERJADWAL) 
+  status      ScheduleStatus @default(BELUM) 
   
   siloId      Int?
   silo        Silo?          @relation(fields: [siloId], references: [id])

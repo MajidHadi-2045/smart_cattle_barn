@@ -69,6 +69,7 @@ const Livestock = () => {
     const [newSectionName, setNewSectionName] = useState('');
     const [formSelectedZoneId, setFormSelectedZoneId] = useState(''); // Untuk form Tambah Sapi
     const [manageSelectedZoneId, setManageSelectedZoneId] = useState(null); // Untuk modal Kelola Zona
+    const [expandedZones, setExpandedZones] = useState({}); // Untuk melipat list section
     const [chartData, setChartData] = useState([]);
     const [activeChartCow, setActiveChartCow] = useState(null);
     const [showDetailModal, setShowDetailModal] = useState(false);
@@ -434,8 +435,8 @@ const Livestock = () => {
         toast.promise(
             Promise.all(promises).then(async (results) => { for (const res of results) { if (!res.ok) { const err = await res.json().catch(()=>({})); throw new Error(err.message || 'Ada yang gagal'); } } return results; }),
             {
-                loading: 'Mencatat timbang kelompok...',
-                success: () => { setBulkWeight(''); setSelectedFeedWeightCows([]); setShowBulkWeightModal(false); fetchLivestock(); return 'Berat kelompok berhasil dicatat!'; },
+                loading: 'Mencatat timbang berat...',
+                success: () => { setBulkWeight(''); setSelectedFeedWeightCows([]); setShowBulkWeightModal(false); fetchLivestock(); return 'Timbang berat berhasil dicatat!'; },
                 error: (err) => `Gagal: ${err.message || 'Error server'}`
             }
         );
@@ -452,8 +453,8 @@ const Livestock = () => {
         toast.promise(
             Promise.all(promises).then(async (results) => { for (const res of results) { if (!res.ok) { const err = await res.json().catch(()=>({})); throw new Error(err.message || 'Ada yang gagal'); } } return results; }),
             {
-                loading: 'Mencatat pakan kelompok...',
-                success: () => { setBulkFeed({ feedType: 'Hijauan', weightKg: '' }); setSelectedFeedWeightCows([]); setShowBulkFeedModal(false); fetchLivestock(); return 'Pakan kelompok berhasil dicatat!'; },
+                loading: 'Mencatat beri pakan...',
+                success: () => { setBulkFeed({ feedType: 'Hijauan', weightKg: '' }); setSelectedFeedWeightCows([]); setShowBulkFeedModal(false); fetchLivestock(); return 'Beri pakan berhasil dicatat!'; },
                 error: (err) => `Gagal: ${err.message || 'Error server'}`
             }
         );
@@ -481,17 +482,24 @@ const Livestock = () => {
 
     const handleAddSection = async (zoneId) => {
         if (!newSectionName) return;
-        toast.promise(
+        const names = newSectionName.split(',').map(n => n.trim()).filter(n => n);
+        if (names.length === 0) return;
+
+        const promises = names.map(name => 
             fetchApi(`/zones/${zoneId}/sections`, {
                 method: 'POST',
-                body: JSON.stringify({ name: newSectionName })
-            }).then(res => { if(!res.ok) throw new Error(); return res; }),
+                body: JSON.stringify({ name })
+            }).then(res => { if(!res.ok) throw new Error(); return res; })
+        );
+
+        toast.promise(
+            Promise.all(promises),
             {
-                loading: 'Menambah section...',
+                loading: `Menambah ${names.length > 1 ? names.length + ' ' : ''}section...`,
                 success: () => {
                     setNewSectionName('');
                     fetchZones();
-                    return 'Section berhasil ditambahkan!';
+                    return `${names.length} Section berhasil ditambahkan!`;
                 },
                 error: 'Gagal menambah section',
             }
@@ -773,13 +781,13 @@ const Livestock = () => {
                             onClick={() => { setSelectedFeedWeightCows([]); setShowBulkWeightModal(true); }} 
                             className="flex-1 lg:flex-none px-4 py-2.5 bg-sky-50 hover:bg-sky-100 dark:bg-sky-950/30 dark:hover:bg-sky-950/50 text-sky-700 dark:text-sky-400 border border-sky-200/60 dark:border-sky-900/50 rounded-xl font-semibold text-sm transition flex items-center justify-center gap-2"
                         >
-                            <span>⚖️ Timbang Kelompok</span>
+                            <span>⚖️ Timbang Berat</span>
                         </button>
                         <button 
                             onClick={() => { setSelectedFeedWeightCows([]); setShowBulkFeedModal(true); }} 
                             className="flex-1 lg:flex-none px-4 py-2.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:hover:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-900/50 rounded-xl font-semibold text-sm transition flex items-center justify-center gap-2"
                         >
-                            <span>🌾 Pakan Kelompok</span>
+                            <span>🌾 Beri Pakan</span>
                         </button>
                         <button 
                             onClick={() => setShowZoneModal(true)} 
@@ -1168,12 +1176,24 @@ const Livestock = () => {
                                         
                                         {/* Sections List */}
                                         <div className="ml-4 space-y-2 mb-3 border-l-2 border-slate-200 dark:border-slate-600 pl-4">
-                                            {z.sections.map(s => (
+                                            {(expandedZones[z.id] ? z.sections : z.sections.slice(0, 3)).map(s => (
                                                 <div key={s.id} className="flex justify-between items-center text-sm">
                                                     <span className="text-slate-600 dark:text-slate-300 font-medium">📍 {s.name}</span>
                                                     <button onClick={() => handleDeleteSection(s.id)} className="text-slate-400 hover:text-red-500 font-bold">×</button>
                                                 </div>
                                             ))}
+
+                                            {z.sections.length > 3 && (
+                                                <div className="pt-1">
+                                                    <button 
+                                                        onClick={() => setExpandedZones(prev => ({ ...prev, [z.id]: !prev[z.id] }))}
+                                                        className="text-xs text-primary-600 font-bold hover:underline"
+                                                    >
+                                                        {expandedZones[z.id] ? 'Sembunyikan' : `Lihat ${z.sections.length - 3} lebih banyak`}
+                                                    </button>
+                                                </div>
+                                            )}
+
                                             {z.sections.length === 0 && <p className="text-xs text-slate-400 italic">Belum ada section</p>}
                                         </div>
 
@@ -1181,7 +1201,7 @@ const Livestock = () => {
                                         <div className="flex gap-2">
                                             <input 
                                                 type="text" 
-                                                placeholder="Nama Section Baru..." 
+                                                placeholder="Cth: Blok A, Blok B (Pisahkan koma)" 
                                                 value={manageSelectedZoneId === z.id ? newSectionName : ''}
                                                 onFocus={() => setManageSelectedZoneId(z.id)}
                                                 onChange={(e) => setNewSectionName(e.target.value)}
@@ -1735,7 +1755,7 @@ const Livestock = () => {
                         <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-sky-50 dark:bg-sky-950/15">
                             <div className="flex items-center gap-2.5">
                                 <span className="text-lg">⚖️</span>
-                                <h3 className="font-bold text-lg text-sky-900 dark:text-sky-100">Timbang Berat Kelompok</h3>
+                                <h3 className="font-bold text-lg text-sky-900 dark:text-sky-100">Timbang Berat</h3>
                             </div>
                             <button onClick={() => { setShowBulkWeightModal(false); setWeightZoneFilter('ALL'); }} className="text-slate-400 hover:text-slate-650 text-2xl font-bold">×</button>
                         </div>
@@ -1813,7 +1833,7 @@ const Livestock = () => {
                                     <h4 className="font-bold text-sky-900 dark:text-sky-200 text-xs flex items-center gap-1">⚖️ Berat Badan Sapi (Kg)</h4>
                                     <input type="number" step="0.1" required placeholder="Contoh: 350.5" value={bulkWeight} onChange={e => setBulkWeight(e.target.value)} className="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-800 rounded-lg text-xs" />
                                 </div>
-                                <button type="submit" className="w-full bg-sky-600 hover:bg-sky-700 text-white py-2.5 rounded-xl font-bold text-xs shadow-md transition">Simpan Timbang Kelompok</button>
+                                <button type="submit" className="w-full bg-sky-600 hover:bg-sky-700 text-white py-2.5 rounded-xl font-bold text-xs shadow-md transition">Simpan Timbang Berat</button>
                             </form>
                         </div>
                     </div>
@@ -1827,7 +1847,7 @@ const Livestock = () => {
                         <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-emerald-50 dark:bg-emerald-950/15">
                             <div className="flex items-center gap-2.5">
                                 <span className="text-lg">🌾</span>
-                                <h3 className="font-bold text-lg text-emerald-900 dark:text-emerald-100">Pakan Kelompok</h3>
+                                <h3 className="font-bold text-lg text-emerald-900 dark:text-emerald-100">Beri Pakan</h3>
                             </div>
                             <button onClick={() => { setShowBulkFeedModal(false); setFeedZoneFilter('ALL'); }} className="text-slate-400 hover:text-slate-650 text-2xl font-bold">×</button>
                         </div>
@@ -1956,7 +1976,7 @@ const Livestock = () => {
                                                 <div className="p-3.5 bg-gradient-to-br from-indigo-50 to-emerald-50 dark:from-slate-900/60 dark:to-slate-900/40 rounded-xl border border-indigo-100/70 dark:border-slate-700/80 text-xs space-y-2">
                                                     <div className="flex items-center justify-between pb-1 border-b border-indigo-100 dark:border-slate-700">
                                                         <span className="font-bold text-indigo-900 dark:text-indigo-400 flex items-center gap-1.5 uppercase tracking-wider text-[10px]">
-                                                            💡 Rekomendasi Nutrisi Kelompok
+                                                            💡 Rekomendasi Nutrisi
                                                         </span>
                                                         <span className="bg-indigo-100/80 dark:bg-indigo-950/40 px-2 py-0.5 text-[9px] font-bold text-indigo-700 dark:text-indigo-400 rounded-md">
                                                             {selectedFeedWeightCows.length} Sapi
@@ -1965,7 +1985,7 @@ const Livestock = () => {
 
                                                     <div className="grid grid-cols-2 gap-2 text-[11px] pt-1">
                                                         <div>
-                                                            <span className="text-slate-500 block">Total BK Kelompok:</span>
+                                                            <span className="text-slate-500 block">Total BK Terpilih:</span>
                                                             <span className="font-bold text-slate-800 dark:text-slate-200">{recs.totalBk.toFixed(2)} kg BK/hari</span>
                                                         </div>
                                                         <div>
@@ -1980,11 +2000,11 @@ const Livestock = () => {
                                                         {feedType === 'Konsentrat+hijauan' ? (
                                                             <div className="space-y-1.5 text-[11px]">
                                                                 <div className="flex justify-between items-center">
-                                                                    <span className="text-slate-500">Hijauan Harian (Kelompok):</span>
+                                                                    <span className="text-slate-500">Hijauan Harian (Total):</span>
                                                                     <span className="font-bold text-slate-800 dark:text-slate-200">{recs.totalForageAsFed.toFixed(2)} kg</span>
                                                                 </div>
                                                                 <div className="flex justify-between items-center">
-                                                                    <span className="text-slate-500">Konsentrat Harian (Kelompok):</span>
+                                                                    <span className="text-slate-500">Konsentrat Harian (Total):</span>
                                                                     <span className="font-bold text-slate-800 dark:text-slate-200">{recs.totalConcentrateAsFed.toFixed(2)} kg</span>
                                                                 </div>
                                                                 <div className="pt-1.5 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center text-[10px]">
@@ -1997,7 +2017,7 @@ const Livestock = () => {
                                                         ) : (
                                                             <div className="space-y-1 text-[11px]">
                                                                 <div className="flex justify-between">
-                                                                    <span className="text-slate-500">Total Harian (Kelompok):</span>
+                                                                    <span className="text-slate-500">Total Harian (Total Sapi):</span>
                                                                     <span className="font-bold text-slate-800 dark:text-slate-200">{selectedRecTotal.toFixed(2)} kg</span>
                                                                 </div>
                                                                 <div className="flex justify-between">
@@ -2059,7 +2079,7 @@ const Livestock = () => {
                                     })()}
                                 </div>
 
-                                <button type="submit" className="w-full mt-4 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-lg font-bold shadow-lg transition">Simpan Pakan Kelompok</button>
+                                <button type="submit" className="w-full mt-4 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-lg font-bold shadow-lg transition">Simpan Beri Pakan</button>
                             </form>
                         </div>
                     </div>

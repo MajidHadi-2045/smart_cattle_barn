@@ -521,6 +521,7 @@ export class LivestockService {
       data: { currentWeight: weight }
     });
 
+    await this.clearLivestockCache();
     await this.activityService.log(author, 'TAMBAH', 'TERNAK', `Mencatat berat sapi ${cattleId}: ${weight} kg pada ${weighDate.toISOString().split('T')[0]}`);
     return record;
   }
@@ -552,6 +553,11 @@ export class LivestockService {
       data: { cattleId, feedType, weightKg, bkPercent, asFedWeight }
     });
 
+    try {
+      await this.redis.del('feed:schedules');
+    } catch (err) {}
+
+    await this.clearLivestockCache();
     await this.activityService.log(author, 'TAMBAH', 'TERNAK', `Mencatat pakan sapi ${cattleId}: ${feedType} ${weightKg}kg`);
     return record;
   }
@@ -640,8 +646,8 @@ export class LivestockService {
     };
   }
 
-  // 4. Data untuk Grafik: BK vs Bobot vs Limbah vs THI
-  async getPerformanceChartData(period: string = 'minggu') {
+  // 4. Data untuk Grafik: DMI/BK vs ADG
+  async getPerformanceChartData(period: string = 'minggu', cowId?: string) {
     let days = 7;
     if (period === 'hari') days = 1;
     else if (period === 'bulan') days = 30;
@@ -650,90 +656,110 @@ export class LivestockService {
     const startDate = new Date();
     startDate.setDate(endDate.getDate() - days + 1); // +1 so if days=1 it's just today
 
-    let wastes: any[] = [];
     let feeds: any[] = [];
-    let envData: any[] = [];
-    let isDummy = true;
+    let weightRecords: any[] = [];
+    let initialWeight = 0;
+    let cowsCount = 1;
+    let isAllCows = !cowId || cowId === 'ALL' || cowId.trim() === '';
 
     try {
-      // Ambil Limbah per hari
-      wastes = await (this.prisma.livestockWaste.groupBy as any)({
-        by: ['date'],
-        where: { date: { gte: startDate } },
-        _sum: { fecesKg: true, urineL: true }
-      });
-
-      // Ambil Pakan per hari (Asumsi rata-rata BK% * Weight)
+      const feedWhere: any = { feedDate: { gte: startDate } };
+      const weightWhere: any = { weighDate: { gte: startDate } };
+      
+      if (!isAllCows && cowId) {
+         feedWhere.cattleId = cowId.trim();
+         weightWhere.cattleId = cowId.trim();
+         
+         const cow = await this.prisma.livestock.findUnique({ where: { cattleId: cowId.trim() }});
+         initialWeight = cow?.initialWeight || 0;
+      } else {
+         const allCows = await this.prisma.livestock.findMany({ select: { initialWeight: true }});
+         cowsCount = allCows.length > 0 ? allCows.length : 1;
+         initialWeight = allCows.reduce((acc, c) => acc + (c.initialWeight || 0), 0) / cowsCount;
+      }
+      
       feeds = await this.prisma.livestockFeedRecord.findMany({
-        where: { feedDate: { gte: startDate } }
+        where: feedWhere,
+        orderBy: { feedDate: 'asc' }
+      });
+      
+      weightRecords = await this.prisma.livestockWeightRecord.findMany({
+        where: weightWhere,
+        orderBy: { weighDate: 'asc' }
       });
 
-      // Ambil THI (Rata-rata per hari)
-      envData = await this.prisma.environmentData.findMany({
-        where: { timestamp: { gte: startDate } }
-      });
-
-      // Kita hanya cek wastes dan feeds. Karena envData terus masuk dari sensor/simulator,
-      // maka kita abaikan envData sebagai penentu apakah data "asli" kinerja ternak sudah ada.
-      const hasRealData = wastes.length > 0 || feeds.length > 0;
-      isDummy = !hasRealData;
     } catch (err) {
-      console.warn('Error fetching chart data from database, falling back to simulation:', err.message);
-      isDummy = true;
+      console.warn('Error fetching chart data from database:', err.message);
     }
 
-    // Proses data harian
     const chartData: any[] = [];
+    let totalDmi = 0;
+    let totalWeightGain = 0;
+
+    let periodStartWeight = initialWeight;
+    let periodEndWeight = initialWeight;
+
+    if (!isAllCows) {
+       // Jika hanya ada 1 record timbangan di periode ini, gunakan initialWeight sebagai berat awal
+       const firstWeight = weightRecords.length > 1 ? weightRecords[0].weight : initialWeight;
+       const lastWeight = weightRecords.length > 0 ? weightRecords[weightRecords.length - 1].weight : initialWeight;
+       periodStartWeight = firstWeight;
+       periodEndWeight = lastWeight;
+       totalWeightGain = periodEndWeight - periodStartWeight;
+    }
+
     for (let i = 0; i < days; i++) {
       const currentDate = new Date(startDate);
       currentDate.setDate(startDate.getDate() + i);
       const dateStr = currentDate.toISOString().split('T')[0];
 
-      let totalWaste = 0;
-      let totalBk = 0;
-      let avgThi = 0;
-      let simulatedWeightGain = 0;
+      let dailyBk = 0;
+      let dailyAdg = 0;
 
-      if (!isDummy) {
-        const dailyWastes = wastes.find(w => new Date(w.date).toISOString().split('T')[0] === dateStr);
-        totalWaste = (dailyWastes?._sum.fecesKg || 0) + (dailyWastes?._sum.urineL || 0);
-
-        const dailyFeeds = feeds.filter(f => new Date(f.feedDate).toISOString().split('T')[0] === dateStr);
-        totalBk = dailyFeeds.reduce((acc, f) => acc + (f.weightKg * ((f.bkPercent || 100) / 100)), 0);
-
-        const dailyEnv = envData.filter(e => new Date(e.timestamp).toISOString().split('T')[0] === dateStr && e.thi !== null);
-        avgThi = dailyEnv.length ? dailyEnv.reduce((acc, e) => acc + (e.thi || 0), 0) / dailyEnv.length : 0;
-
-        // Mockup pertambahan bobot jika belum ada algoritma pasti, tapi kita hubungkan dengan BK dan THI
-        // BK tinggi -> ADG naik. THI tinggi (Stres) -> ADG turun
-        if (totalBk > 0) {
-          simulatedWeightGain = (totalBk * 0.15) - (avgThi > 72 ? (avgThi - 72) * 0.05 : 0);
-          if (simulatedWeightGain < 0) simulatedWeightGain = 0;
-        }
-      } else {
-        // Generate Dummy Data for this day
-        // Waste: ~30-40 kg/L total
-        // BK: ~15-20 kg
-        // THI: ~68-75
-        // Weight Gain: ~1.0-1.5 kg
-        totalWaste = 30 + Math.random() * 10;
-        totalBk = 15 + Math.random() * 5;
-        avgThi = 68 + Math.random() * 7;
-        simulatedWeightGain = 1.0 + Math.random() * 0.5;
+      const dailyFeeds = feeds.filter(f => new Date(f.feedDate).toISOString().split('T')[0] === dateStr);
+      dailyBk = dailyFeeds.reduce((acc, f) => acc + (f.weightKg * ((f.bkPercent || 100) / 100)), 0);
+      
+      if (isAllCows) {
+          dailyBk = dailyBk / cowsCount;
       }
+      
+      if (dailyBk > 0) {
+          dailyAdg = dailyBk * 0.15; // Estimasi jika tidak ada timbangan harian aktual
+      }
+      
+      totalDmi += dailyBk;
 
       chartData.push({
         date: dateStr,
-        waste: parseFloat(totalWaste.toFixed(2)),
-        bk: parseFloat(totalBk.toFixed(2)),
-        thi: parseFloat(avgThi.toFixed(2)),
-        weightGain: parseFloat(simulatedWeightGain.toFixed(2))
+        bk: parseFloat(dailyBk.toFixed(2)),
+        adg: parseFloat(dailyAdg.toFixed(2))
       });
+    }
+    
+    let adgTotal = days > 0 ? totalWeightGain / days : 0;
+    
+    // Jika melihat semua sapi, atau tidak ada record weight individu, gunakan estimasi DMI
+    if (isAllCows || (weightRecords.length === 0 && !isAllCows)) {
+        adgTotal = days > 0 ? (totalDmi * 0.15 / days) : 0; 
+        periodEndWeight = periodStartWeight + (adgTotal * days);
+        totalWeightGain = periodEndWeight - periodStartWeight;
+    }
+
+    let fcr = 0;
+    if (totalWeightGain > 0) {
+        fcr = totalDmi / totalWeightGain;
     }
 
     return {
       data: chartData,
-      isDummy
+      isDummy: false,
+      summary: {
+         totalBk: parseFloat(totalDmi.toFixed(2)),
+         startWeight: parseFloat(periodStartWeight.toFixed(2)),
+         endWeight: parseFloat(periodEndWeight.toFixed(2)),
+         adg: parseFloat(adgTotal.toFixed(2)),
+         fcr: parseFloat(fcr.toFixed(2))
+      }
     };
   }
 
@@ -837,12 +863,17 @@ export class LivestockService {
       }
     });
 
+    await this.clearLivestockCache();
     await this.activityService.log(author, 'EDIT', 'TERNAK', `Mengubah pakan sapi ${updated.cattleId}: ${old.weightKg}kg -> ${updated.weightKg}kg`);
     return updated;
   }
 
   async deleteFeedRecord(id: number, author: string = 'Admin') {
     const deleted = await this.prisma.livestockFeedRecord.delete({ where: { id } });
+    try {
+      await this.redis.del('feed:schedules');
+    } catch (err) {}
+    await this.clearLivestockCache();
     await this.activityService.log(author, 'HAPUS', 'TERNAK', `Menghapus pakan sapi ${deleted.cattleId}: ${deleted.feedType} ${deleted.weightKg}kg`);
     return { success: true };
   }
@@ -865,6 +896,7 @@ export class LivestockService {
       data: { currentWeight: updated.weight }
     });
 
+    await this.clearLivestockCache();
     await this.activityService.log(author, 'EDIT', 'TERNAK', `Mengubah timbangan sapi ${updated.cattleId}: ${old.weight}kg -> ${updated.weight}kg`);
     return updated;
   }
@@ -887,6 +919,7 @@ export class LivestockService {
       });
     }
 
+    await this.clearLivestockCache();
     await this.activityService.log(author, 'HAPUS', 'TERNAK', `Menghapus timbangan sapi ${deleted.cattleId}: ${deleted.weight}kg`);
     return { success: true };
   }

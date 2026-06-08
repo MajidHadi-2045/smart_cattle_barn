@@ -25,6 +25,9 @@ const DashboardHome = () => {
     const [wasteStats, setWasteStats] = useState({ fecesKg: 0, urineL: 0 });
     const [performanceData, setPerformanceData] = useState([]);
     const [performanceRange, setPerformanceRange] = useState('minggu');
+    const [performanceCowId, setPerformanceCowId] = useState('');
+    const [cows, setCows] = useState([]);
+    const [performanceSummary, setPerformanceSummary] = useState({ totalBk: 0, startWeight: 0, endWeight: 0, adg: 0, fcr: 0 });
     const [isDummyChart, setIsDummyChart] = useState(false);
     const [lastSensorUpdate, setLastSensorUpdate] = useState(0); // Set to 0 initially so it shows offline until data arrives
     const [currentTime, setCurrentTime] = useState(Date.now());
@@ -190,12 +193,15 @@ const DashboardHome = () => {
 
                 const fetchPerformance = async () => {
                     try {
-                        const res = await fetchApi(`/livestock/performance-chart?period=${performanceRange}`);
+                        const res = await fetchApi(`/livestock/performance-chart?period=${performanceRange}&cowId=${performanceCowId}`);
                         if (res.ok) {
                             const result = await res.json();
                             if (result.data) {
                                 setPerformanceData(result.data);
                                 setIsDummyChart(result.isDummy);
+                                if (result.summary) {
+                                    setPerformanceSummary(result.summary);
+                                }
                             } else {
                                 setPerformanceData(result);
                                 setIsDummyChart(false);
@@ -211,8 +217,18 @@ const DashboardHome = () => {
                     }
                 };
 
+                const fetchCows = async () => {
+                    try {
+                        const res = await fetchApi('/livestock');
+                        if (res.ok) {
+                            const data = await res.json();
+                            setCows(data);
+                        }
+                    } catch (e) { console.error("Cows fetch error", e); }
+                };
+
                 // Run parallel but independent
-                await Promise.all([fetchSummary(), fetchLiveEnv(), fetchLiveWind(), fetchWaste(), fetchPerformance(), fetchChecklist()]);
+                await Promise.all([fetchSummary(), fetchLiveEnv(), fetchLiveWind(), fetchWaste(), fetchPerformance(), fetchChecklist(), fetchCows()]);
 
                 // 3. Fetch heavy trend data separately
                 try {
@@ -336,7 +352,7 @@ const DashboardHome = () => {
             socket.off('websocket:environment', onEnvironmentData);
             socket.off('websocket:windspeed', onWindspeedData);
         };
-    }, [selectedZoneId, selectedSectionId, timeRange, wasteFilter, performanceRange]);
+    }, [selectedZoneId, selectedSectionId, timeRange, wasteFilter, performanceRange, performanceCowId]);
 
     const handleSaveChecklistConfig = async () => {
         setIsSavingConfig(true);
@@ -1055,15 +1071,32 @@ const DashboardHome = () => {
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                         <div>
                             <h4 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                                Korelasi Performa & Lingkungan
+                                DMI (Dry Matter Intake)/BK VS ADG (Average Daily Gain)
                                 {isDummyChart && <span className="bg-amber-100 text-amber-700 text-[10px] px-2 py-0.5 rounded-full border border-amber-200 uppercase font-black tracking-wider">Data Dummy</span>}
                             </h4>
-                            <p className="text-sm text-slate-500">Bahan Kering (BK) Konsumsi vs Pertambahan Bobot vs Limbah vs Tingkat Stres (THI)</p>
+                            <p className="text-sm text-slate-500">Bahan Kering (BK) Konsumsi vs Pertambahan Bobot</p>
                         </div>
-                        <div className="flex bg-slate-100 dark:bg-slate-900 p-1 rounded-lg border border-slate-200 dark:border-slate-700">
-                            <button onClick={() => setPerformanceRange('hari')} className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${performanceRange === 'hari' ? 'bg-white dark:bg-slate-800 text-amber-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>Hari Ini</button>
-                            <button onClick={() => setPerformanceRange('minggu')} className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${performanceRange === 'minggu' ? 'bg-white dark:bg-slate-800 text-amber-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>Minggu Ini</button>
-                            <button onClick={() => setPerformanceRange('bulan')} className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${performanceRange === 'bulan' ? 'bg-white dark:bg-slate-800 text-amber-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>Bulan Ini</button>
+                        <div className="flex flex-col sm:flex-row gap-3">
+                            <div className="relative sm:min-w-[200px]">
+                                <input 
+                                    type="text"
+                                    list="cow-ids"
+                                    placeholder="Ketik ID Sapi (Misal: C-101)..."
+                                    value={performanceCowId}
+                                    onChange={(e) => setPerformanceCowId(e.target.value)}
+                                    className="w-full px-3 py-1.5 text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                                />
+                                <datalist id="cow-ids">
+                                    {cows.map(c => (
+                                        <option key={c.id} value={c.cattleId} />
+                                    ))}
+                                </datalist>
+                            </div>
+                            <div className="flex bg-slate-100 dark:bg-slate-900 p-1 rounded-lg border border-slate-200 dark:border-slate-700">
+                                <button onClick={() => setPerformanceRange('hari')} className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${performanceRange === 'hari' ? 'bg-white dark:bg-slate-800 text-amber-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>Hari Ini</button>
+                                <button onClick={() => setPerformanceRange('minggu')} className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${performanceRange === 'minggu' ? 'bg-white dark:bg-slate-800 text-amber-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>Minggu Ini</button>
+                                <button onClick={() => setPerformanceRange('bulan')} className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${performanceRange === 'bulan' ? 'bg-white dark:bg-slate-800 text-amber-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>Bulan Ini</button>
+                            </div>
                         </div>
                     </div>
                     
@@ -1074,19 +1107,14 @@ const DashboardHome = () => {
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                                     <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 11}} />
                                     
-                                    {/* Y-Axis for Weight & BK & Waste */}
+                                    {/* Y-Axis for Weight & BK */}
                                     <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 11}} />
-                                    {/* Y-Axis for THI */}
-                                    <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{fill: '#ef4444', fontSize: 11}} />
 
                                     <Tooltip contentStyle={{backgroundColor: '#fff', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
                                     <Legend wrapperStyle={{ paddingTop: '20px' }} />
 
-                                    <Line yAxisId="left" type="monotone" dataKey="bk" name="Bahan Kering (kg)" stroke="#8b5cf6" strokeWidth={3} dot={{r:4}} />
-                                    <Line yAxisId="left" type="monotone" dataKey="weightGain" name="Pertambahan Bobot (kg)" stroke="#10b981" strokeWidth={3} dot={{r:4}} />
-                                    <Line yAxisId="left" type="monotone" dataKey="waste" name="Limbah (kg/L)" stroke="#f59e0b" strokeWidth={3} dot={{r:4}} />
-                                    <Line yAxisId="right" type="monotone" dataKey="thi" name="Tingkat Stres (THI)" stroke="#ef4444" strokeWidth={3} strokeDasharray="5 5" dot={{r:4}} />
-                                    
+                                    <Line yAxisId="left" type="monotone" dataKey="bk" name="DMI / Bahan Kering (kg)" stroke="#8b5cf6" strokeWidth={3} dot={{r:4}} />
+                                    <Line yAxisId="left" type="monotone" dataKey="adg" name="ADG / Pertambahan Bobot (kg)" stroke="#10b981" strokeWidth={3} dot={{r:4}} />
                                 </LineChart>
                             </ResponsiveContainer>
                         ) : (
@@ -1094,6 +1122,30 @@ const DashboardHome = () => {
                                 Belum ada data korelasi performa yang memadai.
                             </div>
                         )}
+                    </div>
+                    
+                    {/* Ringkasan Performa */}
+                    <div className="mt-6 grid grid-cols-2 md:grid-cols-5 gap-3">
+                        <div className="bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-100 dark:border-slate-800 text-center">
+                            <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1">Total DMI (BK)</p>
+                            <p className="text-xl font-black text-slate-700 dark:text-slate-200">{performanceSummary?.totalBk || 0} <span className="text-xs font-medium text-slate-400">kg</span></p>
+                        </div>
+                        <div className="bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-100 dark:border-slate-800 text-center">
+                            <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1">Bobot Awal</p>
+                            <p className="text-xl font-black text-slate-700 dark:text-slate-200">{performanceSummary?.startWeight || 0} <span className="text-xs font-medium text-slate-400">kg</span></p>
+                        </div>
+                        <div className="bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-100 dark:border-slate-800 text-center">
+                            <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1">Bobot Akhir</p>
+                            <p className="text-xl font-black text-slate-700 dark:text-slate-200">{performanceSummary?.endWeight || 0} <span className="text-xs font-medium text-slate-400">kg</span></p>
+                        </div>
+                        <div className="bg-emerald-50 dark:bg-emerald-900/10 p-4 rounded-xl border border-emerald-100 dark:border-emerald-900/30 text-center">
+                            <p className="text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-500 tracking-wider mb-1">Avg Daily Gain (ADG)</p>
+                            <p className="text-xl font-black text-emerald-700 dark:text-emerald-400">{performanceSummary?.adg || 0} <span className="text-xs font-medium text-emerald-500">kg/hari</span></p>
+                        </div>
+                        <div className="bg-purple-50 dark:bg-purple-900/10 p-4 rounded-xl border border-purple-100 dark:border-purple-900/30 text-center">
+                            <p className="text-[10px] uppercase font-bold text-purple-600 dark:text-purple-500 tracking-wider mb-1">Feed Conv Ratio (FCR)</p>
+                            <p className="text-xl font-black text-purple-700 dark:text-purple-400">{performanceSummary?.fcr || 0}</p>
+                        </div>
                     </div>
                 </div>
             </div>
