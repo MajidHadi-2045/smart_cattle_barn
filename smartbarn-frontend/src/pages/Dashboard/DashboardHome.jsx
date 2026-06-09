@@ -133,8 +133,9 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                     try {
                         const res = await fetchApi(`/environment/live-wind/${selectedZoneId}`);
                         if (res.ok) {
-                            const liveWindData = await res.json();
-                            if (liveWindData) {
+                            const text = await res.text();
+                            if (text) {
+                                const liveWindData = JSON.parse(text);
                                 setCurrentWindspeed(parseFloat(liveWindData.windspeed));
                             } else {
                                 setCurrentWindspeed(null);
@@ -143,7 +144,10 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                             setCurrentWindspeed(null);
                         }
                     } catch (e) {
-                        console.error("Live wind fetch error", e);
+                        // Jangan print jika hanya error JSON parsing (artinya data belum tersedia)
+                        if (e.name !== 'SyntaxError') {
+                            console.error("Live wind fetch error", e);
+                        }
                         setCurrentWindspeed(null);
                     }
                 };
@@ -1127,12 +1131,10 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                                         const colorBk = colors[(idx * 2) % colors.length];
                                         const colorAdg = colors[(idx * 2 + 1) % colors.length];
                                         const isAll = cowId === 'ALL';
-                                        return (
-                                            <React.Fragment key={cowId}>
-                                                <Line yAxisId="left" type="monotone" dataKey={isAll ? 'bk' : `${cowId}_bk`} name={`DMI BK (kg) ${!isAll ? cowId : ''}`} stroke={colorBk} strokeWidth={3} dot={{r:4}} />
-                                                <Line yAxisId="left" type="monotone" dataKey={isAll ? 'adg' : `${cowId}_adg`} name={`ADG (kg) ${!isAll ? cowId : ''}`} stroke={colorAdg} strokeWidth={3} dot={{r:4}} />
-                                            </React.Fragment>
-                                        );
+                                        return [
+                                            <Line key={`${cowId}_bk`} yAxisId="left" type="monotone" dataKey={isAll ? 'bk' : `${cowId}_bk`} name={`DMI BK (kg) ${!isAll ? cowId : ''}`} stroke={colorBk} strokeWidth={3} dot={{r:4}} />,
+                                            <Line key={`${cowId}_adg`} yAxisId="left" type="monotone" dataKey={isAll ? 'adg' : `${cowId}_adg`} name={`ADG (kg) ${!isAll ? cowId : ''}`} stroke={colorAdg} strokeWidth={3} dot={{r:4}} />
+                                        ];
                                     })}
                                 </LineChart>
                             </ResponsiveContainer>
