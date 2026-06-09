@@ -71,7 +71,7 @@ export class LivestockController {
   // ==========================================
   @Post()
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles('SUPER_ADMIN', 'STAFF')
+  @Roles('STAFF')
   create(@Body() data: any, @Req() req: any) {
     if (data.birthDate) {
       data.birthDate = new Date(data.birthDate);
@@ -95,7 +95,7 @@ export class LivestockController {
 
   @Post('waste/settings')
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles('SUPER_ADMIN', 'STAFF')
+  @Roles('STAFF')
   updateSettings(@Body() data: { fecesKg: number, urineL: number }, @Req() req: any) {
     const author = req.user?.name ? `${req.user.name} (${req.user.role})` : req.user?.email || 'Admin';
     return this.livestockService.updateSettings(data.fecesKg, data.urineL, author);
@@ -108,7 +108,7 @@ export class LivestockController {
 
   @Post('waste')
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles('SUPER_ADMIN', 'STAFF')
+  @Roles('STAFF')
   recordWaste(@Body() data: { cattleIds: string[], fecesKg: number, urineL: number }, @Req() req: any) {
     const author = req.user?.name ? `${req.user.name} (${req.user.role})` : req.user?.email || 'Admin';
     if (!data.cattleIds || !Array.isArray(data.cattleIds)) {
@@ -119,7 +119,7 @@ export class LivestockController {
 
   @Post('waste/zone')
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles('SUPER_ADMIN', 'STAFF')
+  @Roles('STAFF')
   recordZoneWaste(@Body() data: { zoneId: number, fecesKg: number, urineL: number }, @Req() req: any) {
     const author = req.user?.name ? `${req.user.name} (${req.user.role})` : req.user?.email || 'Admin';
     return this.livestockService.recordZoneWaste(+data.zoneId, data.fecesKg, data.urineL, author);
@@ -141,7 +141,7 @@ export class LivestockController {
 
   @Post('weight')
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles('SUPER_ADMIN', 'STAFF')
+  @Roles('STAFF')
   recordWeight(@Body() data: { cattleId: string, weight: number, date?: string }, @Req() req: any) {
     const author = req.user?.name ? `${req.user.name} (${req.user.role})` : req.user?.email || 'Admin';
     return this.livestockService.recordWeight(data.cattleId, data.weight, author, data.date);
@@ -149,7 +149,7 @@ export class LivestockController {
 
   @Post('feed')
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles('SUPER_ADMIN', 'STAFF')
+  @Roles('STAFF')
   recordFeed(@Body() data: { cattleId: string, feedType: string, weightKg: number, bkPercent: number }, @Req() req: any) {
     const author = req.user?.name ? `${req.user.name} (${req.user.role})` : req.user?.email || 'Admin';
     return this.livestockService.recordFeed(data.cattleId, data.feedType, data.weightKg, data.bkPercent, author);
@@ -170,7 +170,7 @@ export class LivestockController {
 
   @Patch('feed/:id')
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles('SUPER_ADMIN', 'STAFF')
+  @Roles('STAFF')
   updateFeed(@Param('id') id: string, @Body() data: any, @Req() req: any) {
     const author = req.user?.name ? `${req.user.name} (${req.user.role})` : req.user?.email || 'Admin';
     return this.livestockService.updateFeedRecord(+id, data, author);
@@ -178,7 +178,7 @@ export class LivestockController {
 
   @Delete('feed/:id')
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles('SUPER_ADMIN', 'STAFF')
+  @Roles('STAFF')
   deleteFeed(@Param('id') id: string, @Req() req: any) {
     const author = req.user?.name ? `${req.user.name} (${req.user.role})` : req.user?.email || 'Admin';
     return this.livestockService.deleteFeedRecord(+id, author);
@@ -186,7 +186,7 @@ export class LivestockController {
 
   @Patch('weight/:id')
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles('SUPER_ADMIN', 'STAFF')
+  @Roles('STAFF')
   updateWeight(@Param('id') id: string, @Body() data: any, @Req() req: any) {
     const author = req.user?.name ? `${req.user.name} (${req.user.role})` : req.user?.email || 'Admin';
     return this.livestockService.updateWeightRecord(+id, data, author);
@@ -194,7 +194,7 @@ export class LivestockController {
 
   @Delete('weight/:id')
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles('SUPER_ADMIN', 'STAFF')
+  @Roles('STAFF')
   deleteWeight(@Param('id') id: string, @Req() req: any) {
     const author = req.user?.name ? `${req.user.name} (${req.user.role})` : req.user?.email || 'Admin';
     return this.livestockService.deleteWeightRecord(+id, author);
@@ -202,7 +202,7 @@ export class LivestockController {
 
   @Patch('waste/:id')
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles('SUPER_ADMIN', 'STAFF')
+  @Roles('STAFF')
   updateWaste(@Param('id') id: string, @Body() data: any, @Req() req: any) {
     const author = req.user?.name ? `${req.user.name} (${req.user.role})` : req.user?.email || 'Admin';
     return this.livestockService.updateWasteRecord(+id, data, author);
@@ -210,7 +210,7 @@ export class LivestockController {
 
   @Delete('waste/:id')
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles('SUPER_ADMIN', 'STAFF')
+  @Roles('STAFF')
   deleteWaste(@Param('id') id: string, @Req() req: any) {
     const author = req.user?.name ? `${req.user.name} (${req.user.role})` : req.user?.email || 'Admin';
     return this.livestockService.deleteWasteRecord(+id, author);
@@ -218,7 +218,7 @@ export class LivestockController {
 
   @Patch('waste/zone/:id')
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles('SUPER_ADMIN', 'STAFF')
+  @Roles('STAFF')
   updateZoneWaste(@Param('id') id: string, @Body() data: any, @Req() req: any) {
     const author = req.user?.name ? `${req.user.name} (${req.user.role})` : req.user?.email || 'Admin';
     return this.livestockService.updateZoneWasteRecord(+id, data, author);
@@ -226,7 +226,7 @@ export class LivestockController {
 
   @Delete('waste/zone/:id')
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles('SUPER_ADMIN', 'STAFF')
+  @Roles('STAFF')
   deleteZoneWaste(@Param('id') id: string, @Req() req: any) {
     const author = req.user?.name ? `${req.user.name} (${req.user.role})` : req.user?.email || 'Admin';
     return this.livestockService.deleteZoneWasteRecord(+id, author);
@@ -242,7 +242,7 @@ export class LivestockController {
 
   @Patch(':id')
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles('SUPER_ADMIN', 'STAFF')
+  @Roles('STAFF')
   update(@Param('id') id: string, @Body() data: any, @Req() req: any) {
     const author = req.user?.name ? `${req.user.name} (${req.user.role})` : req.user?.email || 'Admin';
     return this.livestockService.update(+id, data, author);
@@ -250,7 +250,7 @@ export class LivestockController {
 
   @Delete(':cattleId')
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles('SUPER_ADMIN', 'STAFF')
+  @Roles('STAFF')
   remove(@Param('cattleId') cattleId: string, @Req() req: any) {
     const author = req.user?.name ? `${req.user.name} (${req.user.role})` : req.user?.email || 'Admin';
     return this.livestockService.removeByCattleId(cattleId, author);

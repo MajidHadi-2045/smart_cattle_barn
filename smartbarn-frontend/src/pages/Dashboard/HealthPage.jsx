@@ -245,7 +245,7 @@ const HealthPage = () => {
                 <option value="KRITIS">Kritis</option>
                 <option value="MATI">Mati</option>
             </select>
-            {userRole !== 'STAFF' && (
+            {userRole === 'VETERINER' && (
                 <button 
                     onClick={() => {
                         setFormData({ id: null, cattleId: '', diagnosis: '', treatment: '', vet: '', notes: '', status: 'Dalam Perawatan' });
@@ -287,7 +287,7 @@ const HealthPage = () => {
                             <th className="px-6 py-4">Penanganan</th>
                             <th className="px-6 py-4">Dokter</th>
                              <th className="px-6 py-4">Status</th>
-                             {userRole !== 'STAFF' && <th className="px-6 py-4 text-center">Aksi</th>}
+                             {userRole === 'VETERINER' && <th className="px-6 py-4 text-center">Aksi</th>}
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
@@ -312,7 +312,7 @@ const HealthPage = () => {
                                         {record.status === 'DALAM_PERAWATAN' ? 'DALAM PERAWATAN' : record.status}
                                     </span>
                                 </td>
-                                {userRole !== 'STAFF' && (
+                                {userRole === 'VETERINER' && (
                                     <td className="px-6 py-4 text-center">
                                         <div className="flex justify-center gap-2">
                                             <button onClick={() => handleEdit(record)} className="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition" title="Edit">
@@ -327,7 +327,7 @@ const HealthPage = () => {
                             </tr>
                         )) : (
                             <tr>
-                                 <td colSpan={userRole === 'STAFF' ? 6 : 7} className="px-6 py-8 text-center text-slate-500">Belum ada data rekam medis.</td>
+                                 <td colSpan={userRole === 'VETERINER' ? 7 : 6} className="px-6 py-8 text-center text-slate-500">Belum ada data rekam medis.</td>
                              </tr>
                         )}
                     </tbody>

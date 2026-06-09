@@ -769,7 +769,7 @@ const Livestock = () => {
                 </div>
                 
                 {/* Clean, Unified Action Buttons Deck */}
-                {userRole !== 'VETERINER' && (
+                {userRole === 'STAFF' && (
                     <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
                         <button 
                             onClick={() => setShowWasteModal(true)} 

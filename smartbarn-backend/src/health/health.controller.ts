@@ -24,7 +24,7 @@ export class HealthController {
   // Submit form "Input Kondisi Sakit"
   @Post()
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles('SUPER_ADMIN', 'VETERINER')
+  @Roles('VETERINER')
   create(@Body() data: any, @Req() req: any) {
     const author = req.user?.name ? `${req.user.name} (${req.user.role})` : req.user?.email || 'Admin';
     return this.healthService.createRecord(data, author);
@@ -33,7 +33,7 @@ export class HealthController {
   // Submit bulk checkup / mass vaccination
   @Post('bulk')
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles('SUPER_ADMIN', 'VETERINER')
+  @Roles('VETERINER')
   createBulk(@Body() data: any, @Req() req: any) {
     const author = req.user?.name ? `${req.user.name} (${req.user.role})` : req.user?.email || 'Admin';
     return this.healthService.createBulkRecords(data, author);
@@ -42,7 +42,7 @@ export class HealthController {
   // Edit rekam medis
   @Patch(':id')
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles('SUPER_ADMIN', 'VETERINER')
+  @Roles('VETERINER')
   update(@Param('id') id: string, @Body() data: any, @Req() req: any) {
     const author = req.user?.name ? `${req.user.name} (${req.user.role})` : req.user?.email || 'Admin';
     return this.healthService.updateRecord(+id, data, author);
@@ -51,7 +51,7 @@ export class HealthController {
   // Hapus rekam medis
   @Delete(':id')
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles('SUPER_ADMIN', 'VETERINER')
+  @Roles('VETERINER')
   remove(@Param('id') id: string, @Req() req: any) {
     const author = req.user?.name ? `${req.user.name} (${req.user.role})` : req.user?.email || 'Admin';
     return this.healthService.removeRecord(+id, author);

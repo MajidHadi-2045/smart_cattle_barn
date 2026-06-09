@@ -4,8 +4,10 @@ import { socket } from '../../utils/socket';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush } from 'recharts';
 import toast from 'react-hot-toast';
 
-const DashboardHome = () => {
-    const userRole = localStorage.getItem('userRole');
+const DashboardHome = ({ isPublicRoute = false }) => {
+    const userRole = isPublicRoute ? null : localStorage.getItem('userRole');
+    const userName = isPublicRoute ? null : localStorage.getItem('userName');
+    
     // --- 1. STATE MANAGEMENT ---
     const [zones, setZones] = useState([]);
     const [selectedZoneId, setSelectedZoneId] = useState(null);
@@ -28,6 +30,8 @@ const DashboardHome = () => {
     const [performanceCowId, setPerformanceCowId] = useState('');
     const [cows, setCows] = useState([]);
     const [performanceSummary, setPerformanceSummary] = useState({ totalBk: 0, startWeight: 0, endWeight: 0, adg: 0, fcr: 0 });
+    const [performanceMultiSummaries, setPerformanceMultiSummaries] = useState([]);
+    const [selectedCowsForChart, setSelectedCowsForChart] = useState(['ALL']);
     const [isDummyChart, setIsDummyChart] = useState(false);
     const [lastSensorUpdate, setLastSensorUpdate] = useState(0); // Set to 0 initially so it shows offline until data arrives
     const [currentTime, setCurrentTime] = useState(Date.now());
@@ -202,9 +206,13 @@ const DashboardHome = () => {
                                 if (result.summary) {
                                     setPerformanceSummary(result.summary);
                                 }
+                                setPerformanceMultiSummaries(result.multiSummaries || []);
+                                setSelectedCowsForChart(result.selectedCows || ['ALL']);
                             } else {
                                 setPerformanceData(result);
                                 setIsDummyChart(false);
+                                setPerformanceMultiSummaries([]);
+                                setSelectedCowsForChart(['ALL']);
                             }
                         } else {
                             setPerformanceData(generateDummyPerformance(performanceRange));
@@ -565,7 +573,7 @@ const DashboardHome = () => {
                 
                 <div className="flex items-center gap-3 flex-wrap">
                     {/* Button to open Checklist & Koreksi Modal */}
-                    {userRole !== 'VETERINER' && (
+                    {userRole === 'STAFF' && (
                         <button 
                             onClick={() => setIsChecklistModalOpen(true)}
                             className="flex items-center gap-2 px-4 py-2 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:hover:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-900/50 rounded-xl font-semibold text-sm transition shadow-sm"
@@ -1081,7 +1089,8 @@ const DashboardHome = () => {
                                 <input 
                                     type="text"
                                     list="cow-ids"
-                                    placeholder="Ketik ID Sapi (Misal: C-101)..."
+                                    placeholder="C-101, C-102 (Max 5/10)..."
+                                    title="Pisahkan dengan koma untuk multi-select"
                                     value={performanceCowId}
                                     onChange={(e) => setPerformanceCowId(e.target.value)}
                                     className="w-full px-3 py-1.5 text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500"
@@ -1113,8 +1122,18 @@ const DashboardHome = () => {
                                     <Tooltip contentStyle={{backgroundColor: '#fff', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
                                     <Legend wrapperStyle={{ paddingTop: '20px' }} />
 
-                                    <Line yAxisId="left" type="monotone" dataKey="bk" name="DMI / Bahan Kering (kg)" stroke="#8b5cf6" strokeWidth={3} dot={{r:4}} />
-                                    <Line yAxisId="left" type="monotone" dataKey="adg" name="ADG / Pertambahan Bobot (kg)" stroke="#10b981" strokeWidth={3} dot={{r:4}} />
+                                    {selectedCowsForChart.map((cowId, idx) => {
+                                        const colors = ['#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#3b82f6', '#ec4899', '#6366f1', '#14b8a6', '#f97316', '#84cc16'];
+                                        const colorBk = colors[(idx * 2) % colors.length];
+                                        const colorAdg = colors[(idx * 2 + 1) % colors.length];
+                                        const isAll = cowId === 'ALL';
+                                        return (
+                                            <React.Fragment key={cowId}>
+                                                <Line yAxisId="left" type="monotone" dataKey={isAll ? 'bk' : `${cowId}_bk`} name={`DMI BK (kg) ${!isAll ? cowId : ''}`} stroke={colorBk} strokeWidth={3} dot={{r:4}} />
+                                                <Line yAxisId="left" type="monotone" dataKey={isAll ? 'adg' : `${cowId}_adg`} name={`ADG (kg) ${!isAll ? cowId : ''}`} stroke={colorAdg} strokeWidth={3} dot={{r:4}} />
+                                            </React.Fragment>
+                                        );
+                                    })}
                                 </LineChart>
                             </ResponsiveContainer>
                         ) : (
@@ -1124,28 +1143,36 @@ const DashboardHome = () => {
                         )}
                     </div>
                     
-                    {/* Ringkasan Performa */}
-                    <div className="mt-6 grid grid-cols-2 md:grid-cols-5 gap-3">
-                        <div className="bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-100 dark:border-slate-800 text-center">
-                            <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1">Total DMI (BK)</p>
-                            <p className="text-xl font-black text-slate-700 dark:text-slate-200">{performanceSummary?.totalBk || 0} <span className="text-xs font-medium text-slate-400">kg</span></p>
-                        </div>
-                        <div className="bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-100 dark:border-slate-800 text-center">
-                            <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1">Bobot Awal</p>
-                            <p className="text-xl font-black text-slate-700 dark:text-slate-200">{performanceSummary?.startWeight || 0} <span className="text-xs font-medium text-slate-400">kg</span></p>
-                        </div>
-                        <div className="bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-100 dark:border-slate-800 text-center">
-                            <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1">Bobot Akhir</p>
-                            <p className="text-xl font-black text-slate-700 dark:text-slate-200">{performanceSummary?.endWeight || 0} <span className="text-xs font-medium text-slate-400">kg</span></p>
-                        </div>
-                        <div className="bg-emerald-50 dark:bg-emerald-900/10 p-4 rounded-xl border border-emerald-100 dark:border-emerald-900/30 text-center">
-                            <p className="text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-500 tracking-wider mb-1">Avg Daily Gain (ADG)</p>
-                            <p className="text-xl font-black text-emerald-700 dark:text-emerald-400">{performanceSummary?.adg || 0} <span className="text-xs font-medium text-emerald-500">kg/hari</span></p>
-                        </div>
-                        <div className="bg-purple-50 dark:bg-purple-900/10 p-4 rounded-xl border border-purple-100 dark:border-purple-900/30 text-center">
-                            <p className="text-[10px] uppercase font-bold text-purple-600 dark:text-purple-500 tracking-wider mb-1">Feed Conv Ratio (FCR)</p>
-                            <p className="text-xl font-black text-purple-700 dark:text-purple-400">{performanceSummary?.fcr || 0}</p>
-                        </div>
+                    {/* Ringkasan Performa Table (Multi-Cows) */}
+                    <div className="mt-6 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                        <table className="w-full text-sm text-left">
+                            <thead className="bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs uppercase font-bold tracking-wider">
+                                <tr>
+                                    <th className="px-4 py-3 border-b border-slate-200 dark:border-slate-700">ID Sapi</th>
+                                    <th className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 text-center">Total DMI (Kg)</th>
+                                    <th className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 text-center">Bobot Awal</th>
+                                    <th className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 text-center">Bobot Akhir</th>
+                                    <th className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 text-center">ADG (Kg/hari)</th>
+                                    <th className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 text-center">FCR</th>
+                                </tr>
+                            </thead>
+                            <tbody className="bg-white dark:bg-slate-900/50 divide-y divide-slate-100 dark:divide-slate-800/50">
+                                {performanceMultiSummaries.length > 0 ? performanceMultiSummaries.map((sum) => (
+                                    <tr key={sum.cowId} className="hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors">
+                                        <td className="px-4 py-3 font-bold text-slate-800 dark:text-slate-200">{sum.cowId === 'ALL' ? 'Semua Sapi (Rata-rata)' : sum.cowId}</td>
+                                        <td className="px-4 py-3 text-center text-slate-600 dark:text-slate-300">{sum.totalBk}</td>
+                                        <td className="px-4 py-3 text-center text-slate-600 dark:text-slate-300">{sum.startWeight}</td>
+                                        <td className="px-4 py-3 text-center font-semibold text-slate-700 dark:text-slate-200">{sum.endWeight}</td>
+                                        <td className="px-4 py-3 text-center font-bold text-emerald-600 dark:text-emerald-400">{sum.adg}</td>
+                                        <td className="px-4 py-3 text-center font-bold text-purple-600 dark:text-purple-400">{sum.fcr}</td>
+                                    </tr>
+                                )) : (
+                                    <tr>
+                                        <td colSpan="6" className="px-4 py-8 text-center text-slate-400 italic">Data ringkasan tidak tersedia</td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>

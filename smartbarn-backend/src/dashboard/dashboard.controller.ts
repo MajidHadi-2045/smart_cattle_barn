@@ -1,5 +1,8 @@
-import { Controller, Get, Post, Body, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, UseGuards } from '@nestjs/common';
 import { DashboardService } from './dashboard.service';
+import { AuthGuard } from '../auth/auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
 
 @Controller('dashboard') 
 export class DashboardController {
@@ -21,6 +24,8 @@ export class DashboardController {
   }
 
   @Post('checklist-config')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('STAFF')
   async saveChecklistConfig(@Body() body: any) {
     return this.dashboardService.saveConfig(body);
   }

@@ -646,36 +646,40 @@ export class LivestockService {
     };
   }
 
-  // 4. Data untuk Grafik: DMI/BK vs ADG
-  async getPerformanceChartData(period: string = 'minggu', cowId?: string) {
+  // 4. Data untuk Grafik & Tabel: DMI/BK vs ADG (Multi-Select)
+  async getPerformanceChartData(period: string = 'minggu', cowIdsParam?: string) {
     let days = 7;
     if (period === 'hari') days = 1;
     else if (period === 'bulan') days = 30;
 
     const endDate = new Date();
     const startDate = new Date();
-    startDate.setDate(endDate.getDate() - days + 1); // +1 so if days=1 it's just today
+    startDate.setDate(endDate.getDate() - days + 1);
+
+    const isAllCows = !cowIdsParam || cowIdsParam === 'ALL' || cowIdsParam.trim() === '';
+    // Batasi maksimal 10 sapi untuk query agar tidak berat
+    const cowIds = isAllCows ? [] : cowIdsParam.split(',').map(id => id.trim()).filter(id => id).slice(0, 10);
 
     let feeds: any[] = [];
     let weightRecords: any[] = [];
-    let initialWeight = 0;
+    let initialWeights: Record<string, number> = {};
     let cowsCount = 1;
-    let isAllCows = !cowId || cowId === 'ALL' || cowId.trim() === '';
 
     try {
       const feedWhere: any = { feedDate: { gte: startDate } };
       const weightWhere: any = { weighDate: { gte: startDate } };
       
-      if (!isAllCows && cowId) {
-         feedWhere.cattleId = cowId.trim();
-         weightWhere.cattleId = cowId.trim();
+      if (!isAllCows && cowIds.length > 0) {
+         feedWhere.cattleId = { in: cowIds };
+         weightWhere.cattleId = { in: cowIds };
          
-         const cow = await this.prisma.livestock.findUnique({ where: { cattleId: cowId.trim() }});
-         initialWeight = cow?.initialWeight || 0;
+         const cows = await this.prisma.livestock.findMany({ where: { cattleId: { in: cowIds } }});
+         cows.forEach(c => initialWeights[c.cattleId] = c.initialWeight || 0);
       } else {
          const allCows = await this.prisma.livestock.findMany({ select: { initialWeight: true }});
          cowsCount = allCows.length > 0 ? allCows.length : 1;
-         initialWeight = allCows.reduce((acc, c) => acc + (c.initialWeight || 0), 0) / cowsCount;
+         const avgInitial = allCows.reduce((acc, c) => acc + (c.initialWeight || 0), 0) / cowsCount;
+         initialWeights['ALL'] = avgInitial;
       }
       
       feeds = await this.prisma.livestockFeedRecord.findMany({
@@ -693,19 +697,23 @@ export class LivestockService {
     }
 
     const chartData: any[] = [];
-    let totalDmi = 0;
-    let totalWeightGain = 0;
-
-    let periodStartWeight = initialWeight;
-    let periodEndWeight = initialWeight;
+    const targetIds = isAllCows ? ['ALL'] : cowIds;
+    
+    // Siapkan objek ringkasan per sapi
+    const summaries: Record<string, any> = {};
+    targetIds.forEach(id => {
+      summaries[id] = { totalDmi: 0, startWeight: initialWeights[id] || 0, endWeight: initialWeights[id] || 0, totalWeightGain: 0, cowId: id };
+    });
 
     if (!isAllCows) {
-       // Jika hanya ada 1 record timbangan di periode ini, gunakan initialWeight sebagai berat awal
-       const firstWeight = weightRecords.length > 1 ? weightRecords[0].weight : initialWeight;
-       const lastWeight = weightRecords.length > 0 ? weightRecords[weightRecords.length - 1].weight : initialWeight;
-       periodStartWeight = firstWeight;
-       periodEndWeight = lastWeight;
-       totalWeightGain = periodEndWeight - periodStartWeight;
+       targetIds.forEach(id => {
+         const cowWeights = weightRecords.filter(w => w.cattleId === id);
+         const firstWeight = cowWeights.length > 1 ? cowWeights[0].weight : (initialWeights[id] || 0);
+         const lastWeight = cowWeights.length > 0 ? cowWeights[cowWeights.length - 1].weight : (initialWeights[id] || 0);
+         summaries[id].startWeight = firstWeight;
+         summaries[id].endWeight = lastWeight;
+         summaries[id].totalWeightGain = lastWeight - firstWeight;
+       });
     }
 
     for (let i = 0; i < days; i++) {
@@ -713,53 +721,74 @@ export class LivestockService {
       currentDate.setDate(startDate.getDate() + i);
       const dateStr = currentDate.toISOString().split('T')[0];
 
-      let dailyBk = 0;
-      let dailyAdg = 0;
+      const dailyData: any = { date: dateStr };
 
-      const dailyFeeds = feeds.filter(f => new Date(f.feedDate).toISOString().split('T')[0] === dateStr);
-      dailyBk = dailyFeeds.reduce((acc, f) => acc + (f.weightKg * ((f.bkPercent || 100) / 100)), 0);
-      
-      if (isAllCows) {
-          dailyBk = dailyBk / cowsCount;
-      }
-      
-      if (dailyBk > 0) {
-          dailyAdg = dailyBk * 0.15; // Estimasi jika tidak ada timbangan harian aktual
-      }
-      
-      totalDmi += dailyBk;
+      targetIds.forEach(id => {
+        let dailyBk = 0;
+        let dailyAdg = 0;
 
-      chartData.push({
-        date: dateStr,
-        bk: parseFloat(dailyBk.toFixed(2)),
-        adg: parseFloat(dailyAdg.toFixed(2))
+        const dailyFeeds = feeds.filter(f => 
+          new Date(f.feedDate).toISOString().split('T')[0] === dateStr &&
+          (isAllCows || f.cattleId === id)
+        );
+
+        dailyBk = dailyFeeds.reduce((acc, f) => acc + (f.weightKg * ((f.bkPercent || 100) / 100)), 0);
+        
+        if (isAllCows) {
+            dailyBk = dailyBk / cowsCount;
+        }
+        
+        if (dailyBk > 0) {
+            dailyAdg = dailyBk * 0.15; // Estimasi harian
+        }
+        
+        summaries[id].totalDmi += dailyBk;
+
+        if (isAllCows) {
+          dailyData.bk = parseFloat(dailyBk.toFixed(2));
+          dailyData.adg = parseFloat(dailyAdg.toFixed(2));
+        } else {
+          dailyData[`${id}_bk`] = parseFloat(dailyBk.toFixed(2));
+          dailyData[`${id}_adg`] = parseFloat(dailyAdg.toFixed(2));
+        }
       });
-    }
-    
-    let adgTotal = days > 0 ? totalWeightGain / days : 0;
-    
-    // Jika melihat semua sapi, atau tidak ada record weight individu, gunakan estimasi DMI
-    if (isAllCows || (weightRecords.length === 0 && !isAllCows)) {
-        adgTotal = days > 0 ? (totalDmi * 0.15 / days) : 0; 
-        periodEndWeight = periodStartWeight + (adgTotal * days);
-        totalWeightGain = periodEndWeight - periodStartWeight;
-    }
 
-    let fcr = 0;
-    if (totalWeightGain > 0) {
-        fcr = totalDmi / totalWeightGain;
+      chartData.push(dailyData);
     }
+    
+    // Finalize summaries
+    const finalSummaries = targetIds.map(id => {
+      const sum = summaries[id];
+      let adgTotal = days > 0 ? sum.totalWeightGain / days : 0;
+      
+      const cowWeights = weightRecords.filter(w => w.cattleId === id);
+      if (isAllCows || cowWeights.length === 0) {
+          adgTotal = days > 0 ? (sum.totalDmi * 0.15 / days) : 0; 
+          sum.endWeight = sum.startWeight + (adgTotal * days);
+          sum.totalWeightGain = sum.endWeight - sum.startWeight;
+      }
+
+      let fcr = 0;
+      if (sum.totalWeightGain > 0) {
+          fcr = sum.totalDmi / sum.totalWeightGain;
+      }
+
+      return {
+         cowId: id,
+         totalBk: parseFloat(sum.totalDmi.toFixed(2)),
+         startWeight: parseFloat(sum.startWeight.toFixed(2)),
+         endWeight: parseFloat(sum.endWeight.toFixed(2)),
+         adg: parseFloat(adgTotal.toFixed(2)),
+         fcr: parseFloat(fcr.toFixed(2))
+      };
+    });
 
     return {
       data: chartData,
       isDummy: false,
-      summary: {
-         totalBk: parseFloat(totalDmi.toFixed(2)),
-         startWeight: parseFloat(periodStartWeight.toFixed(2)),
-         endWeight: parseFloat(periodEndWeight.toFixed(2)),
-         adg: parseFloat(adgTotal.toFixed(2)),
-         fcr: parseFloat(fcr.toFixed(2))
-      }
+      summary: isAllCows ? finalSummaries[0] : null,
+      multiSummaries: finalSummaries,
+      selectedCows: targetIds
     };
   }
 

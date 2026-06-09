@@ -10,6 +10,7 @@ const fetcher = async (url) => {
 };
 
 const Feed = () => {
+    const userRole = localStorage.getItem('userRole');
     // --- 1. STATE MANAGEMENT ---
     const [activeTab, setActiveTab] = useState('overview'); // 'overview' atau 'schedule'
     const [silos, setSilos] = useState([]);
@@ -296,12 +297,14 @@ const Feed = () => {
                     >
                         Ringkasan Stok
                     </button>
-                    <button 
-                        onClick={() => setActiveTab('schedule')} 
-                        className={`px-4 py-2 text-sm font-bold rounded-md transition ${activeTab === 'schedule' ? 'bg-white dark:bg-slate-700 text-primary-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
-                    >
-                        Atur Jadwal
-                    </button>
+                    {userRole === 'STAFF' && (
+                        <button 
+                            onClick={() => setActiveTab('schedule')} 
+                            className={`px-4 py-2 text-sm font-bold rounded-md transition ${activeTab === 'schedule' ? 'bg-white dark:bg-slate-700 text-primary-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
+                        >
+                            Atur Jadwal
+                        </button>
+                    )}
                     <button 
                         onClick={() => setActiveTab('report')} 
                         className={`px-4 py-2 text-sm font-bold rounded-md transition ${activeTab === 'report' ? 'bg-white dark:bg-slate-700 text-primary-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
@@ -387,14 +390,16 @@ const Feed = () => {
                                 return (
                                     <div key={silo.id} className={`group relative bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border transition-all hover:shadow-md ${silo.isCritical ? 'border-red-300 dark:border-red-800/50' : 'border-slate-200 dark:border-slate-700'}`}>
                                         {/* Action Overlay */}
-                                        <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button onClick={() => openEditSilo(silo)} className="p-1.5 bg-slate-100 dark:bg-slate-700 text-slate-500 hover:text-blue-500 rounded-lg shadow-sm">
-                                                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                                            </button>
-                                            <button onClick={() => handleDeleteSilo(silo.id)} className="p-1.5 bg-slate-100 dark:bg-slate-700 text-slate-500 hover:text-red-500 rounded-lg shadow-sm">
-                                                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                            </button>
-                                        </div>
+                                        {userRole === 'STAFF' && (
+                                            <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button onClick={() => openEditSilo(silo)} className="p-1.5 bg-slate-100 dark:bg-slate-700 text-slate-500 hover:text-blue-500 rounded-lg shadow-sm">
+                                                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                                </button>
+                                                <button onClick={() => handleDeleteSilo(silo.id)} className="p-1.5 bg-slate-100 dark:bg-slate-700 text-slate-500 hover:text-red-500 rounded-lg shadow-sm">
+                                                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                                </button>
+                                            </div>
+                                        )}
 
                                         <div className="flex justify-between items-start mb-4 pr-16">
                                             <div>
@@ -469,28 +474,32 @@ const Feed = () => {
                                             </>
                                         )}
 
-                                        <div className="opacity-0 max-h-0 overflow-hidden pointer-events-none group-hover:opacity-100 group-hover:max-h-20 group-hover:pointer-events-auto transition-all duration-300">
-                                            <button 
-                                                onClick={() => openTransactionModal(silo)} 
-                                                className="w-full mt-4 py-2 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:hover:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 border border-indigo-100 dark:border-indigo-900/30 shadow-sm"
-                                            >
-                                                🔄 Catat Catatan Stok Pakan
-                                            </button>
-                                        </div>
+                                        {userRole === 'STAFF' && (
+                                            <div className="opacity-0 max-h-0 overflow-hidden pointer-events-none group-hover:opacity-100 group-hover:max-h-20 group-hover:pointer-events-auto transition-all duration-300">
+                                                <button 
+                                                    onClick={() => openTransactionModal(silo)} 
+                                                    className="w-full mt-4 py-2 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:hover:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 border border-indigo-100 dark:border-indigo-900/30 shadow-sm"
+                                                >
+                                                    🔄 Catat Catatan Stok Pakan
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 );
                             })}
 
                             {/* Tombol Tambah Silo Baru */}
-                            <button 
-                                onClick={() => { setSiloFormData({ id: null, name: '', feedType: 'Hijauan', capacity: 100, currentStock: 0, unit: 'Kg', expiryDate: '' }); setShowSiloModal(true); }}
-                                className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/10 transition group h-full min-h-[180px]"
-                            >
-                                <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 group-hover:bg-primary-100 group-hover:text-primary-600 transition mb-3">
-                                    <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                                </div>
-                                <span className="font-bold text-slate-500 group-hover:text-primary-600 transition">Tambah Bar Stok</span>
-                            </button>
+                            {userRole === 'STAFF' && (
+                                <button 
+                                    onClick={() => { setSiloFormData({ id: null, name: '', feedType: 'Hijauan', capacity: 100, currentStock: 0, unit: 'Kg', expiryDate: '' }); setShowSiloModal(true); }}
+                                    className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/10 transition group h-full min-h-[180px]"
+                                >
+                                    <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 group-hover:bg-primary-100 group-hover:text-primary-600 transition mb-3">
+                                        <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                                    </div>
+                                    <span className="font-bold text-slate-500 group-hover:text-primary-600 transition">Tambah Bar Stok</span>
+                                </button>
+                            )}
                             
                             {/* Daftar Jadwal Hari Ini */}
                             <div className="md:col-span-3 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
@@ -516,14 +525,16 @@ const Feed = () => {
                                                 }`}>
                                                     {sch.status}
                                                 </span>
-                                                <div className="flex gap-1 ml-2">
-                                                    <button onClick={() => openEditSchedule(sch)} className="p-1.5 text-slate-400 hover:text-blue-500 transition" title="Edit Jadwal">
-                                                        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                                                    </button>
-                                                    <button onClick={() => handleDeleteSchedule(sch.id)} className="p-1.5 text-slate-400 hover:text-red-500 transition" title="Hapus Jadwal">
-                                                        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                                    </button>
-                                                </div>
+                                                {userRole === 'STAFF' && (
+                                                    <div className="flex gap-1 ml-2">
+                                                        <button onClick={() => openEditSchedule(sch)} className="p-1.5 text-slate-400 hover:text-blue-500 transition" title="Edit Jadwal">
+                                                            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                                        </button>
+                                                        <button onClick={() => handleDeleteSchedule(sch.id)} className="p-1.5 text-slate-400 hover:text-red-500 transition" title="Hapus Jadwal">
+                                                            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                                        </button>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     )) : (

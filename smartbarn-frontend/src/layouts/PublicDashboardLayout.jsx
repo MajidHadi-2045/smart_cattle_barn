@@ -1,11 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Outlet, Navigate, Link } from 'react-router-dom';
-import Sidebar from '../components/Sidebar';
-import ActivityFeed from '../components/dashboard/ActivityFeed';
+import { Outlet, Link } from 'react-router-dom';
 
-const DashboardLayout = () => {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+const PublicDashboardLayout = () => {
+  // Sidebar sepenuhnya dihapus untuk tampilan publik
 
   // --- LOGIKA DARK MODE ---
   const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('theme') === 'dark');
@@ -20,33 +17,30 @@ const DashboardLayout = () => {
     }
   }, [isDarkMode]);
 
-  const token = localStorage.getItem('token');
-
   return (
     <div className="relative min-h-screen md:flex bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-50 via-slate-50 to-white dark:from-slate-800 dark:via-slate-900 dark:to-slate-950 font-sans overflow-hidden transition-colors duration-300">
-
-      {/* Sidebar */}
-      <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
+      
+      {/* Sidebar Khusus Publik Dihapus Sesuai Permintaan */}
 
       <main className="flex-1 min-w-0 flex flex-col h-screen overflow-hidden">
         <header className="sticky top-0 z-10 flex items-center justify-between h-20 px-4 md:px-8 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border-b border-white/20 dark:border-slate-700/50 shadow-sm shrink-0">
           <div className="flex items-center gap-4">
-            <button className="md:hidden text-slate-600 dark:text-slate-300 p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition" onClick={toggleSidebar}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-            </button>
-            <Link to="/">
-              <h1 className="text-xl md:text-2xl font-bold text-slate-800 dark:text-white hover:text-primary-600 transition">Smart Cattle Barn</h1>
+            <Link to="/" className="flex items-center gap-3">
+              <div className="bg-white p-1 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm">
+                <img src="/logoxl.svg" alt="Logo" className="h-8 w-8 object-contain" />
+              </div>
+              <h1 className="text-xl md:text-2xl font-bold text-slate-800 dark:text-white hover:text-primary-600 transition tracking-tight">Smart Cattle Barn</h1>
             </Link>
           </div>
 
-          {/* POJOK KANAN ATAS: Dark Mode & History */}
           <div className="flex items-center gap-2">
-            {/* Activity History Widget - Hanya jika login */}
-            {token && <ActivityFeed />}
+            <Link to="/login" className="px-5 py-2 mr-2 text-sm font-bold bg-slate-900 hover:bg-primary-600 text-white rounded-xl shadow-lg hover:shadow-primary-500/30 transition">
+              Login
+            </Link>
+            
+            <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1 hidden sm:block"></div>
 
-            {token && <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1 hidden sm:block"></div>}
-
-            {/* Dark Mode Toggle Toggle */}
+            {/* Dark Mode Toggle */}
             <button 
               onClick={() => setIsDarkMode(!isDarkMode)}
               className={`p-2 rounded-lg transition-all duration-300 ${isDarkMode ? 'bg-slate-700 text-yellow-400' : 'bg-slate-100 text-slate-500 hover:text-primary-600 shadow-inner'}`}
@@ -70,4 +64,4 @@ const DashboardLayout = () => {
   );
 };
 
-export default DashboardLayout;
+export default PublicDashboardLayout;

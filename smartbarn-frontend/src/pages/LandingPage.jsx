@@ -101,8 +101,9 @@ const LandingPage = () => {
                             <a href="#features" className="text-slate-600 hover:text-primary-600 font-semibold transition text-sm">Fitur</a>
                             <a href="#mobile-app" className="text-slate-600 hover:text-primary-600 font-semibold transition text-sm">Aplikasi</a>
                             <a href="#about-pt" className="text-slate-600 hover:text-primary-600 font-semibold transition text-sm">Tentang</a>
+                            <Link to="/public-dashboard" className="text-slate-600 hover:text-primary-600 font-semibold transition text-sm">Dashboard</Link>
                             <Link to="/login" className="px-7 py-3 bg-slate-900 text-white rounded-2xl font-bold hover:bg-primary-600 transition shadow-lg hover:shadow-primary-500/30 text-sm">
-                                Dashboard
+                                Login
                             </Link>
                         </div>
 
@@ -119,7 +120,8 @@ const LandingPage = () => {
                             <a href="#features" onClick={() => setIsMobileMenuOpen(false)} className="py-2">Fitur</a>
                             <a href="#mobile-app" onClick={() => setIsMobileMenuOpen(false)} className="py-2">Mobile App</a>
                             <a href="#about-pt" onClick={() => setIsMobileMenuOpen(false)} className="py-2">Tentang</a>
-                            <Link to="/login" className="py-4 bg-primary-600 text-white rounded-2xl">Login Dashboard</Link>
+                            <Link to="/public-dashboard" onClick={() => setIsMobileMenuOpen(false)} className="py-4 text-slate-600 border border-slate-200 rounded-2xl">Dashboard</Link>
+                            <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} className="py-4 bg-slate-900 text-white rounded-2xl shadow-lg hover:bg-primary-600 hover:shadow-primary-500/30 transition">Login</Link>
                         </div>
                     </div>
                 )}
@@ -144,7 +146,7 @@ const LandingPage = () => {
                                 Efisiensi tanpa batas dengan integrasi IoT. Pantau kesehatan, pakan, dan lingkungan dalam satu genggaman yang terintegrasi penuh.
                             </p>
                             <div className="flex flex-col sm:flex-row gap-5 justify-center lg:justify-start">
-                                <Link to="/login" className="px-10 py-5 bg-slate-900 text-white rounded-[1.5rem] font-bold hover:bg-primary-600 transition shadow-xl hover:shadow-primary-500/40 flex items-center justify-center gap-3 group">
+                                <Link to="/dashboard" className="px-10 py-5 bg-slate-900 text-white rounded-[1.5rem] font-bold hover:bg-primary-600 transition shadow-xl hover:shadow-primary-500/40 flex items-center justify-center gap-3 group">
                                     Mulai Sekarang
                                     <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                                 </Link>

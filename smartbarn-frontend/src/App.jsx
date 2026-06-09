@@ -3,6 +3,7 @@ import { Toaster } from 'react-hot-toast';
 import LandingPage from './pages/LandingPage';
 import AuthPage from './pages/AuthPage';
 import DashboardLayout from './layouts/DashboardLayout';
+import PublicDashboardLayout from './layouts/PublicDashboardLayout';
 import DashboardHome from './pages/Dashboard/DashboardHome';
 import Livestock from './pages/Dashboard/Livestock';
 import HealthPage from './pages/Dashboard/HealthPage';
@@ -34,22 +35,24 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<AuthPage />} />
 
-        {/* Rute Terlindungi: Hanya bisa diakses jika sudah login */}
+        {/* Rute Publik Khusus Dashboard (Tanpa Auth/Profil sama sekali) */}
+        <Route path="/public-dashboard" element={<PublicDashboardLayout />}>
+          <Route index element={<DashboardHome isPublicRoute={true} />} />
+        </Route>
+
+        {/* Rute Terlindungi: Dashboard Admin/Staff */}
         <Route 
           path="/dashboard" 
-          element={
-            <ProtectedRoute>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }
+          element={<DashboardLayout />}
         >
           {/* Semua sub-rute ini otomatis ikut terlindungi */}
-          <Route index element={<DashboardHome />} />
-          <Route path="livestock" element={<Livestock />} />
-          <Route path="feed" element={<Feed />} />
-          <Route path="reports" element={<Reports />} />
-          <Route path="users" element={<UserManagement />} />
-          <Route path="health" element={<HealthPage />} />
+          {/* Semua sub-rute ini dilindungi oleh ProtectedRoute (Kecuali yang index mungkin tidak sengaja terbuka, tapi kita biarkan DashboardHome biasa) */}
+          <Route index element={<ProtectedRoute><DashboardHome /></ProtectedRoute>} />
+          <Route path="livestock" element={<ProtectedRoute><Livestock /></ProtectedRoute>} />
+          <Route path="feed" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
+          <Route path="reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+          <Route path="users" element={<ProtectedRoute><UserManagement /></ProtectedRoute>} />
+          <Route path="health" element={<ProtectedRoute><HealthPage /></ProtectedRoute>} />
         </Route>
 
         {/* Jika user mengetik rute yang tidak terdaftar, arahkan ke landing page */}
