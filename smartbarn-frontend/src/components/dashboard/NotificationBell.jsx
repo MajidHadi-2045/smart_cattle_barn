@@ -98,7 +98,7 @@ const NotificationBell = () => {
           <div className="max-h-80 overflow-y-auto custom-scrollbar">
             {notifications.length === 0 ? (
               <div className="p-8 text-center text-slate-400 text-sm">
-                Tidak ada peringatan. Kondang aman terkendali.
+                Tidak ada peringatan. Kandang aman terkendali.
               </div>
             ) : (
               <div className="divide-y divide-slate-100 dark:divide-slate-700">

@@ -50,6 +50,8 @@ $ mau deploy
 $ cd ~/smart_cattle_barn/smartbarn-backend
 #Menarik Update (kalau ada yg Baru) dari GitHub
 $ git pull
+#jika ada permbaruan yang mengaharuskan npm install
+$ npm install
 #Memperbarui Tipe Database (Wajib jika mengubah file schema.prisma)
 $ npx prisma generate
 #Build/Compile Ulang Backend
@@ -64,16 +66,26 @@ $ pm2 restart smartbarn-api-4000
 $ pm2 status
 #Lihat Error / Log Terminal Backend (Real-time)
 $ pm2 logs smartbarn-api-4000
+#Batasi RAM
+$ pm2 start smartbarn-api-4000 --max-memory-restart 200M
 
 ## FRONTEND (Vite / Website UI)
 #Masuk ke folder Frontend
 $ cd ~/smart_cattle_barn/smartbarn-frontend
 #Menarik Update (kalau ada yg Baru) dari GitHub
 $ git pull
+#jika ada permbaruan yang mengaharuskan npm install
+$ npm install
 #Build/Compile Ulang Desain Web
 $ npm run build
 #Menerapkan Pembaruan ke Internet (Memindahkan ke Nginx)
 $ sudo cp -r dist/* /var/www/smartcattlebarn.site/html/
+# 1. Tarik informasi terbaru dari GitHub tanpa mengubah file
+git fetch origin
+# 2. Paksa kode di VPS agar 100% sama dengan branch 'main' di GitHub
+git reset --hard origin/main
+# (Opsional tapi disarankan) 3. Bersihkan file-file sementara/sampah yang tidak ada di GitHub
+git clean -fd
 
 ##Apk (File APK)
 #Cara Mengunggah APK Baru ke Server (Jalankan di CMD Laptop, BUKAN di SSH Server)

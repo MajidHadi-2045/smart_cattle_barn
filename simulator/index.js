@@ -1,6 +1,7 @@
 const mqtt = require('mqtt');
 
-const MQTT_URL = 'mqtt://localhost:1883';
+// const MQTT_URL = 'mqtt://localhost:1883';
+const MQTT_URL = 'mqtt://smartcattlebarn.site:1883';
 const client = mqtt.connect(MQTT_URL);
 
 // --- Simulasi Data sensor IOT SMARTCATTLEBARN ---
