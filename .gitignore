@@ -39,3 +39,7 @@ lerna-debug.log*
 # OS files
 .DS_Store
 Thumbs.db
+
+# Google API Configs
+google-services.json
+google.json
