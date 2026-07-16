@@ -16,7 +16,9 @@ const HealthPage = () => {
   const { data: healthData, error: swrError, isLoading: swrLoading, mutate: mutateHealth } = useSWR('/health', fetcher);
   const { data: livestockData } = useSWR('/livestock', fetcher);
 
-  // --- 1. STATE MANAGEMENT ---
+  // ==========================================
+  // BAGIAN 1: DEKLARASI STATE KOMPONEN
+  // ==========================================
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [healthRecords, setHealthRecords] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -48,7 +50,9 @@ const HealthPage = () => {
     status: 'Dalam Perawatan'
   });
 
-  // --- 2. FUNGSI MENGAMBIL DATA (GET) ---
+  // ==========================================
+  // BAGIAN 2: LOGIKA PENGAMBILAN DATA (FETCHING)
+  // ==========================================
   const fetchHealthRecords = async () => {
     await mutateHealth();
   };
@@ -68,13 +72,17 @@ const HealthPage = () => {
     }
   }, [livestockData]);
 
-  // --- 3. HANDLERS FORM ---
+  // ==========================================
+  // BAGIAN 3: PENGENDALI INPUT FORMULIR
+  // ==========================================
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // --- 4. FUNGSI MENYIMPAN DATA (POST) ---
+  // ==========================================
+  // BAGIAN 4: LOGIKA SUBMIT DAN MUTASI DATA
+  // ==========================================
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isSubmitting) return;
@@ -90,6 +98,7 @@ const HealthPage = () => {
             vet: formData.vet,
             status: formData.status === 'Dalam Perawatan' ? 'DALAM_PERAWATAN' : 
                     formData.status === 'Sembuh' ? 'SEMBUH' : 
+                    formData.status === 'Sakit' ? 'SAKIT' : 
                     formData.status === 'Mati' ? 'MATI' : 'KRITIS'
         };
 
@@ -130,6 +139,7 @@ const HealthPage = () => {
         pemeriksa: formData.vet,
         status: formData.status === 'Dalam Perawatan' ? 'DALAM_PERAWATAN' : 
                 formData.status === 'Sembuh' ? 'SEMBUH' : 
+                formData.status === 'Sakit' ? 'SAKIT' : 
                 formData.status === 'Mati' ? 'MATI' : 'KRITIS'
     };
 
@@ -174,6 +184,7 @@ const HealthPage = () => {
         vet: record.pemeriksa || record.vet || '',
         status: record.status === 'DALAM_PERAWATAN' ? 'Dalam Perawatan' : 
                 record.status === 'SEMBUH' ? 'Sembuh' : 
+                record.status === 'SAKIT' ? 'Sakit' : 
                 record.status === 'MATI' ? 'Mati' : 
                 record.status === 'KRITIS' ? 'Kritis' : record.status,
         notes: ''
@@ -240,6 +251,7 @@ const HealthPage = () => {
                 className="px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 outline-none font-medium"
             >
                 <option value="ALL">Semua Rekam</option>
+                <option value="SAKIT">Sakit</option>
                 <option value="DALAM_PERAWATAN">Dalam Perawatan</option>
                 <option value="SEMBUH">Sembuh</option>
                 <option value="KRITIS">Kritis</option>
@@ -492,6 +504,7 @@ const HealthPage = () => {
                                     onChange={handleInputChange}
                                     className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none text-slate-800 dark:text-slate-100"
                                 >
+                                    <option value="Sakit">Sakit</option>
                                     <option value="Dalam Perawatan">Dalam Perawatan</option>
                                     <option value="Sembuh">Sembuh</option>
                                     <option value="Kritis">Kritis</option>
@@ -510,6 +523,7 @@ const HealthPage = () => {
                                 onChange={handleInputChange}
                                 className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none text-slate-800 dark:text-slate-100"
                             >
+                                <option value="Sakit">Sakit</option>
                                 <option value="Dalam Perawatan">Dalam Perawatan</option>
                                 <option value="Sembuh">Sembuh</option>
                                 <option value="Kritis">Kritis</option>

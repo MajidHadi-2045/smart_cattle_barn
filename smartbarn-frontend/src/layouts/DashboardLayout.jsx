@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Outlet, Navigate, Link } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import ActivityFeed from '../components/dashboard/ActivityFeed';
+import NotificationBell from '../components/dashboard/NotificationBell';
 
 const DashboardLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -41,7 +42,10 @@ const DashboardLayout = () => {
 
           {/* POJOK KANAN ATAS: Dark Mode & History */}
           <div className="flex items-center gap-2">
-            {/* Activity History Widget - Hanya jika login */}
+            {/* Lonceng Notifikasi */}
+            {token && <NotificationBell />}
+
+            {/* Activity History Widget */}
             {token && <ActivityFeed />}
 
             {token && <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1 hidden sm:block"></div>}

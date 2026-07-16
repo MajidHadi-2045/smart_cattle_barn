@@ -88,7 +88,10 @@ export class DashboardService {
       result = {
         total: stats.reduce((acc, curr) => acc + curr._count._all, 0),
         sehat: stats.find((s) => s.status === 'SEHAT')?._count._all || 0,
-        sakit: stats.find((s) => s.status === 'SAKIT')?._count._all || 0,
+        sakit: 
+          (stats.find((s) => s.status === 'SAKIT')?._count._all || 0) + 
+          (stats.find((s) => s.status === 'DALAM_PERAWATAN')?._count._all || 0) +
+          (stats.find((s) => s.status === 'KRITIS')?._count._all || 0),
         hamil: stats.find((s) => s.status === 'HAMIL')?._count._all || 0,
       };
     } catch (err) {
@@ -243,5 +246,14 @@ export class DashboardService {
           : `${weightResult.completedCows}/${totalCows} sapi ditimbang ${config.weight.goal}x ${periodMap[config.weight.period]}`
       }
     };
+  }
+
+  async getNotifications() {
+    try {
+      const notifs = await this.redis.lrange('system:notifications', 0, -1);
+      return notifs.map(n => JSON.parse(n));
+    } catch (err) {
+      return [];
+    }
   }
 }

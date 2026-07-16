@@ -23,6 +23,11 @@ export class DashboardController {
     return this.dashboardService.getDailyChecklist();
   }
 
+  @Get('notifications')
+  async getNotifications() {
+    return this.dashboardService.getNotifications();
+  }
+
   @Post('checklist-config')
   @UseGuards(AuthGuard, RolesGuard)
   @Roles('STAFF')

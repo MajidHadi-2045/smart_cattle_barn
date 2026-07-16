@@ -34,6 +34,7 @@ npm run dev
 
 # Build produksi React siap deploy
 npm run build
+vite build
 
 # Preview hasil build produksi secara lokal
 npm run preview
@@ -49,6 +50,9 @@ cd smartbarn-mobile
 # Menjalankan Expo bundler/development server
 npm run start
 
+# membersihkan cache bundler Android/iOS yang lama
+npx expo start -c
+
 # Jalankan app di emulator/perangkat Android
 npm run android
 
@@ -57,6 +61,16 @@ npm run ios
 
 # Periksa tipe TypeScript tanpa menghasilkan file
 npx tsc --noEmit
+
+# Mulai Proses Build (Build Cloud)
+eas build -p android --profile preview
+
+# Install EAS CLI (Jika Belum)
+npm install -g eas-cli
+
+# Login ke Akun Expo
+eas login
+
 
 -----------------------------------
 
@@ -80,3 +94,8 @@ git add .
 git commit -m "Initial commit SmartCattleBarn"
 git push
 git remote set-url origin https://github.com/USERNAME_ANDA/smart-cattle-barn.git
+
+# untuk cpu ram  vps
+ top 
+# untuk cek pemakaian db 
+ ps -C postgres -o user,pid,%cpu,%mem,rss,cmd

@@ -25,7 +25,7 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
 
     // Subscribe to topics
     try {
-      this.redisSub.subscribe('websocket:environment', 'websocket:heartrate', 'websocket:temperature', 'websocket:vital-update', 'websocket:windspeed', (err, count) => {
+      this.redisSub.subscribe('websocket:environment', 'websocket:heartrate', 'websocket:temperature', 'websocket:vital-update', 'websocket:windspeed', 'websocket:alert', (err, count) => {
         if (err) {
           this.logger.error('Failed to subscribe to Redis channels', err);
         } else {

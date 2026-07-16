@@ -6,11 +6,18 @@ import {
   FlatList, 
   ActivityIndicator,
   RefreshControl,
-  Dimensions
+  Dimensions,
+  TouchableOpacity,
+  Modal,
+  TextInput,
+  Alert,
+  ScrollView,
+  Switch
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, SPACING, SHADOWS } from '../theme';
 import { Utensils, Zap, Database, Clock, Hourglass } from 'lucide-react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import apiClient from '../api/client';
 import LoadingSpinner from '../components/LoadingSpinner';
 
@@ -19,27 +26,50 @@ const { width } = Dimensions.get('window');
 const FeedScreen = () => {
   const [silos, setSilos] = useState<any[]>([]);
   const [cows, setCows] = useState<any[]>([]);
+  const [schedules, setSchedules] = useState<any[]>([]);
+  const [reports, setReports] = useState<any>({});
+  const [zones, setZones] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [activeTab, setActiveTab] = useState<'silo' | 'schedule' | 'report'>('silo');
   const ITEMS_PER_PAGE = 10;
+  
+  // States untuk Jadwal
+  const [scheduleModal, setScheduleModal] = useState(false);
+  const [scheduleForm, setScheduleForm] = useState<any>({ id: null, time: '08:00', zoneId: '', feedType: 'Hijauan', siloId: '', status: 'BELUM' });
+  const [userRole, setUserRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    const checkUserRole = async () => {
+      const userStr = await AsyncStorage.getItem('user');
+      if (userStr) {
+        setUserRole(JSON.parse(userStr).role);
+      }
+    };
+    checkUserRole();
+  }, []);
 
   const fetchFeedData = async () => {
     try {
-      const [silosRes, cowsRes] = await Promise.all([
+      const [silosRes, cowsRes, schedRes, repRes, zoneRes] = await Promise.all([
         apiClient.get('/feed/silo'),
-        apiClient.get('/livestock')
+        apiClient.get('/livestock'),
+        apiClient.get('/feed/schedule').catch(() => ({ data: [] })),
+        apiClient.get('/feed/report').catch(() => ({ data: {} })),
+        apiClient.get('/zones').catch(() => ({ data: [] }))
       ]);
       setSilos(silosRes.data);
       setCows(cowsRes.data);
+      setSchedules(schedRes.data || []);
+      setReports(repRes.data || {});
+      setZones(zoneRes.data || []);
     } catch (error) {
       console.error('Error fetching feed data:', error);
-      // Fallback
-      setSilos([
-        { id: 1, name: 'Silo Utama', feedType: 'Konsentrat', currentStock: 750, capacity: 1000, unit: 'kg', status: 'AMAN' },
-        { id: 2, name: 'Silo Cadangan', feedType: 'Rumput Kering', currentStock: 120, capacity: 500, unit: 'kg', status: 'KRITIS' },
-      ]);
+      setSilos([]);
       setCows([]);
+      setSchedules([]);
+      setReports({});
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -49,6 +79,64 @@ const FeedScreen = () => {
   useEffect(() => {
     fetchFeedData();
   }, []);
+
+  const handleSaveSchedule = async () => {
+    try {
+      const finalFeedType = scheduleForm.feedType;
+
+      const payload = {
+        time: scheduleForm.time,
+        feedType: finalFeedType,
+        status: scheduleForm.status,
+        zoneId: scheduleForm.zoneId ? parseInt(scheduleForm.zoneId) : null,
+      };
+
+      if (scheduleForm.id) {
+        await apiClient.patch(`/feed/schedule/${scheduleForm.id}`, payload);
+        Alert.alert('Sukses', 'Jadwal berhasil diperbarui');
+      } else {
+        await apiClient.post('/feed/schedule', payload);
+        Alert.alert('Sukses', 'Jadwal berhasil ditambahkan');
+      }
+      setScheduleModal(false);
+      fetchFeedData();
+    } catch (err) {
+      console.error(err);
+      Alert.alert('Error', 'Gagal menyimpan jadwal');
+    }
+  };
+
+  const handleDeleteSchedule = (id: number) => {
+    Alert.alert('Hapus Jadwal', 'Yakin ingin menghapus jadwal ini?', [
+      { text: 'Batal', style: 'cancel' },
+      { 
+        text: 'Hapus', 
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await apiClient.delete(`/feed/schedule/${id}`);
+            Alert.alert('Sukses', 'Jadwal terhapus');
+            fetchFeedData();
+          } catch (err: any) {
+            const errorMsg = err.response?.data?.message || err.message || 'Gagal menghapus jadwal';
+            Alert.alert('Error', `Gagal menghapus jadwal: ${errorMsg}`);
+          }
+        }
+      }
+    ]);
+  };
+
+  const handleToggleStatus = async (item: any) => {
+    if (userRole !== 'STAFF') return;
+    try {
+      const newStatus = item.status === 'BELUM' ? 'SUDAH' : 'BELUM';
+      await apiClient.patch(`/feed/schedule/${item.id}`, { status: newStatus });
+      fetchFeedData();
+    } catch (err) {
+      console.error(err);
+      Alert.alert('Error', 'Gagal update status jadwal');
+    }
+  };
 
   const SiloCard = ({ item: silo }: { item: any }) => {
     const percentage = Math.round((silo.currentStock / silo.capacity) * 100);
@@ -206,11 +294,23 @@ const FeedScreen = () => {
         </View>
       </View>
 
+      <View style={{ flexDirection: 'row', backgroundColor: COLORS.white, paddingHorizontal: SPACING.md, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }}>
+        <TouchableOpacity style={[styles.tabBtn, activeTab === 'silo' && styles.tabBtnActive]} onPress={() => setActiveTab('silo')}>
+          <Text style={[styles.tabText, activeTab === 'silo' && styles.tabTextActive]}>Silo Pakan</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.tabBtn, activeTab === 'schedule' && styles.tabBtnActive]} onPress={() => setActiveTab('schedule')}>
+          <Text style={[styles.tabText, activeTab === 'schedule' && styles.tabTextActive]}>Jadwal</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.tabBtn, activeTab === 'report' && styles.tabBtnActive]} onPress={() => setActiveTab('report')}>
+          <Text style={[styles.tabText, activeTab === 'report' && styles.tabTextActive]}>Laporan</Text>
+        </TouchableOpacity>
+      </View>
+
       {loading ? (
         <View style={styles.centerContainer}>
-          <LoadingSpinner message="Memuat Data Silo Pakan..." />
+          <LoadingSpinner message="Memuat Data Pakan..." />
         </View>
-      ) : (() => {
+      ) : activeTab === 'silo' ? (() => {
         const totalPages = Math.ceil(silos.length / ITEMS_PER_PAGE);
         const paginatedSilos = silos.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
         return (
@@ -235,12 +335,166 @@ const FeedScreen = () => {
           }
         />
         );
-      })()}
+      })() : activeTab === 'schedule' ? (
+        <View style={{ flex: 1 }}>
+          {userRole !== 'STAFF' && (
+            <View style={{ padding: SPACING.md, backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }}>
+              <TouchableOpacity 
+                style={{ backgroundColor: COLORS.primary, padding: 12, borderRadius: 8, alignItems: 'center' }}
+                onPress={() => {
+                  setScheduleForm({ id: null, time: '08:00', zoneId: '', feedType: 'Hijauan', siloId: '', status: 'BELUM' });
+                  setScheduleModal(true);
+                }}
+              >
+                <Text style={{ color: COLORS.white, fontWeight: 'bold' }}>+ Tambah Jadwal</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+          <FlatList
+          data={schedules}
+          keyExtractor={item => item.id.toString()}
+          contentContainerStyle={styles.listContent}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchFeedData(); }} />}
+          renderItem={({ item }) => (
+            <View style={styles.card}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <Text style={{ fontWeight: 'bold', fontSize: 16, color: COLORS.text, flex: 1, marginRight: 10 }} numberOfLines={2}>{item.feedType}</Text>
+                <TouchableOpacity 
+                  disabled={userRole !== 'STAFF'}
+                  onPress={() => handleToggleStatus(item)}
+                  style={[styles.statusBadge, { backgroundColor: item.status === 'SUDAH' ? '#dcfce7' : item.status === 'SUDAH_TELAT' || item.status === 'TELAT' ? '#fee2e2' : '#f1f5f9' }]}
+                >
+                  <Text style={[styles.statusText, { color: item.status === 'SUDAH' ? COLORS.success : item.status === 'SUDAH_TELAT' || item.status === 'TELAT' ? COLORS.danger : COLORS.textLight }]}>
+                    {item.status === 'SUDAH_TELAT' ? 'SUDAH (TELAT)' : item.status}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              <Text style={{ color: COLORS.textLight, fontSize: 14 }}>Waktu: {item.time}</Text>
+              <Text style={{ color: COLORS.textLight, fontSize: 14 }}>Kandang: {item.zone ? item.zone.name : 'Semua Kandang'}</Text>
+              
+              {userRole !== 'STAFF' && (
+                <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 10, gap: 10 }}>
+                  <TouchableOpacity onPress={() => {
+                    setScheduleForm({
+                      id: item.id,
+                      time: item.time,
+                      feedType: item.feedType,
+                      status: item.status,
+                      zoneId: item.zoneId ? item.zoneId.toString() : '',
+                      siloId: item.siloId ? item.siloId.toString() : ''
+                    });
+                    setScheduleModal(true);
+                  }}>
+                    <Text style={{ color: COLORS.primary, fontWeight: 'bold', fontSize: 14 }}>Edit</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => handleDeleteSchedule(item.id)}>
+                    <Text style={{ color: COLORS.danger, fontWeight: 'bold', fontSize: 14 }}>Hapus</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          )}
+          ListEmptyComponent={<Text style={{ textAlign: 'center', marginTop: 20, color: COLORS.textLight }}>Belum ada jadwal.</Text>}
+        />
+        </View>
+      ) : (
+        <FlatList
+          data={reports.transactions || []}
+          keyExtractor={item => item.id.toString()}
+          contentContainerStyle={styles.listContent}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchFeedData(); }} />}
+          renderItem={({ item }) => (
+            <View style={styles.card}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
+                <Text style={{ fontWeight: 'bold', fontSize: 16, color: COLORS.text }}>{item.silo?.name || 'Silo Terhapus'}</Text>
+                <View style={[styles.statusBadge, { backgroundColor: item.type === 'MASUK' ? '#d1fae5' : '#e0e7ff' }]}>
+                  <Text style={[styles.statusText, { color: item.type === 'MASUK' ? '#047857' : '#4338ca' }]}>
+                    {item.type === 'MASUK' ? '📥 Masuk' : '📤 Keluar'}
+                  </Text>
+                </View>
+              </View>
+              <Text style={{ color: COLORS.textLight, fontSize: 14 }}>Jumlah: {item.weightKg} {item.silo?.unit || 'Kg'}</Text>
+              <Text style={{ color: COLORS.textLight, fontSize: 14, marginTop: 4 }}>Ket: {item.description || '-'}</Text>
+              <Text style={{ color: COLORS.textLight, fontSize: 12, marginTop: 8 }}>{new Date(item.createdAt).toLocaleString('id-ID')}</Text>
+            </View>
+          )}
+          ListEmptyComponent={<Text style={{ textAlign: 'center', marginTop: 20, color: COLORS.textLight }}>Belum ada riwayat transaksi pakan.</Text>}
+        />
+      )}
+
+      {/* MODAL JADWAL PAKAN */}
+      <Modal visible={scheduleModal} transparent animationType="slide">
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 }}>
+          <View style={{ backgroundColor: COLORS.white, borderRadius: 12, padding: 20, maxHeight: '80%' }}>
+            <ScrollView>
+              <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 15, color: COLORS.text }}>
+                {scheduleForm.id ? 'Edit Jadwal' : 'Tambah Jadwal'}
+              </Text>
+
+              <Text style={{ fontWeight: 'bold', marginBottom: 5, color: COLORS.textLight }}>Waktu (HH:MM)</Text>
+              <TextInput 
+                style={{ borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 8, padding: 10, marginBottom: 15 }}
+                value={scheduleForm.time}
+                onChangeText={(t) => setScheduleForm({...scheduleForm, time: t})}
+                placeholder="Contoh: 08:00"
+              />
+
+              <Text style={{ fontWeight: 'bold', marginBottom: 5, color: COLORS.textLight }}>Jenis Pakan</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 15 }}>
+                {['Hijauan', 'Konsentrat', 'Hijauan + Konsentrat', 'TMR'].map(type => (
+                  <TouchableOpacity 
+                    key={type}
+                    onPress={() => setScheduleForm({...scheduleForm, feedType: type})}
+                    style={{ 
+                      padding: 8, 
+                      borderRadius: 6, 
+                      backgroundColor: scheduleForm.feedType === type ? COLORS.primary : '#f1f5f9'
+                    }}
+                  >
+                    <Text style={{ color: scheduleForm.feedType === type ? COLORS.white : COLORS.text }}>{type}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <Text style={{ fontWeight: 'bold', marginBottom: 5, color: COLORS.textLight }}>Status</Text>
+              <View style={{ flexDirection: 'row', gap: 10, marginBottom: 15 }}>
+                {['BELUM', 'SUDAH'].map(st => (
+                  <TouchableOpacity 
+                    key={st}
+                    onPress={() => setScheduleForm({...scheduleForm, status: st})}
+                    style={{ 
+                      padding: 8, 
+                      borderRadius: 6, 
+                      backgroundColor: scheduleForm.status === st ? COLORS.primary : '#f1f5f9'
+                    }}
+                  >
+                    <Text style={{ color: scheduleForm.status === st ? COLORS.white : COLORS.text }}>{st}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 10, marginTop: 10 }}>
+                <TouchableOpacity onPress={() => setScheduleModal(false)} style={{ padding: 12, backgroundColor: '#f1f5f9', borderRadius: 8 }}>
+                  <Text style={{ color: COLORS.text, fontWeight: 'bold' }}>Batal</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={handleSaveSchedule} style={{ padding: 12, backgroundColor: COLORS.primary, borderRadius: 8 }}>
+                  <Text style={{ color: COLORS.white, fontWeight: 'bold' }}>Simpan</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  tabBtn: { flex: 1, paddingVertical: 12, alignItems: 'center', borderBottomWidth: 2, borderBottomColor: 'transparent' },
+  tabBtnActive: { borderBottomColor: COLORS.primary },
+  tabText: { color: COLORS.textLight, fontWeight: 'bold' },
+  tabTextActive: { color: COLORS.primary },
   container: { flex: 1, backgroundColor: COLORS.background },
   header: { 
     flexDirection: 'row', 

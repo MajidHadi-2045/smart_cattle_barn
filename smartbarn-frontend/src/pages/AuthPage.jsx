@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
 const AuthPage = () => {
     const [view, setView] = useState('login');
@@ -149,10 +150,10 @@ const AuthPage = () => {
                                 className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none transition"
                                 required
                             >
-                                <option value="" disabled>-- Kategori Pengguna --</option>
-                                <option value="super_admin">Super Admin (IT)</option>
+                                <option value="" disabled>-- Pilih Peran --</option>
+                                <option value="super_admin">Super Admin (Manajer)</option>
                                 <option value="veteriner">Dokter Hewan (Veteriner)</option>
-                                <option value="staff">Staf Kandang / Operator</option>
+                                <option value="staff">Staff (Operator Kandang)</option>
                             </select>
                         </div>
 
@@ -190,6 +191,41 @@ const AuthPage = () => {
                         >
                             {isLoading ? 'Memproses...' : 'Masuk Dashboard'}
                         </button>
+
+                        <div className="text-center mt-4">
+                            <button
+                                type="button"
+                                onClick={async () => {
+                                    if (!email || !email.includes('@')) {
+                                        setError('Silakan ketik alamat Email Anda yang valid di kolom atas, lalu tekan tombol Lupa Password ini lagi.');
+                                        return;
+                                    }
+                                    setIsLoading(true);
+                                    setError('');
+                                    try {
+                                        const res = await fetch(`${API_URL}/auth/forgot-password`, {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ email })
+                                        });
+                                        const data = await res.json();
+                                        if (res.ok) {
+                                            toast.success(data.message || 'Link reset password telah dikirim ke email Anda.', { duration: 4000 });
+                                        } else {
+                                            setError(data.message || 'Gagal mengirim email reset.');
+                                        }
+                                    } catch (err) {
+                                        console.error("Forgot Password Error:", err);
+                                        setError('Gagal menghubungi server.');
+                                    } finally {
+                                        setIsLoading(false);
+                                    }
+                                }}
+                                className="text-sm font-semibold text-primary-600 hover:text-primary-700 hover:underline transition"
+                            >
+                                Lupa Password?
+                            </button>
+                        </div>
                     </form>
 
                     <p className="mt-6 text-center text-sm text-slate-500 dark:text-slate-450 italic">

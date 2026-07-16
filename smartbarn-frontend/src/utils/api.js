@@ -24,14 +24,14 @@ export const fetchApi = async (endpoint, options = {}) => {
     ...options.headers,
   };
 
-  // Jika melakukan Mutasi (POST, PUT, PATCH, DELETE), hapus cache terkait
+  // Saat terjadi operasi mutasi data (POST, PUT, PATCH, atau DELETE), kita harus melakukan invalidasi cache yang relevan
   if (method !== 'GET') {
     apiCache.delete(cacheKey);
-    // Juga hapus cache root jika ini adalah data koleksi (misal /health/1 -> hapus /health)
+    // Lakukan pembersihan cache pada level root endpoint apabila terjadi perubahan pada sub-item (contoh: endpoint /health/1 diupdate, maka bersihkan cache /health)
     const rootEndpoint = endpoint.split('/').slice(0, 2).join('/');
     apiCache.delete(`GET:${rootEndpoint}`);
     
-    // Khusus untuk dashboard summary yang sering terpengaruh
+    // Invalidasi spesifik untuk cache dashboard summary karena datanya sering kali bergantung pada mutasi ini
     apiCache.delete(`GET:/dashboard/summary`);
   }
 
@@ -40,8 +40,8 @@ export const fetchApi = async (endpoint, options = {}) => {
 };
 
 /**
- * Fungsi untuk menghapus cache secara manual jika diperlukan
- * @param {string} endpoint 
+ * Utility function yang berguna untuk melakukan invalidasi/penghapusan data cache secara paksa berdasarkan endpoint tertentu
+ * @param {string} endpoint - Path endpoint yang cachenya ingin dibersihkan
  */
 export const mutate = (endpoint) => {
   apiCache.delete(`GET:${endpoint}`);

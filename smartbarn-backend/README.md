@@ -8,7 +8,6 @@
 #Pilih opsi: TypeScript: Restart TS Server
 
 ## Description
-
 [Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
 
 ## Project setup
@@ -41,44 +40,86 @@ $ npm run test:e2e
 
 # test coverage
 $ npm run test:cov
-```
 
 ## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
 $ npm install -g @nestjs/mau
 $ mau deploy
-```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+# Backend NestJS/Database
+#Masuk ke folder Backend
+$ cd ~/smart_cattle_barn/smartbarn-backend
+#Menarik Update (kalau ada yg Baru) dari GitHub
+$ git pull
+#Memperbarui Tipe Database (Wajib jika mengubah file schema.prisma)
+$ npx prisma generate
+#Build/Compile Ulang Backend
+$ npm run build
+#Membangunkan / Menyalakan Backend
+$ pm2 start smartbarn-api-4000
+#Menidurkan / Mematikan Backend
+$ pm2 stop smartbarn-api-4000
+#Restart Backend (Wajib dilakukan setiap habis npm run build)
+$ pm2 restart smartbarn-api-4000
+#Cek Status RAM & Aplikasi Backend
+$ pm2 status
+#Lihat Error / Log Terminal Backend (Real-time)
+$ pm2 logs smartbarn-api-4000
 
-## Resources
+## FRONTEND (Vite / Website UI)
+#Masuk ke folder Frontend
+$ cd ~/smart_cattle_barn/smartbarn-frontend
+#Menarik Update (kalau ada yg Baru) dari GitHub
+$ git pull
+#Build/Compile Ulang Desain Web
+$ npm run build
+#Menerapkan Pembaruan ke Internet (Memindahkan ke Nginx)
+$ sudo cp -r dist/* /var/www/smartcattlebarn.site/html/
 
-Check out a few resources that may come in handy when working with NestJS:
+##Apk (File APK)
+#Cara Mengunggah APK Baru ke Server (Jalankan di CMD Laptop, BUKAN di SSH Server)
+$ scp C:\Users\majid\Downloads\smartbarn.apk majid@77.37.63.21:/home/majid/
+#Pindahkan APK ke Web (Jalankan di Terminal SSH Server)
+$ sudo mv /home/majid/smartbarn.apk /var/www/smartcattlebarn.site/html/
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+##JARINGAN (Nginx & Firewall)
+#Cara Mematikan Website Frontend Sementara Waktu (Menutup Akses Web)
+$ sudo rm /etc/nginx/sites-enabled/smartcattlebarn.site
+$ sudo systemctl reload nginx
+#Cara Menyalakan Website Frontend Kembali
+$ sudo ln -s /etc/nginx/sites-available/smartcattlebarn.site /etc/nginx/sites-enabled/
+$ sudo systemctl reload nginx
+#Melihat Error Nginx (Jika web tiba-tiba Error 500/502)
+$ sudo tail -n 20 /var/log/nginx/error.log
 
-## Support
+##Redis
+$ redis-cli info memory | grep used_memory_human #used_memory_human adalah total memori RAM asli yang saat ini sedang dipakai oleh Redis untuk menyimpan cache dan data sementara
+$ redis-cli info memory | grep maxmemory #maxmemory adalah batas maksimum memori yang diizinkan oleh sistem untuk digunakan oleh Redis (jika sudah penuh, Redis akan mulai menghapus data lama/kurang penting untuk memberi ruang)
+$ redis-cli info memory | grep maxmemory_policy #maxmemory_policy adalah aturan yang digunakan Redis untuk menghapus data ketika memori penuh (misalnya: allkeys-lru, volatile-lru, dll.)
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+$used_memory_rss → RAM aktual yang diambil dari OS (bisa lebih besar karena fragmentasi).
 
-## Stay in touch
+$used_memory_peak → penggunaan RAM tertinggi yang pernah dicapai.
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+$mem_fragmentation_ratio → rasio fragmentasi memori.
 
-## License
+##Notes redis:
+#(Sebagai info tambahan: Redis biasanya sangat ringan dan pintar mengelola memori. Ia jarang menjadi penyebab memori penuh kecuali dikonfigurasi untuk menyimpan data yang berukuran gigabyte. Tersangka utamanya biasanya tetap jatuh pada aplikasi Node.js/PM2 yang menyala berhari-hari tadi)
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+##Jangan pernah menjalankan perintah $redis-cli flushall (perintah untuk menghapus semua isi Redis). Jika Anda melakukannya, cache website teman Anda juga akan ikut terhapus dan bisa membuat website mereka melambat! 
+$ redis-cli flushall
+
+# Testing notif mobile
+$ node test-notifikasi.js ExponentPushToken[xxxxxxxxx]
+
+# Testing notif email
+$ node test-notifikasi.js emailanda@gmail.com
+
+# Testing notif email & mobile
+$ node test-notifikasi.js emailanda@gmail.com ExponentPushToken[xxxxxxxxx]
+
+#Tesing notif Web
+$ node test-notifikasi.js web
+
+
+
+

@@ -47,6 +47,7 @@ const Livestock = () => {
     
     const [showWasteModal, setShowWasteModal] = useState(false);
     const [wasteSummary, setWasteSummary] = useState({ totalFeces: 0, totalUrine: 0, cowCount: 0 });
+    const [wasteSettings, setWasteSettings] = useState({ fecesKg: 25, urineL: 120 });
     const [selectedWasteCows, setSelectedWasteCows] = useState([]);
     const [manualWaste, setManualWaste] = useState({ fecesKg: '', urineL: '' });
     const [wasteMode, setWasteMode] = useState('INDIVIDU'); // 'INDIVIDU' or 'KANDANG'
@@ -54,10 +55,11 @@ const Livestock = () => {
 
     const [showBulkWeightModal, setShowBulkWeightModal] = useState(false);
     const [showBulkFeedModal, setShowBulkFeedModal] = useState(false);
+    const [showBulkNutritionModal, setShowBulkNutritionModal] = useState(false);
     const [selectedFeedWeightCows, setSelectedFeedWeightCows] = useState([]);
     const [bulkWeight, setBulkWeight] = useState('');
-    const [bulkFeed, setBulkFeed] = useState({ feedType: 'Hijauan', weightKg: '' });
-    
+    const [bulkFeed, setBulkFeed] = useState({ feedType: 'Hijauan', weightKg: '', siloId: '', siloId2: '' });
+    const [silos, setSilos] = useState([]);
     // Filter Kandang untuk bulk modals
     const [wasteZoneFilter, setWasteZoneFilter] = useState('ALL');
     const [weightZoneFilter, setWeightZoneFilter] = useState('ALL');
@@ -70,7 +72,8 @@ const Livestock = () => {
     const [formSelectedZoneId, setFormSelectedZoneId] = useState(''); // Untuk form Tambah Sapi
     const [manageSelectedZoneId, setManageSelectedZoneId] = useState(null); // Untuk modal Kelola Zona
     const [expandedZones, setExpandedZones] = useState({}); // Untuk melipat list section
-    const [chartData, setChartData] = useState([]);
+    const [hrChartData, setHrChartData] = useState([]);
+    const [tempChartData, setTempChartData] = useState([]);
     const [activeChartCow, setActiveChartCow] = useState(null);
     const [showDetailModal, setShowDetailModal] = useState(false);
     const [selectedCow, setSelectedCow] = useState(null);
@@ -87,14 +90,49 @@ const Livestock = () => {
         forageRatio: 60,
         concentrateRatio: 40,
         forageDM: 20,
-        concentrateDM: 86
+        concentrateDM: 86,
+        feedingFrequency: 2
     });
 
     // Nutrition Modal
     const [showNutritionModal, setShowNutritionModal] = useState(false);
     const [weightInput, setWeightInput] = useState('');
     const [weightDateInput, setWeightDateInput] = useState(new Date().toISOString().split('T')[0]);
-    const [feedInput, setFeedInput] = useState({ feedType: 'Hijauan', weightKg: '' });
+    const [feedInput, setFeedInput] = useState({ feedType: 'Hijauan', weightKg: '', siloId: '' });
+    const [isDownloadingWaste, setIsDownloadingWaste] = useState(false);
+
+    const handleDownloadWasteReport = async () => {
+        setIsDownloadingWaste(true);
+        try {
+            const token = localStorage.getItem('token');
+            const d = new Date();
+            const endDate = d.toISOString().split('T')[0];
+            d.setDate(1);
+            const startDate = d.toISOString().split('T')[0];
+
+            const response = await fetch(`${API_URL}/reports/download?jenis=Limbah&start=${startDate}&end=${endDate}&format=PDF`, {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) throw new Error('Gagal mengunduh laporan dari server');
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const today = new Date().toISOString().split('T')[0];
+            a.download = `Laporan_Limbah_SmartCattleBarn_${today}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (err) {
+            toast.error(err.message || 'Gagal mengunduh laporan limbah');
+        } finally {
+            setIsDownloadingWaste(false);
+        }
+    };
 
     // --- 2. FUNGSI MENGAMBIL DATA (READ) ---
     const fetchLivestock = async () => {
@@ -150,11 +188,19 @@ const Livestock = () => {
         }
     };
 
+    const fetchSilos = async () => {
+        try {
+            const res = await fetchApi('/feed/silo');
+            if (res.ok) setSilos(await res.json());
+        } catch (err) { console.error('Gagal fetch silos', err); }
+    };
+
     useEffect(() => {
         fetchWasteSummary();
         fetchWasteSettings();
         fetchZones();
         fetchHealthRecords();
+        fetchSilos();
 
         const fetchChecklistConfig = async () => {
             try {
@@ -325,7 +371,32 @@ const Livestock = () => {
     };
 
     const openEditCow = (cow) => {
-        // Find DB id (backend returns cattleId as 'id' usually, so we use dbId for patch)
+        // Find sectionId and zoneId to pre-populate the edit form
+        let secId = '';
+        let zId = '';
+        if (cow.section?.id && cow.section?.zoneId) {
+            secId = cow.section.id;
+            zId = cow.section.zoneId;
+        } else if (cow.section?.name && cow.zone) {
+            // Lookup from zones array if it's a locally added cow without full IDs yet
+            const z = zones.find(z => z.name === cow.zone);
+            if (z) {
+                zId = z.id;
+                const s = z.sections?.find(s => s.name === cow.section.name);
+                if (s) secId = s.id;
+            }
+        } else {
+            // Fallback for deeply nested api object or missing names
+            const z = zones.find(z => z.name === cow.zone);
+            if (z) {
+                zId = z.id;
+                if (cow.section) {
+                    const s = z.sections?.find(s => s.id === cow.section.id || s.name === cow.section.name);
+                    if (s) secId = s.id;
+                }
+            }
+        }
+
         setCowFormData({
             id: cow.dbId,
             cattleId: cow.id,
@@ -334,8 +405,10 @@ const Livestock = () => {
             birthDate: '', // Can't easily map age back to birthDate perfectly without real date
             initialWeight: cow.weight,
             zone: cow.zone,
-            status: cow.status
+            status: cow.status,
+            sectionId: secId
         });
+        setFormSelectedZoneId(zId);
         setShowCowModal(true);
     };
 
@@ -391,9 +464,7 @@ const Livestock = () => {
             const cow = cows.find(c => c.id === cowId);
             if (!cow) return;
 
-            const lastWeightRecord = cow.weightRecords && cow.weightRecords.length > 0
-                ? cow.weightRecords[0].weight
-                : (cow.initialWeight || 300);
+            const lastWeightRecord = cow.weight || 300;
 
             const targetBkPercent = cow.targetBkPercent ?? 2.5;
             const bkReq = lastWeightRecord * (targetBkPercent / 100);
@@ -424,6 +495,49 @@ const Livestock = () => {
         };
     };
 
+    const handleBulkNutritionSubmit = async (e) => {
+        e.preventDefault();
+        if (selectedFeedWeightCows.length === 0) return toast.error('Pilih sapi terlebih dahulu');
+
+        let finalPrefs = { ...nutritionPrefsForm };
+        if (feedingMethod === 'HIJAUAN_SAJA') {
+            finalPrefs.forageRatio = 100;
+            finalPrefs.concentrateRatio = 0;
+        } else if (feedingMethod === 'KONSENTRAT_SAJA') {
+            finalPrefs.forageRatio = 0;
+            finalPrefs.concentrateRatio = 100;
+        } else if (feedingMethod === 'TMR') {
+            finalPrefs.forageRatio = 100;
+            finalPrefs.concentrateRatio = 999;
+        }
+
+        toast.promise(
+            fetchApi('/livestock/bulk/nutrition', {
+                method: 'PATCH',
+                body: JSON.stringify({
+                    cattleIds: selectedFeedWeightCows,
+                    ...finalPrefs
+                })
+            }).then(async res => {
+                if (!res.ok) {
+                    const err = await res.json().catch(()=>({}));
+                    throw new Error(err.message || 'Gagal menyimpan data');
+                }
+                return res.json();
+            }),
+            {
+                loading: 'Menyimpan nutrisi massal...',
+                success: () => {
+                    setSelectedFeedWeightCows([]);
+                    setShowBulkNutritionModal(false);
+                    fetchLivestock();
+                    return 'Nutrisi massal berhasil diperbarui!';
+                },
+                error: (err) => `Gagal: ${err.message || 'Error server'}`
+            }
+        );
+    };
+
     const handleBulkWeightSubmit = async (e) => {
         e.preventDefault();
         if (selectedFeedWeightCows.length === 0) { toast.error('Pilih minimal satu sapi'); return; }
@@ -447,14 +561,34 @@ const Livestock = () => {
         if (selectedFeedWeightCows.length === 0) { toast.error('Pilih minimal satu sapi'); return; }
         if (!bulkFeed.weightKg) { toast.error('Masukkan berat pakan'); return; }
         const bkPercent = getBulkFeedBkPercent(bulkFeed.feedType);
-        const promises = selectedFeedWeightCows.map(cowId =>
-            fetchApi('/livestock/feed', { method: 'POST', body: JSON.stringify({ cattleId: cowId, feedType: bulkFeed.feedType, weightKg: parseFloat(bulkFeed.weightKg), bkPercent }) })
-        );
+        
+        const payload = {
+            cattleIds: selectedFeedWeightCows,
+            feedType: bulkFeed.feedType,
+            weightKgPerCow: parseFloat(bulkFeed.weightKg),
+            bkPercent,
+            siloForageId: bulkFeed.siloId || undefined,
+            siloConcentrateId: bulkFeed.siloId2 || undefined
+        };
+
         toast.promise(
-            Promise.all(promises).then(async (results) => { for (const res of results) { if (!res.ok) { const err = await res.json().catch(()=>({})); throw new Error(err.message || 'Ada yang gagal'); } } return results; }),
+            fetchApi('/livestock/feed-bulk', { method: 'POST', body: JSON.stringify(payload) })
+            .then(async (res) => {
+                if (!res.ok) {
+                    const err = await res.json().catch(()=>({}));
+                    throw new Error(err.message || 'Gagal menyimpan data');
+                }
+                return res.json();
+            }),
             {
                 loading: 'Mencatat beri pakan...',
-                success: () => { setBulkFeed({ feedType: 'Hijauan', weightKg: '' }); setSelectedFeedWeightCows([]); setShowBulkFeedModal(false); fetchLivestock(); return 'Beri pakan berhasil dicatat!'; },
+                success: () => { 
+                    setBulkFeed({ feedType: 'Hijauan', weightKg: '', siloId: '', siloId2: '' }); 
+                    setSelectedFeedWeightCows([]); 
+                    setShowBulkFeedModal(false); 
+                    fetchLivestock(); 
+                    return 'Beri pakan berhasil dicatat!'; 
+                },
                 error: (err) => `Gagal: ${err.message || 'Error server'}`
             }
         );
@@ -562,19 +696,57 @@ const Livestock = () => {
         } catch (err) { console.error("Gagal load history chart", err); }
     };
 
+    const lastTempChartUpdate = useRef(0);
+
     useEffect(() => {
         if (!activeChartCow) return;
+        lastTempChartUpdate.current = 0; // Force immediate update when modal opens
+
+        // Fetch historical data first
+        const loadHistory = async () => {
+            try {
+                const res = await fetchApi(`/livestock/vital/history/${activeChartCow}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    
+                    const hrHistory = data.filter(d => d.heartRate !== null).map(d => ({
+                        time: new Date(d.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second:'2-digit' }),
+                        heartRate: d.heartRate
+                    })).slice(-30);
+                    
+                    const tempHistory = data.filter(d => d.bodyTemperature !== null).map(d => ({
+                        time: new Date(d.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+                        temp: d.bodyTemperature
+                    })).slice(-30);
+
+                    setHrChartData(hrHistory);
+                    setTempChartData(tempHistory);
+                }
+            } catch (err) {
+                console.error('Failed to load vital history', err);
+            }
+        };
+        loadHistory();
+
         const onVitalUpdate = (payload) => {
-            setChartData(prev => {
-                const lastPoint = prev.length > 0 ? prev[prev.length - 1] : { heartRate: 0, temp: 0 };
-                const newDataPoint = {
-                    time: new Date(payload.timestamp || Date.now()).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second:'2-digit' }),
-                    heartRate: payload.heartRate !== undefined ? payload.heartRate : lastPoint.heartRate,
-                    temp: payload.bodyTemperature !== undefined ? payload.bodyTemperature : lastPoint.temp
-                };
-                const updated = [...prev, newDataPoint];
-                return updated.length > 30 ? updated.slice(updated.length - 30) : updated;
-            });
+            const timeStr = new Date(payload.timestamp || Date.now()).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second:'2-digit' });
+            
+            if (payload.heartRate !== undefined) {
+                setHrChartData(prev => {
+                    const updated = [...prev, { time: timeStr, heartRate: payload.heartRate }];
+                    return updated.length > 30 ? updated.slice(updated.length - 30) : updated;
+                });
+            }
+
+            const now = Date.now();
+            if (payload.bodyTemperature !== undefined && (now - lastTempChartUpdate.current >= 60000)) {
+                setTempChartData(prev => {
+                    const timeStrMin = new Date(payload.timestamp || now).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                    const updated = [...prev, { time: timeStrMin, temp: payload.bodyTemperature }];
+                    return updated.length > 30 ? updated.slice(updated.length - 30) : updated;
+                });
+                lastTempChartUpdate.current = now;
+            }
         };
 
         const eventName = `vital-update-${activeChartCow}`;
@@ -582,6 +754,8 @@ const Livestock = () => {
 
         return () => {
             socket.off(eventName, onVitalUpdate);
+            setHrChartData([]);
+            setTempChartData([]);
         };
     }, [activeChartCow]);
 
@@ -609,7 +783,7 @@ const Livestock = () => {
                     }
                 } else {
                     // Defaults fallback
-                    setNutritionPrefsForm({ targetBkPercent: 2.5, forageRatio: 60, concentrateRatio: 40, forageDM: 20, concentrateDM: 86 });
+                    setNutritionPrefsForm({ targetBkPercent: 2.5, forageRatio: 60, concentrateRatio: 40, forageDM: 20, concentrateDM: 86, feedingFrequency: 2 });
                     setFeedingMethod('CAMPURAN');
                 }
             }
@@ -717,8 +891,16 @@ const Livestock = () => {
         switch(feedInput.feedType) {
             case 'Hijauan': computedBkPercent = nutritionPrefsForm.forageDM || 20; break;
             case 'Konsentrat': computedBkPercent = nutritionPrefsForm.concentrateDM || 86; break;
-            case 'Konsentrat+hijauan': computedBkPercent = ((nutritionPrefsForm.forageDM || 20) + (nutritionPrefsForm.concentrateDM || 86)) / 2; break;
-            case 'Konsentrat+hijauan+vitamin': computedBkPercent = ((nutritionPrefsForm.forageDM || 20) + (nutritionPrefsForm.concentrateDM || 86)) / 2; break;
+            case 'Konsentrat+hijauan':
+            case 'Konsentrat+hijauan+vitamin': {
+                const fRatio = nutritionPrefsForm.forageRatio || 60;
+                const cRatio = nutritionPrefsForm.concentrateRatio || 40;
+                const fDM = nutritionPrefsForm.forageDM || 20;
+                const cDM = nutritionPrefsForm.concentrateDM || 86;
+                const expectedAsFed = (fRatio / (fDM/100)) + (cRatio / (cDM/100));
+                computedBkPercent = expectedAsFed > 0 ? (100 / expectedAsFed) * 100 : 53;
+                break;
+            }
             case 'Tmr': computedBkPercent = (nutritionPrefsForm.concentrateRatio === 999) ? (nutritionPrefsForm.forageDM || 50) : 50; break;
         }
 
@@ -729,7 +911,8 @@ const Livestock = () => {
                     cattleId: selectedCow.id, 
                     feedType: feedInput.feedType, 
                     weightKg: parseFloat(feedInput.weightKg), 
-                    bkPercent: parseFloat(computedBkPercent.toFixed(2)) 
+                    bkPercent: parseFloat(computedBkPercent.toFixed(2)),
+                    siloId: feedInput.siloId || undefined
                 })
             }).then(async res => { if(!res.ok) { const err = await res.json().catch(()=>({})); throw new Error(err.message || 'Gagal'); } return res; }),
             {
@@ -788,6 +971,12 @@ const Livestock = () => {
                             className="flex-1 lg:flex-none px-4 py-2.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:hover:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-900/50 rounded-xl font-semibold text-sm transition flex items-center justify-center gap-2"
                         >
                             <span>🌾 Beri Pakan</span>
+                        </button>
+                        <button 
+                            onClick={() => { setSelectedFeedWeightCows(cows.map(c => c.cattleId)); setShowBulkNutritionModal(true); }} 
+                            className="flex-1 lg:flex-none px-4 py-2.5 bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/30 dark:hover:bg-purple-950/50 text-purple-700 dark:text-purple-400 border border-purple-200/60 dark:border-purple-900/50 rounded-xl font-semibold text-sm transition flex items-center justify-center gap-2"
+                        >
+                            <span>🔬 Atur Nutrisi</span>
                         </button>
                         <button 
                             onClick={() => setShowZoneModal(true)} 
@@ -941,7 +1130,7 @@ const Livestock = () => {
                         </div>
 
                         {/* Always Visible Actions */}
-                        {userRole !== 'VETERINER' && (
+                        {userRole !== 'VETERINER' && userRole !== 'SUPER_ADMIN' && (
                             <div className="mb-2">
                                 <button onClick={() => openNutritionConfig(cow)} className="w-full bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 dark:border-slate-600 transition flex items-center justify-center gap-1 shadow-sm">
                                     ⚙️ Parameter Target Nutrisi
@@ -967,7 +1156,7 @@ const Livestock = () => {
                                     ❤️ <span className="text-xs font-bold">{cow.heartRate > 0 ? cow.heartRate : '--'}</span>
                                 </button>
                             </div>
-                            {userRole !== 'VETERINER' && (
+                            {userRole !== 'VETERINER' && userRole !== 'SUPER_ADMIN' && (
                                 <div className="flex gap-1 opacity-60 hover:opacity-100 transition-opacity">
                                     <button onClick={() => openEditCow(cow)} className="p-1 text-slate-400 hover:text-blue-500 transition" title="Edit Sapi">✏️</button>
                                     <button onClick={() => handleDelete(cow.id)} className="p-1 text-slate-400 hover:text-red-500 transition" title="Hapus">🗑️</button>
@@ -1241,7 +1430,7 @@ const Livestock = () => {
                             <div className="h-48 w-full mb-8">
                                 <h4 className="text-rose-400 text-sm font-bold mb-2 flex items-center gap-2">❤️ Detak Jantung (BPM)</h4>
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <LineChart data={chartData} margin={{ top: 5, right: 0, left: -20, bottom: 5 }}>
+                                    <LineChart data={hrChartData} margin={{ top: 5, right: 0, left: -20, bottom: 5 }}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
                                         <XAxis dataKey="time" stroke="#64748b" fontSize={12} tick={{fill: '#64748b'}} />
                                         <YAxis stroke="#64748b" fontSize={12} domain={['dataMin - 10', 'dataMax + 10']} tick={{fill: '#64748b'}} />
@@ -1256,10 +1445,10 @@ const Livestock = () => {
                             <div className="h-48 w-full">
                                 <h4 className="text-orange-400 text-sm font-bold mb-2 flex items-center gap-2">🌡️ Suhu Tubuh (°C)</h4>
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <LineChart data={chartData} margin={{ top: 5, right: 0, left: -20, bottom: 5 }}>
+                                    <LineChart data={tempChartData} margin={{ top: 5, right: 0, left: -20, bottom: 5 }}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
                                         <XAxis dataKey="time" stroke="#64748b" fontSize={12} tick={{fill: '#64748b'}} />
-                                        <YAxis stroke="#64748b" fontSize={12} domain={[35, 45]} tick={{fill: '#64748b'}} />
+                                        <YAxis stroke="#64748b" fontSize={12} domain={['dataMin - 0.5', 'dataMax + 0.5']} tick={{fill: '#64748b'}} />
                                         <Tooltip contentStyle={{backgroundColor: '#1e293b', borderColor: '#334155', color: '#fff'}} itemStyle={{color: '#fb923c'}} />
                                         <Line type="monotone" dataKey="temp" stroke="#fb923c" strokeWidth={3} dot={false} isAnimationActive={false} />
                                         <Brush dataKey="time" height={20} stroke="#334155" fill="#0f172a" />
@@ -1732,6 +1921,29 @@ const Livestock = () => {
                                         </select>
                                     </div>
                                     <div>
+                                        <label className="block text-xs font-medium text-slate-500 mb-1">Pilih Silo (Gudang)</label>
+                                        <select 
+                                            value={feedInput.siloId} 
+                                            onChange={e => setFeedInput({...feedInput, siloId: e.target.value})} 
+                                            className="w-full p-2 text-sm border rounded-lg dark:bg-slate-800 dark:border-slate-600"
+                                        >
+                                            <option value="">-- Pilih Silo (Otomatis) --</option>
+                                            {(silos || [])
+                                                .filter(s => {
+                                                    const fType = feedInput.feedType.toLowerCase();
+                                                    const sType = (s.feedType || '').toLowerCase();
+                                                    const sName = (s.name || '').toLowerCase();
+                                                    if (fType.includes('konsentrat+hijauan') || fType === 'tmr') {
+                                                        return sType.includes('hijauan') || sType.includes('konsentrat') || sName.includes('hijauan') || sName.includes('konsentrat');
+                                                    }
+                                                    return sType.includes(fType) || sName.includes(fType);
+                                                })
+                                                .map(s => (
+                                                <option key={s.id} value={s.id}>{s.name} - Sisa {s.currentStock} {s.unit}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div>
                                         <label className="block text-xs font-medium text-slate-500 mb-1">Berat Diberikan (As-Fed dalam Kg)</label>
                                         <div className="flex gap-2">
                                             <input 
@@ -1924,7 +2136,7 @@ const Livestock = () => {
 
                                 <div className="bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-xl border border-emerald-100 dark:border-emerald-900/30 space-y-3">
                                     <h4 className="font-bold text-emerald-900 dark:text-emerald-100 text-sm">🌾 Input Pemberian Pakan</h4>
-                                    <div className="grid grid-cols-2 gap-3">
+                                    <div className="space-y-3">
                                         <div>
                                             <label className="block text-xs font-semibold text-emerald-800 mb-1">Jenis Pakan</label>
                                             <select value={bulkFeed.feedType} onChange={e => setBulkFeed({...bulkFeed, feedType: e.target.value})} className="w-full p-2 border rounded-lg text-sm dark:bg-slate-800 dark:border-slate-600 bg-white">
@@ -1935,7 +2147,60 @@ const Livestock = () => {
                                             </select>
                                         </div>
                                         <div>
-                                            <label className="block text-xs font-semibold text-emerald-800 mb-1">Berat As-Fed (Kg)</label>
+                                            <label className="block text-xs font-semibold text-emerald-800 mb-1">Pilih Silo {(bulkFeed.feedType.toLowerCase().includes('konsentrat+hijauan') || bulkFeed.feedType.toLowerCase() === 'tmr') ? 'Hijauan' : '(Gudang)'}</label>
+                                            <select 
+                                                value={bulkFeed.siloId} 
+                                                onChange={e => setBulkFeed({...bulkFeed, siloId: e.target.value})} 
+                                                className="w-full p-2 border rounded-lg text-sm dark:bg-slate-800 dark:border-slate-600 bg-white"
+                                            >
+                                                <option value="">-- Pilih Silo (Otomatis) --</option>
+                                                {(silos || [])
+                                                    .filter(s => {
+                                                        const fType = bulkFeed.feedType.toLowerCase();
+                                                        const sType = (s.feedType || '').toLowerCase();
+                                                        const sName = (s.name || '').toLowerCase();
+                                                        if (fType.includes('konsentrat+hijauan') || fType === 'tmr') {
+                                                            return sType.includes('hijauan') || sType.includes('rumput') || sName.includes('hijauan') || sName.includes('rumput');
+                                                        }
+                                                        return sType.includes(fType) || sName.includes(fType);
+                                                    })
+                                                    .map(s => (
+                                                    <option key={s.id} value={s.id}>{s.name} - Sisa {s.currentStock} {s.unit}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        {(bulkFeed.feedType.toLowerCase().includes('konsentrat+hijauan') || bulkFeed.feedType.toLowerCase() === 'tmr') && (
+                                            <div>
+                                                <label className="block text-xs font-semibold text-emerald-800 mb-1">Pilih Silo Konsentrat</label>
+                                                <select 
+                                                    value={bulkFeed.siloId2 || ''} 
+                                                    onChange={e => setBulkFeed({...bulkFeed, siloId2: e.target.value})} 
+                                                    className="w-full p-2 border rounded-lg text-sm dark:bg-slate-800 dark:border-slate-600 bg-white"
+                                                >
+                                                    <option value="">-- Pilih Silo (Otomatis) --</option>
+                                                    {(silos || [])
+                                                        .filter(s => {
+                                                            const sType = (s.feedType || '').toLowerCase();
+                                                            const sName = (s.name || '').toLowerCase();
+                                                            return sType.includes('konsentrat') || sName.includes('konsentrat');
+                                                        })
+                                                        .map(s => (
+                                                        <option key={s.id} value={s.id}>{s.name} - Sisa {s.currentStock} {s.unit}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        )}
+
+                                        <div>
+                                            <label className="block text-xs font-semibold text-emerald-800 mb-1">
+                                                {selectedFeedWeightCows.length > 1 ? 'Rata-rata As-Fed per Sapi (kg)' : 'Berat As-Fed (Kg / Sapi)'}
+                                            </label>
+                                            {selectedFeedWeightCows.length > 1 && (
+                                                <p className="text-[10px] text-emerald-600 dark:text-emerald-400 mb-2 leading-tight font-medium">
+                                                    *Total {selectedFeedWeightCows.length} sapi akan didistribusikan secara proporsional sesuai BK masing-masing.
+                                                </p>
+                                            )}
                                             <input type="number" step="0.1" placeholder="Contoh: 12.5" value={bulkFeed.weightKg} onChange={e => setBulkFeed({...bulkFeed, weightKg: e.target.value})} className="w-full p-2 border rounded-lg text-sm dark:bg-slate-800 dark:border-slate-600 bg-white" />
                                         </div>
                                     </div>
@@ -2008,9 +2273,9 @@ const Livestock = () => {
                                                                     <span className="font-bold text-slate-800 dark:text-slate-200">{recs.totalConcentrateAsFed.toFixed(2)} kg</span>
                                                                 </div>
                                                                 <div className="pt-1.5 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center text-[10px]">
-                                                                    <span className="text-slate-400">Porsi Per Sapi / Makan ({feedGoal}x):</span>
+                                                                    <span className="text-slate-400">Distribusi Porsi ({feedGoal}x Makan):</span>
                                                                     <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                                                                        Hijauan: {(recs.totalForageAsFed / (selectedFeedWeightCows.length * feedGoal)).toFixed(2)} kg | Kons: {(recs.totalConcentrateAsFed / (selectedFeedWeightCows.length * feedGoal)).toFixed(2)} kg
+                                                                        {selectedFeedWeightCows.length > 1 ? 'Proporsional (Sesuai Kebutuhan BK)' : `Hijauan: ${(recs.totalForageAsFed / feedGoal).toFixed(2)} kg | Kons: ${(recs.totalConcentrateAsFed / feedGoal).toFixed(2)} kg`}
                                                                     </span>
                                                                 </div>
                                                             </div>
@@ -2021,12 +2286,12 @@ const Livestock = () => {
                                                                     <span className="font-bold text-slate-800 dark:text-slate-200">{selectedRecTotal.toFixed(2)} kg</span>
                                                                 </div>
                                                                 <div className="flex justify-between">
-                                                                    <span className="text-slate-500">Total Harian (Per Sapi):</span>
+                                                                    <span className="text-slate-500">{selectedFeedWeightCows.length > 1 ? 'Rata-rata Harian (Acuan Dasar):' : 'Total Harian (Per Sapi):'}</span>
                                                                     <span className="font-bold text-slate-800 dark:text-slate-200">{recPerCow.toFixed(2)} kg</span>
                                                                 </div>
                                                                 {feedGoal > 1 && (
                                                                     <div className="flex justify-between text-emerald-600 dark:text-emerald-400 font-semibold">
-                                                                        <span>Porsi 1x Makan (Per Sapi):</span>
+                                                                        <span>{selectedFeedWeightCows.length > 1 ? 'Rata-rata 1x Makan:' : 'Porsi 1x Makan (Per Sapi):'}</span>
                                                                         <span>{recPerCowSession.toFixed(2)} kg</span>
                                                                     </div>
                                                                 )}
@@ -2039,7 +2304,7 @@ const Livestock = () => {
                                                                 onClick={() => setBulkFeed({ ...bulkFeed, weightKg: recPerCow.toFixed(2) })}
                                                                 className="flex-1 px-2 py-1 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-950/60 text-indigo-700 dark:text-indigo-400 rounded text-[10px] font-bold border border-indigo-200/40 transition"
                                                             >
-                                                                🎯 Gunakan Harian ({recPerCow.toFixed(2)} kg)
+                                                                🎯 Gunakan Harian ({selectedFeedWeightCows.length > 1 ? `Acuan ${recPerCow.toFixed(2)} kg` : `${recPerCow.toFixed(2)} kg`})
                                                             </button>
                                                             {feedGoal > 1 && (
                                                                 <button
@@ -2047,7 +2312,7 @@ const Livestock = () => {
                                                                     onClick={() => setBulkFeed({ ...bulkFeed, weightKg: recPerCowSession.toFixed(2) })}
                                                                     className="flex-1 px-2 py-1 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 rounded text-[10px] font-bold border border-emerald-200/40 transition"
                                                                 >
-                                                                    🎯 Gunakan Porsi 1x ({recPerCowSession.toFixed(2)} kg)
+                                                                    🎯 Gunakan Porsi 1x ({selectedFeedWeightCows.length > 1 ? `Acuan ${recPerCowSession.toFixed(2)} kg` : `${recPerCowSession.toFixed(2)} kg`})
                                                                 </button>
                                                             )}
                                                         </div>
@@ -2059,7 +2324,7 @@ const Livestock = () => {
                                                     <div className="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-slate-700 text-xs space-y-1.5">
                                                         <p className="font-bold text-slate-700 dark:text-slate-300 text-[10px] uppercase tracking-wide">📊 Estimasi Pencatatan:</p>
                                                         <div className="flex justify-between">
-                                                            <span className="text-slate-500">As-Fed Per Cow:</span>
+                                                            <span className="text-slate-500">{selectedFeedWeightCows.length > 1 ? 'Input Dasar (Rata-rata/Sapi):' : 'As-Fed Per Cow:'}</span>
                                                             <span className="font-bold text-slate-800 dark:text-slate-200">{asFedInputVal.toFixed(2)} kg</span>
                                                         </div>
                                                         <div className="flex justify-between">
@@ -2067,10 +2332,47 @@ const Livestock = () => {
                                                             <span className="font-bold text-indigo-600 dark:text-indigo-400">{(asFedInputVal * (bkPct / 100)).toFixed(2)} kg BK/sapi</span>
                                                         </div>
                                                         {selectedFeedWeightCows.length > 1 && (
-                                                            <div className="flex justify-between pt-1.5 border-t border-slate-200 dark:border-slate-700">
-                                                                <span className="text-slate-500 font-semibold">Total As-Fed ({selectedFeedWeightCows.length} sapi):</span>
-                                                                <span className="font-bold text-emerald-600 dark:text-emerald-400">{totalInputAsFed.toFixed(2)} kg</span>
-                                                            </div>
+                                                            <>
+                                                                <div className="flex justify-between pt-1.5 border-t border-slate-200 dark:border-slate-700">
+                                                                    <span className="text-slate-500 font-semibold">Total As-Fed ({selectedFeedWeightCows.length} sapi):</span>
+                                                                    <span className="font-bold text-emerald-600 dark:text-emerald-400">{totalInputAsFed.toFixed(2)} kg</span>
+                                                                </div>
+                                                                <div className="pt-2 mt-2 border-t border-slate-200 dark:border-slate-700">
+                                                                    <p className="font-semibold text-slate-700 dark:text-slate-300 text-[10px] mb-1">Rincian Distribusi (Proporsional):</p>
+                                                                    <div className="max-h-32 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                                                                        {selectedFeedWeightCows.map(cowId => {
+                                                                            const cow = cows.find(c => c.id === cowId);
+                                                                            if(!cow) return null;
+                                                                            const weight = cow.weight || 300;
+                                                                            const bkReq = weight * ((cow.targetBkPercent ?? 2.5) / 100);
+                                                                            const proportion = recs.totalBk > 0 ? (bkReq / recs.totalBk) : (1 / selectedFeedWeightCows.length);
+                                                                            const cowAsFed = totalInputAsFed * proportion;
+                                                                            const forageRatio = cow.forageRatio ?? 60;
+                                                                            const concentrateRatio = cow.concentrateRatio ?? 40;
+                                                                            const forageDM = cow.forageDM ?? 20;
+                                                                            const concentrateDM = cow.concentrateDM ?? 86;
+                                                                            let expectedAsFed = 0;
+                                                                            if (bulkFeed.feedType === 'Hijauan') {
+                                                                                expectedAsFed = bkReq / (forageDM / 100);
+                                                                            } else if (bulkFeed.feedType === 'Konsentrat') {
+                                                                                expectedAsFed = bkReq / (concentrateDM / 100);
+                                                                            } else if (bulkFeed.feedType === 'Tmr') {
+                                                                                expectedAsFed = bkReq / (forageDM / 100);
+                                                                            } else {
+                                                                                expectedAsFed = (bkReq * (forageRatio / 100)) / (forageDM / 100) + (bkReq * (concentrateRatio / 100)) / (concentrateDM / 100);
+                                                                            }
+                                                                            const trueBkPct = expectedAsFed > 0 ? (bkReq / expectedAsFed) : (bkPct / 100);
+                                                                            const cowBk = cowAsFed * trueBkPct;
+                                                                            return (
+                                                                                <div key={cowId} className="flex justify-between text-[10px] bg-slate-100 dark:bg-slate-800 p-1 px-2 rounded border border-slate-200 dark:border-slate-700">
+                                                                                    <span className="text-slate-700 dark:text-slate-300 font-medium">{cow.cattleId}</span>
+                                                                                    <span className="text-slate-800 dark:text-slate-200 font-bold">{cowAsFed.toFixed(2)} kg <span className="font-normal text-slate-500 dark:text-slate-400 text-[9px] ml-1">({cowBk.toFixed(2)} kg BK)</span></span>
+                                                                                </div>
+                                                                            );
+                                                                        })}
+                                                                    </div>
+                                                                </div>
+                                                            </>
                                                         )}
                                                     </div>
                                                 )}
@@ -2080,6 +2382,105 @@ const Livestock = () => {
                                 </div>
 
                                 <button type="submit" className="w-full mt-4 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-lg font-bold shadow-lg transition">Simpan Beri Pakan</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {showBulkNutritionModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 backdrop-blur-sm p-4" onClick={() => { setShowBulkNutritionModal(false); setFeedZoneFilter('ALL'); }}>
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-md max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+                        <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-purple-50 dark:bg-purple-950/15">
+                            <div className="flex items-center gap-2.5">
+                                <span className="text-lg">🔬</span>
+                                <h3 className="font-bold text-lg text-purple-900 dark:text-purple-100">Atur Nutrisi Massal</h3>
+                            </div>
+                            <button onClick={() => { setShowBulkNutritionModal(false); setFeedZoneFilter('ALL'); }} className="text-slate-400 hover:text-slate-650 text-2xl font-bold">x</button>
+                        </div>
+                        <div className="p-4">
+                            <form onSubmit={handleBulkNutritionSubmit} className="space-y-4">
+                                <div className="space-y-3 max-h-40 overflow-y-auto border border-slate-200 dark:border-slate-700 p-3 rounded-xl bg-slate-50 dark:bg-slate-900/30">
+                                    <div className="flex justify-between items-center pb-2 border-b border-slate-200 dark:border-slate-700 mb-2">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs font-bold text-slate-500">Filter Kandang:</span>
+                                            <select value={feedZoneFilter} onChange={e => setFeedZoneFilter(e.target.value)} className="text-xs py-1 px-2 border rounded dark:bg-slate-800 dark:border-slate-600">
+                                                <option value="ALL">Semua Kandang</option>
+                                                {zones.map(z => <option key={z.id} value={z.id}>{z.name}</option>)}
+                                            </select>
+                                        </div>
+                                        <button type="button" onClick={() => {
+                                            const filteredCows = feedZoneFilter === 'ALL' ? cows : cows.filter(c => c.section?.zoneId === parseInt(feedZoneFilter));
+                                            if (selectedFeedWeightCows.length === filteredCows.length) {
+                                                setSelectedFeedWeightCows([]);
+                                            } else {
+                                                setSelectedFeedWeightCows(filteredCows.map(c => c.cattleId));
+                                            }
+                                        }} className="text-xs text-primary-600 font-bold hover:underline">
+                                            {selectedFeedWeightCows.length > 0 ? 'Batal Semua' : 'Pilih Semua'}
+                                        </button>
+                                    </div>
+                                    {cows.filter(c => feedZoneFilter === 'ALL' || c.section?.zoneId === parseInt(feedZoneFilter)).map(cow => (
+                                        <label key={cow.id} className="flex items-center gap-3 cursor-pointer group p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg">
+                                            <input type="checkbox" checked={selectedFeedWeightCows.includes(cow.cattleId)} onChange={(e) => {
+                                                if (e.target.checked) setSelectedFeedWeightCows([...selectedFeedWeightCows, cow.cattleId]);
+                                                else setSelectedFeedWeightCows(selectedFeedWeightCows.filter(id => id !== cow.cattleId));
+                                            }} className="w-4 h-4 text-primary-600 rounded" />
+                                            <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{cow.cattleId} <span className="text-xs text-slate-400 font-normal ml-1">({cow.breed})</span></span>
+                                        </label>
+                                    ))}
+                                </div>
+                                <p className="text-xs text-slate-500 mt-1">{selectedFeedWeightCows.length} sapi terpilih</p>
+
+                                <div>
+                                    <label className="block text-xs font-semibold text-purple-800 mb-1">Metode Pemberian Pakan</label>
+                                    <select value={feedingMethod} onChange={e => setFeedingMethod(e.target.value)} className="w-full p-2 border rounded-lg text-sm dark:bg-slate-800 dark:border-slate-600 bg-white">
+                                        <option value="CAMPURAN">Campuran (Pisahkan Hijauan & Konsentrat)</option>
+                                        <option value="TMR">TMR (Total Mixed Ration)</option>
+                                        <option value="HIJAUAN_SAJA">Hijauan Saja</option>
+                                        <option value="KONSENTRAT_SAJA">Konsentrat Saja</option>
+                                    </select>
+                                </div>
+                                
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="block text-xs font-semibold text-slate-600 mb-1">Target DMI / BK (%)</label>
+                                        <input type="number" step="0.1" value={nutritionPrefsForm.targetBkPercent} onChange={e => setNutritionPrefsForm({...nutritionPrefsForm, targetBkPercent: e.target.value})} className="w-full p-2 border rounded-lg text-sm dark:bg-slate-800 dark:border-slate-600 bg-transparent" placeholder="Persentase" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-semibold text-slate-600 mb-1">Frekuensi Makan (x / Hari)</label>
+                                        <input type="number" min="1" max="10" value={nutritionPrefsForm.feedingFrequency ?? 2} onChange={e => setNutritionPrefsForm({...nutritionPrefsForm, feedingFrequency: parseInt(e.target.value)})} className="w-full p-2 border rounded-lg text-sm dark:bg-slate-800 dark:border-slate-600 bg-transparent" placeholder="Frekuensi" />
+                                    </div>
+                                </div>
+                                
+                                {feedingMethod === 'CAMPURAN' && (
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="block text-xs font-semibold text-slate-600 mb-1">Rasio Hijauan (%)</label>
+                                            <input type="number" value={nutritionPrefsForm.forageRatio} onChange={e => setNutritionPrefsForm({...nutritionPrefsForm, forageRatio: parseFloat(e.target.value)})} className="w-full p-2 border rounded-lg text-sm dark:bg-slate-800 dark:border-slate-600 bg-transparent" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-slate-600 mb-1">Rasio Konsentrat (%)</label>
+                                            <input type="number" value={nutritionPrefsForm.concentrateRatio} onChange={e => setNutritionPrefsForm({...nutritionPrefsForm, concentrateRatio: parseFloat(e.target.value)})} className="w-full p-2 border rounded-lg text-sm dark:bg-slate-800 dark:border-slate-600 bg-transparent" />
+                                        </div>
+                                    </div>
+                                )}
+                                
+                                <div className="grid grid-cols-2 gap-3">
+                                    {feedingMethod !== 'KONSENTRAT_SAJA' && (
+                                        <div className={feedingMethod !== 'CAMPURAN' ? 'col-span-2' : ''}>
+                                            <label className="block text-xs font-semibold text-slate-600 mb-1">{feedingMethod === 'TMR' ? 'Bahan Kering TMR (%)' : 'Kandungan BK Hijauan (%)'}</label>
+                                            <input type="number" step="0.1" value={nutritionPrefsForm.forageDM} onChange={e => setNutritionPrefsForm({...nutritionPrefsForm, forageDM: parseFloat(e.target.value)})} className="w-full p-2 border rounded-lg text-sm dark:bg-slate-800 dark:border-slate-600 bg-transparent" />
+                                        </div>
+                                    )}
+                                    {feedingMethod === 'CAMPURAN' && (
+                                        <div>
+                                            <label className="block text-xs font-semibold text-slate-600 mb-1">Kandungan BK Konsentrat (%)</label>
+                                            <input type="number" step="0.1" value={nutritionPrefsForm.concentrateDM} onChange={e => setNutritionPrefsForm({...nutritionPrefsForm, concentrateDM: parseFloat(e.target.value)})} className="w-full p-2 border rounded-lg text-sm dark:bg-slate-800 dark:border-slate-600 bg-transparent" />
+                                        </div>
+                                    )}
+                                </div>
+
+                                <button type="submit" className="w-full mt-4 bg-purple-600 hover:bg-purple-700 text-white py-2.5 rounded-lg font-bold shadow-lg transition">Simpan Atur Nutrisi</button>
                             </form>
                         </div>
                     </div>

@@ -37,29 +37,31 @@ const FeatureCard = ({ title, desc, icon }) => {
     );
 };
 
-const Typewriter = ({ text, delay = 150 }) => {
-    const [currentText, setCurrentText] = useState('');
-    const [currentIndex, setCurrentIndex] = useState(0);
-
-    useEffect(() => {
-        if (currentIndex < text.length) {
-            const timeout = setTimeout(() => {
-                setCurrentText(prevText => prevText + text[currentIndex]);
-                setCurrentIndex(prevIndex => prevIndex + 1);
-            }, delay);
-            return () => clearTimeout(timeout);
-        } else {
-            const resetTimeout = setTimeout(() => {
-                setCurrentText('');
-                setCurrentIndex(0);
-            }, 3000);
-            return () => clearTimeout(resetTimeout);
-        }
-    }, [currentIndex, delay, text]);
-
+const Typewriter = ({ text }) => {
     return (
-        <span className="text-primary-600 border-r-4 border-primary-600 pr-1 animate-pulse">
-            {currentText}
+        <span className="relative inline-flex">
+            {/* Teks dirender full secara statis agar Lighthouse/Google membacanya seketika untuk LCP */}
+            <span className="text-primary-600 font-black relative z-0">
+                {text}
+            </span>
+            
+            {/* Layer animasi CSS murni yang menutupi teks, lalu menyusut ke kanan (efek mengetik) */}
+            <span 
+                className="absolute top-0 right-0 bottom-0 bg-white border-l-4 border-primary-600 z-10 box-content"
+                style={{
+                    width: '100%',
+                    animation: `css-typing 10s infinite steps(${text.length})`
+                }}
+            ></span>
+
+            <style>{`
+                @keyframes css-typing {
+                    0%, 5% { width: 100%; border-left-color: transparent; }
+                    10% { border-left-color: #2563eb; } /* Asumsi primary-600 = biru */
+                    45%, 80% { width: 0%; border-left-color: #2563eb; }
+                    85%, 100% { width: 100%; border-left-color: transparent; }
+                }
+            `}</style>
         </span>
     );
 };
@@ -143,7 +145,8 @@ const LandingPage = () => {
                                 <Typewriter text="Jauh Lebih Cerdas." />
                             </h1>
                             <p className="text-lg text-slate-500 mb-10 max-w-xl mx-auto lg:mx-0 leading-relaxed font-medium">
-                                Efisiensi tanpa batas dengan integrasi IoT. Pantau kesehatan, pakan, dan lingkungan dalam satu genggaman yang terintegrasi penuh.
+                                Efisiensi tanpa batas dengan integrasi IoT. Pantau kesehatan, pakan, dan lingkungan secara terintegrasi. <br/>
+                                <span className="text-primary-600 font-bold mt-2 inline-block">✨ Kini hadir dengan Dashboard Publik transparan yang dapat diakses oleh siapa saja!</span>
                             </p>
                             <div className="flex flex-col sm:flex-row gap-5 justify-center lg:justify-start">
                                 <Link to="/dashboard" className="px-10 py-5 bg-slate-900 text-white rounded-[1.5rem] font-bold hover:bg-primary-600 transition shadow-xl hover:shadow-primary-500/40 flex items-center justify-center gap-3 group">
@@ -253,6 +256,11 @@ const LandingPage = () => {
                                 title: "Pemantauan IoT Real-time", 
                                 desc: "Pantau vital sign (suhu tubuh, detak jantung) dan lingkungan (amonia, kelembapan) secara langsung melalui sensor cerdas.", 
                                 icon: <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></svg> 
+                            },
+                            { 
+                                title: "Dashboard Publik Transparan", 
+                                desc: "Sajikan data performa, pertumbuhan ternak (DMI vs ADG), dan sensor secara live kepada publik atau stakeholder tanpa perlu login.", 
+                                icon: <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> 
                             },
                             { 
                                 title: "Kalkulator Nutrisi & Pakan", 
@@ -380,7 +388,7 @@ const LandingPage = () => {
                 <footer className="bg-white rounded-[2.5rem] p-10 md:p-16 shadow-sm border border-slate-100">
                     <div className="flex flex-col md:flex-row justify-between items-center gap-10">
                         <div className="flex items-center gap-4">
-                            <div className="p-2 bg-slate-50 rounded-xl border border-slate-100 shadow-sm"><img src="/public/logoxl.svg" alt="Logo" className="h-6 w-6"/></div>
+                            <div className="p-2 bg-slate-50 rounded-xl border border-slate-100 shadow-sm"><img src="/logoxl.svg" alt="Logo" className="h-6 w-6"/></div>
                             <span className="text-lg font-bold">Smart Cattle Barn</span>
                         </div>
                         <p className="text-slate-400 text-sm font-medium">© 2026 PT AgriTekno Nusantara. All rights reserved.</p>

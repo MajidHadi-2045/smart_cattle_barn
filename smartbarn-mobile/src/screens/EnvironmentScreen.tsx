@@ -5,13 +5,15 @@ import {
   Text, 
   ScrollView, 
   TouchableOpacity,
-  Dimensions
+  Dimensions,
+  ActivityIndicator
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, SPACING, SHADOWS } from '../theme';
 import { ChevronLeft, Thermometer, Droplets, Wind, Activity, Zap } from 'lucide-react-native';
 import { useSocket } from '../hooks/useSocket';
-import Svg, { Path, Rect } from 'react-native-svg';
+import { LineChart } from 'react-native-chart-kit';
+import apiClient from '../api/client';
 
 const { width } = Dimensions.get('window');
 
@@ -23,7 +25,9 @@ const EnvironmentScreen = ({ navigation }: any) => {
     ammonia: 0.5
   });
 
-  const [tempHistory, setTempHistory] = useState<number[]>(new Array(15).fill(28));
+  const [sensorTrendData, setSensorTrendData] = useState<any[]>([]);
+  const [windTrendData, setWindTrendData] = useState<any[]>([]);
+  const [sensorTrendRange, setSensorTrendRange] = useState('24h');
   
   // Listen ke update sensor lingkungan
   const { data: socketData } = useSocket(['websocket:environment', 'websocket:windspeed']);
@@ -32,9 +36,6 @@ const EnvironmentScreen = ({ navigation }: any) => {
     if (socketData['websocket:environment']) {
       const { temperature, humidity } = socketData['websocket:environment'];
       setEnvData(prev => ({ ...prev, temperature, humidity }));
-      
-      // Update grafik suhu
-      setTempHistory(prev => [...prev.slice(1), temperature]);
     }
     if (socketData['websocket:windspeed']) {
       const { windspeed } = socketData['websocket:windspeed'];
@@ -42,18 +43,26 @@ const EnvironmentScreen = ({ navigation }: any) => {
     }
   }, [socketData]);
 
-  const generateChartPath = (data: number[]) => {
-    const step = (width - 80) / (data.length - 1);
-    const min = Math.min(...data) - 2;
-    const max = Math.max(...data) + 2;
-    const range = max - min;
+  useEffect(() => {
+    const fetchTrendData = async () => {
+      try {
+        const trendRes = await apiClient.get(`/environment/trend/1?range=${sensorTrendRange}`);
+        if (trendRes.data && Array.isArray(trendRes.data)) {
+          const chronological = [...trendRes.data].reverse();
+          setSensorTrendData(chronological.slice(-15));
+        }
+      } catch (e) {}
 
-    return data.map((val, i) => {
-      const x = i * step;
-      const y = 80 - ((val - min) / range) * 60;
-      return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
-    }).join(' ');
-  };
+      try {
+        const windRes = await apiClient.get(`/wind/trend/1?range=${sensorTrendRange}`);
+        if (windRes.data && Array.isArray(windRes.data)) {
+          const chronologicalWind = [...windRes.data].reverse();
+          setWindTrendData(chronologicalWind.slice(-15));
+        }
+      } catch (e) {}
+    };
+    fetchTrendData();
+  }, [sensorTrendRange]);
 
   const SensorCard = ({ title, value, unit, icon: Icon, color, subValue }: any) => (
     <View style={styles.sensorCard}>
@@ -125,31 +134,110 @@ const EnvironmentScreen = ({ navigation }: any) => {
           />
         </View>
 
-        {/* Temperature Trend Chart */}
+        {/* Sensor Trend Chart */}
         <View style={styles.chartSection}>
           <View style={styles.chartHeader}>
-            <Text style={styles.chartTitle}>Tren Suhu (Live)</Text>
-            <View style={styles.liveIndicator}>
-              <View style={styles.dot} />
-              <Text style={styles.liveText}>LIVE</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.chartTitle}>GRAFIK TREN SENSOR</Text>
+              <Text style={styles.chartSubtitle}>
+                {sensorTrendRange === '1h' ? '1 JAM TERAKHIR' : sensorTrendRange === '24h' ? '24 JAM TERAKHIR' : sensorTrendRange === '7d' ? '7 HARI TERAKHIR' : '1 BULAN TERAKHIR'}
+              </Text>
+            </View>
+            <View style={styles.rangeSelector}>
+              <TouchableOpacity onPress={() => setSensorTrendRange('1h')} style={[styles.rangeBtn, sensorTrendRange === '1h' && styles.rangeBtnActive]}><Text style={[styles.rangeBtnText, sensorTrendRange === '1h' && styles.rangeBtnTextActive]}>1J</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => setSensorTrendRange('24h')} style={[styles.rangeBtn, sensorTrendRange === '24h' && styles.rangeBtnActive]}><Text style={[styles.rangeBtnText, sensorTrendRange === '24h' && styles.rangeBtnTextActive]}>24J</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => setSensorTrendRange('7d')} style={[styles.rangeBtn, sensorTrendRange === '7d' && styles.rangeBtnActive]}><Text style={[styles.rangeBtnText, sensorTrendRange === '7d' && styles.rangeBtnTextActive]}>7H</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => setSensorTrendRange('30d')} style={[styles.rangeBtn, sensorTrendRange === '30d' && styles.rangeBtnActive]}><Text style={[styles.rangeBtnText, sensorTrendRange === '30d' && styles.rangeBtnTextActive]}>1B</Text></TouchableOpacity>
             </View>
           </View>
-          
-          <View style={styles.svgContainer}>
-            <Svg height="100" width={width - 80}>
-              <Path
-                d={generateChartPath(tempHistory)}
-                fill="none"
-                stroke="#ef4444"
-                strokeWidth="3"
-                strokeLinecap="round"
-              />
-            </Svg>
-          </View>
-          <View style={styles.chartLabels}>
-            <Text style={styles.labelSmall}>60m lalu</Text>
-            <Text style={styles.labelSmall}>Sekarang</Text>
-          </View>
+
+          {sensorTrendData.length > 0 ? (
+            <View>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 12, marginTop: 8, marginBottom: 8 }}>
+                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                   <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#f97316' }} />
+                   <Text style={{ fontSize: 10, color: COLORS.textLight }}>Suhu (°C)</Text>
+                 </View>
+                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                   <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#3b82f6' }} />
+                   <Text style={{ fontSize: 10, color: COLORS.textLight }}>Kelembapan (%)</Text>
+                 </View>
+                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                   <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#ef4444' }} />
+                   <Text style={{ fontSize: 10, color: COLORS.textLight }}>Amonia (ppm)</Text>
+                 </View>
+                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                   <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#06b6d4' }} />
+                   <Text style={{ fontSize: 10, color: COLORS.textLight }}>Angin (m/s)</Text>
+                 </View>
+              </View>
+
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <LineChart
+                  data={{
+                    labels: sensorTrendData.map(d => {
+                      const date = new Date(d.timestamp || d.time);
+                      if (sensorTrendRange === '1h' || sensorTrendRange === '24h') {
+                        return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+                      }
+                      return `${date.getDate()}/${date.getMonth()+1}`;
+                    }),
+                    datasets: [
+                      {
+                        data: sensorTrendData.map(d => d.temperature || d.temp || 0),
+                        color: (opacity = 1) => `rgba(249, 115, 22, ${opacity})`,
+                        strokeWidth: 2
+                      },
+                      {
+                        data: sensorTrendData.map(d => d.humidity || 0),
+                        color: (opacity = 1) => `rgba(59, 130, 246, ${opacity})`,
+                        strokeWidth: 2
+                      },
+                      {
+                        data: sensorTrendData.map(d => d.ammonia || 0),
+                        color: (opacity = 1) => `rgba(239, 68, 68, ${opacity})`,
+                        strokeWidth: 2
+                      },
+                      {
+                        data: sensorTrendData.map((d, i) => windTrendData[i]?.windspeed || 0),
+                        color: (opacity = 1) => `rgba(6, 182, 212, ${opacity})`,
+                        strokeWidth: 2
+                      }
+                    ]
+                  }}
+                  width={Math.max(Dimensions.get("window").width - SPACING.lg * 2, sensorTrendData.length * 40)}
+                  height={220}
+                  yAxisLabel=""
+                  yAxisSuffix=""
+                  withDots={true}
+                  withInnerLines={false}
+                  withOuterLines={false}
+                  chartConfig={{
+                    backgroundColor: COLORS.white,
+                    backgroundGradientFrom: COLORS.white,
+                    backgroundGradientTo: COLORS.white,
+                    decimalPlaces: 1,
+                    color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                    labelColor: (opacity = 1) => `rgba(100, 116, 139, ${opacity})`,
+                    propsForDots: {
+                      r: "3",
+                      strokeWidth: "2"
+                    }
+                  }}
+                  bezier
+                  style={{
+                    marginVertical: 8,
+                    borderRadius: 16
+                  }}
+                />
+              </ScrollView>
+            </View>
+          ) : (
+            <View style={styles.emptyChart}>
+              <ActivityIndicator size="small" color={COLORS.primary} />
+              <Text style={{ marginTop: 8, color: COLORS.textLight, fontSize: 12 }}>Memuat data grafik...</Text>
+            </View>
+          )}
         </View>
 
         {/* Additional Info */}
@@ -267,25 +355,37 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: COLORS.text,
   },
-  liveIndicator: {
+  chartSubtitle: {
+    fontSize: 12,
+    color: COLORS.textLight,
+  },
+  rangeSelector: {
     flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fee2e2',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
+    backgroundColor: '#f1f5f9',
+    borderRadius: 8,
+    padding: 2,
   },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#ef4444',
-    marginRight: 4,
+  rangeBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
   },
-  liveText: {
-    fontSize: 10,
+  rangeBtnActive: {
+    backgroundColor: COLORS.white,
+    ...SHADOWS.sm,
+  },
+  rangeBtnText: {
+    fontSize: 11,
     fontWeight: 'bold',
-    color: '#ef4444',
+    color: COLORS.textLight,
+  },
+  rangeBtnTextActive: {
+    color: COLORS.primary,
+  },
+  emptyChart: {
+    height: 200,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   svgContainer: {
     backgroundColor: '#f8fafc',

@@ -13,20 +13,22 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, SPACING, SHADOWS } from '../theme';
-import { LogIn, Lock, User } from 'lucide-react-native';
+import { LogIn, Lock, User, Beef, Eye, EyeOff } from 'lucide-react-native';
 import apiClient from '../api/client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { registerForPushNotificationsAsync } from '../utils/registerForPushNotificationsAsync';
 
 const LoginScreen = ({ navigation }: any) => {
   const [usernameOrEmail, setUsernameOrEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [role, setRole] = useState('STAFF');
   const [loading, setLoading] = useState(false);
 
   const ROLES = [
-    { label: 'Administrator', value: 'SUPER_ADMIN' },
-    { label: 'Petugas Kandang', value: 'STAFF' },
-    { label: 'Dokter Hewan', value: 'VETERINER' },
+    { label: 'Super Admin (Manajer)', value: 'SUPER_ADMIN' },
+    { label: 'Staff (Operator Kandang)', value: 'STAFF' },
+    { label: 'Dokter Hewan (Veteriner)', value: 'VETERINER' },
   ];
 
   const handleLogin = async () => {
@@ -37,7 +39,16 @@ const LoginScreen = ({ navigation }: any) => {
 
     setLoading(true);
     try {
-      const response = await apiClient.post('/auth/login', { email: usernameOrEmail, password, role });
+      // Meminta token unik HP dari Expo/Firebase
+      const pushToken = await registerForPushNotificationsAsync();
+      
+      // Kirim token tersebut bersamaan dengan email & password
+      const response = await apiClient.post('/auth/login', { 
+        email: usernameOrEmail, 
+        password, 
+        role,
+        pushToken // <-- Ditambahkan ke backend
+      });
       const { access_token, user } = response.data;
       
       await AsyncStorage.setItem('token', access_token);
@@ -72,6 +83,7 @@ const LoginScreen = ({ navigation }: any) => {
             <TextInput
               style={styles.input}
               placeholder="Username atau Email"
+              placeholderTextColor={COLORS.textLight}
               value={usernameOrEmail}
               onChangeText={(text) => setUsernameOrEmail(text.replace(/\s/g, ''))}
               autoCapitalize="none"
@@ -84,10 +96,14 @@ const LoginScreen = ({ navigation }: any) => {
             <TextInput
               style={styles.input}
               placeholder="Password"
+              placeholderTextColor={COLORS.textLight}
               value={password}
               onChangeText={setPassword}
-              secureTextEntry
+              secureTextEntry={!showPassword}
             />
+            <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={{ padding: 4 }}>
+              {showPassword ? <EyeOff size={20} color={COLORS.textLight} /> : <Eye size={20} color={COLORS.textLight} />}
+            </TouchableOpacity>
           </View>
 
           <View style={styles.roleContainer}>
@@ -122,8 +138,42 @@ const LoginScreen = ({ navigation }: any) => {
               <Text style={styles.loginButtonText}>Login Sekarang</Text>
             )}
           </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={{ marginTop: SPACING.md, alignItems: 'center' }}
+            onPress={async () => {
+              if (!usernameOrEmail) {
+                Alert.alert('Perhatian', 'Silakan ketik Email Anda terlebih dahulu di kolom input, lalu tekan Lupa Password lagi.');
+                return;
+              }
+              try {
+                setLoading(true);
+                const res = await apiClient.post('/auth/forgot-password', { email: usernameOrEmail });
+                Alert.alert('Berhasil', res.data.message || 'Link reset password telah dikirim ke email Anda.');
+              } catch (error: any) {
+                Alert.alert('Gagal', error.response?.data?.message || 'Gagal mengirim email reset.');
+              } finally {
+                setLoading(false);
+              }
+            }}
+          >
+            <Text style={{ color: COLORS.primary, fontWeight: '600', fontSize: 14 }}>Lupa Password?</Text>
+          </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+
+      {/* Full-Screen Loading Overlay */}
+      {loading && (
+        <View style={styles.fullScreenLoading}>
+          <View style={styles.logoBox}>
+            <Beef size={64} color="#ffffff" />
+          </View>
+          <Text style={styles.splashTitle}>Smart Cattle Barn</Text>
+          <Text style={styles.splashSubtitle}>Memverifikasi Akun...</Text>
+          <ActivityIndicator size="large" color={COLORS.primary} style={{ marginTop: 30 }} />
+          <Text style={styles.loadingText}>Mohon Tunggu</Text>
+        </View>
+      )}
     </SafeAreaView>
   );
 };
@@ -231,6 +281,40 @@ const styles = StyleSheet.create({
   roleTextActive: {
     color: COLORS.white,
   },
+  fullScreenLoading: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: COLORS.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 999,
+  },
+  logoBox: {
+    backgroundColor: COLORS.primary,
+    padding: 20,
+    borderRadius: 24,
+    marginBottom: 20,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 15,
+    elevation: 10,
+  },
+  splashTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: COLORS.text,
+    marginBottom: 4,
+  },
+  splashSubtitle: {
+    fontSize: 14,
+    color: COLORS.textLight,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 13,
+    color: COLORS.textLight,
+    fontWeight: '500',
+  }
 });
 
 export default LoginScreen;

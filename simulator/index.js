@@ -3,7 +3,7 @@ const mqtt = require('mqtt');
 const MQTT_URL = 'mqtt://localhost:1883';
 const client = mqtt.connect(MQTT_URL);
 
-// --- KONFIGURASI STANDAR TEKNIK ELEKTRO & TELEKOMUNIKASI ---
+// --- Simulasi Data sensor IOT SMARTCATTLEBARN ---
 const SIMULATE_PACKET_LOSS = true;
 const PACKET_LOSS_RATE = 0.05; // 5% packet loss pada data vitals (High Velocity)
 const RESOLUTION_BITS = 10;     // Resolusi ADC 10-bit
@@ -59,7 +59,7 @@ function calculateRSSI(x, y) {
 
 client.on('connect', () => {
     console.log('\n===============================================================');
-    console.log('  SIMULATOR IoT SMART BARN STANDAR TEKNIK ELEKTRO & TELEKOMUNIKASI');
+    console.log('  SIMULATOR DATA SENSOR IOT SMARTCATTLEBARN');
     console.log('===============================================================');
     console.log(`Connected to MQTT Broker: ${MQTT_URL}`);
     console.log(`Parameter Simulasi:`);
@@ -147,7 +147,7 @@ function simulateHighVelocity() {
 let simulatedMinutes = 360; // Mulai jam 06:00 pagi (360 menit dari tengah malam)
 
 function simulateLowVelocity() {
-    setInterval(() => {
+    const publishData = () => {
         simulatedMinutes += 10; // Waktu simulasi berjalan lebih cepat
         if (simulatedMinutes >= 1440) simulatedMinutes = 0; 
 
@@ -191,8 +191,10 @@ function simulateLowVelocity() {
         const windTopic = `barn/zone/1/windspeed`;
         client.publish(windTopic, JSON.stringify(windPayload), { qos: 0 });
         console.log(`[Low Velocity] Published Windspeed to ${windTopic}: ${quantizedWind} m/s`);
+    };
 
-    }, 60000); // Kirim data setiap 1 menit sekali
+    publishData(); // Eksekusi langsung saat pertama jalan
+    setInterval(publishData, 60000); // Kirim data setiap 1 menit sekali
 }
 
 client.on('error', (err) => {

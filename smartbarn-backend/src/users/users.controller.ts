@@ -34,6 +34,16 @@ export class UsersController {
     return this.usersService.updateUserPhoto(id, photo);
   }
 
+  @Patch('profile/:id/update')
+  @Roles('SUPER_ADMIN', 'VETERINER', 'STAFF')
+  updateProfile(@Param('id') id: string, @Body() body: any, @Req() req: any) {
+    // Pastikan user hanya bisa update profilnya sendiri (atau jika dia Super Admin)
+    if (req.user.role !== 'SUPER_ADMIN' && req.user.sub !== id) {
+      throw new Error('Anda hanya dapat mengubah profil Anda sendiri.');
+    }
+    return this.usersService.updateProfile(id, body);
+  }
+
   @Delete(':id')
   @Roles('SUPER_ADMIN')
   remove(@Param('id') id: string) {

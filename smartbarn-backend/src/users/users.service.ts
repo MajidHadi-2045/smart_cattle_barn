@@ -33,6 +33,7 @@ export class UsersService {
         id: true,
         name: true,
         email: true,
+        phone: true,
         role: true,
         status: true,
         task: true,
@@ -143,6 +144,7 @@ export class UsersService {
         requester: data.requester || 'Unknown',
         calonName: data.calonName || 'Unknown',
         calonEmail: data.calonEmail || 'unknown@example.com',
+        calonPhone: data.calonPhone || null,
         posisi: data.posisi ? data.posisi.toUpperCase() : 'STAFF',
         alasan: data.alasan || '-',
       },
@@ -173,6 +175,7 @@ export class UsersService {
           id: customId,
           name: request.calonName,
           email: request.calonEmail,
+          phone: request.calonPhone,
           password: hashedPassword, 
           role: upperRole as any, 
           status: 'AKTIF',
@@ -254,6 +257,26 @@ export class UsersService {
     } catch (err) {}
     
     return { message: 'Foto berhasil diperbarui', photoUrl: userWithoutPassword.photo };
+  }
+
+  async updateProfile(id: string, data: { email?: string, phone?: string }) {
+    const user = await this.prisma.user.update({
+      where: { id },
+      data: {
+        ...(data.email && { email: data.email }),
+        ...(data.phone && { phone: data.phone }),
+      }
+    });
+    
+    // Ambil semua data kecuali password sebelum dikembalikan
+    const { password, ...userWithoutPassword } = user;
+    
+    try {
+      await this.redis.del('users:staff-list');
+      await this.redis.del(`users:profile:${id}`);
+    } catch (err) {}
+    
+    return { message: 'Profil berhasil diperbarui', user: userWithoutPassword };
   }
 
   async changePassword(userId: string, data: any) {

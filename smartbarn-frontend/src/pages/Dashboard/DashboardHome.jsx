@@ -3,6 +3,73 @@ import { fetchApi } from '../../utils/api';
 import { socket } from '../../utils/socket';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush } from 'recharts';
 import toast from 'react-hot-toast';
+import { Beef, HeartPulse, Activity } from 'lucide-react';
+
+const MultiSelectDropdown = ({ options, selectedIds, onChange, maxSelection, placeholder }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+
+    const filteredOptions = options.filter(opt => opt.cattleId.toLowerCase().includes(searchTerm.toLowerCase())).slice(0, 15); // Batasi 15 sapi agar tidak terlalu berat
+
+    const handleToggle = (id) => {
+        if (selectedIds.includes(id)) {
+            onChange(selectedIds.filter(v => v !== id));
+        } else {
+            if (selectedIds.length < maxSelection) {
+                onChange([...selectedIds, id]);
+            } else {
+                toast.error(`Maksimal ${maxSelection} sapi dapat dipilih.`);
+            }
+        }
+    };
+
+    return (
+        <div className="relative w-full sm:min-w-[250px]">
+            <div 
+                onClick={() => setIsOpen(!isOpen)}
+                className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-800 dark:text-slate-200 cursor-pointer flex justify-between items-center shadow-sm"
+            >
+                <span className="truncate font-semibold">{selectedIds.length > 0 ? `${selectedIds.length} Sapi Terpilih` : placeholder}</span>
+                <svg className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+            </div>
+            
+            {isOpen && (
+                <div className="absolute z-10 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl overflow-hidden">
+                    <div className="p-2 border-b border-slate-100 dark:border-slate-700">
+                        <input 
+                            type="text"
+                            placeholder="Cari ID Sapi..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full px-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-md focus:outline-none focus:ring-1 focus:ring-amber-500"
+                        />
+                    </div>
+                    <div className="max-h-48 overflow-y-auto p-1">
+                        {filteredOptions.length === 0 ? (
+                            <div className="p-2 text-xs text-center text-slate-500">Tidak ditemukan</div>
+                        ) : (
+                            filteredOptions.map(opt => (
+                                <label key={opt.id} className="flex items-center gap-2 px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer rounded-md transition-colors">
+                                    <input 
+                                        type="checkbox" 
+                                        className="rounded text-amber-500 focus:ring-amber-500"
+                                        checked={selectedIds.includes(opt.cattleId)}
+                                        onChange={() => handleToggle(opt.cattleId)}
+                                    />
+                                    <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{opt.cattleId}</span>
+                                </label>
+                            ))
+                        )}
+                    </div>
+                    <div className="p-2 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 flex justify-between items-center">
+                        <span className="text-[10px] font-bold text-slate-400">{selectedIds.length}/{maxSelection} Dipilih</span>
+                        <button onClick={() => setIsOpen(false)} className="px-3 py-1 text-xs font-bold bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded hover:bg-slate-300 dark:hover:bg-slate-600 transition">Tutup</button>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
 
 const DashboardHome = ({ isPublicRoute = false }) => {
     const userRole = isPublicRoute ? null : localStorage.getItem('userRole');
@@ -27,8 +94,10 @@ const DashboardHome = ({ isPublicRoute = false }) => {
     const [wasteStats, setWasteStats] = useState({ fecesKg: 0, urineL: 0 });
     const [performanceData, setPerformanceData] = useState([]);
     const [performanceRange, setPerformanceRange] = useState('minggu');
-    const [performanceCowId, setPerformanceCowId] = useState('');
+    const [performanceChartCowIds, setPerformanceChartCowIds] = useState([]);
+    const [performanceTableCowIds, setPerformanceTableCowIds] = useState([]);
     const [cows, setCows] = useState([]);
+    const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, item: null, label: '' });
     const [performanceSummary, setPerformanceSummary] = useState({ totalBk: 0, startWeight: 0, endWeight: 0, adg: 0, fcr: 0 });
     const [performanceMultiSummaries, setPerformanceMultiSummaries] = useState([]);
     const [selectedCowsForChart, setSelectedCowsForChart] = useState(['ALL']);
@@ -58,6 +127,14 @@ const DashboardHome = ({ isPublicRoute = false }) => {
     const [editValue, setEditValue] = useState('');
     const [editValue2, setEditValue2] = useState('');
     const [loadingHistory, setLoadingHistory] = useState(false);
+    useEffect(() => {
+        const handleOpenHistory = () => {
+            fetchRecentInputs();
+            setIsHistoryModalOpen(true);
+        };
+        window.addEventListener('openHistoryKoreksi', handleOpenHistory);
+        return () => window.removeEventListener('openHistoryKoreksi', handleOpenHistory);
+    }, []);
 
     // Timer untuk force re-render agar status live akurat
     useEffect(() => {
@@ -109,8 +186,9 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                     try {
                         const res = await fetchApi(`/environment/live/${selectedZoneId}`);
                         if (res.ok) {
-                            const sensorData = await res.json();
-                            if (sensorData) {
+                            const text = await res.text();
+                            if (text) {
+                                const sensorData = JSON.parse(text);
                                 setLiveSensorData({
                                     temp: sensorData?.temperature,
                                     hum: sensorData?.humidity,
@@ -124,7 +202,9 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                             setLiveSensorData({});
                         }
                     } catch (e) { 
-                        console.error("Live env fetch error", e);
+                        if (e.name !== 'SyntaxError') {
+                            console.error("Live env fetch error", e);
+                        }
                         setLiveSensorData({});
                     }
                 };
@@ -199,35 +279,6 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                     return chartData;
                 };
 
-                const fetchPerformance = async () => {
-                    try {
-                        const res = await fetchApi(`/livestock/performance-chart?period=${performanceRange}&cowId=${performanceCowId}`);
-                        if (res.ok) {
-                            const result = await res.json();
-                            if (result.data) {
-                                setPerformanceData(result.data);
-                                setIsDummyChart(result.isDummy);
-                                if (result.summary) {
-                                    setPerformanceSummary(result.summary);
-                                }
-                                setPerformanceMultiSummaries(result.multiSummaries || []);
-                                setSelectedCowsForChart(result.selectedCows || ['ALL']);
-                            } else {
-                                setPerformanceData(result);
-                                setIsDummyChart(false);
-                                setPerformanceMultiSummaries([]);
-                                setSelectedCowsForChart(['ALL']);
-                            }
-                        } else {
-                            setPerformanceData(generateDummyPerformance(performanceRange));
-                            setIsDummyChart(true);
-                        }
-                    } catch (e) { 
-                        console.error("Performance fetch error", e); 
-                        setPerformanceData(generateDummyPerformance(performanceRange));
-                        setIsDummyChart(true);
-                    }
-                };
 
                 const fetchCows = async () => {
                     try {
@@ -235,12 +286,17 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                         if (res.ok) {
                             const data = await res.json();
                             setCows(data);
+                            return data;
                         }
                     } catch (e) { console.error("Cows fetch error", e); }
+                    return [];
                 };
 
-                // Run parallel but independent
-                await Promise.all([fetchSummary(), fetchLiveEnv(), fetchLiveWind(), fetchWaste(), fetchPerformance(), fetchChecklist(), fetchCows()]);
+                // Jalankan fetchCows dulu untuk mendapatkan daftar sapi, baru lempar ke fetchPerformance
+                const cowsList = await fetchCows();
+                
+                // Run parallel but independent untuk yang lainnya
+                await Promise.all([fetchSummary(), fetchLiveEnv(), fetchLiveWind(), fetchWaste(), fetchChecklist()]);
 
                 // 3. Fetch heavy trend data separately
                 try {
@@ -289,12 +345,19 @@ const DashboardHome = ({ isPublicRoute = false }) => {
 
         fetchInitialData();
 
+        // Force update status just in case it connected before we listened
+        setIsWsConnected(socket.connected);
+
         // WebSocket Event Listeners
-        const onConnect = () => setIsWsConnected(true);
+        const onConnect = () => {
+            console.log('Socket Connected in Dashboard');
+            setIsWsConnected(true);
+        };
         const onDisconnect = () => setIsWsConnected(false);
         
         const onEnvironmentData = (incomingData) => {
-            if (incomingData && incomingData.sectionId == selectedSectionId) {
+            // Kita terima data, kalau zoneId cocok atau bahkan nggak usah terlalu strict
+            if (incomingData && incomingData.zoneId == selectedZoneId) {
                 setLastSensorUpdate(Date.now());
                 updateDashboardWithData({
                     timestamp: incomingData.timestamp || Date.now(),
@@ -308,6 +371,7 @@ const DashboardHome = ({ isPublicRoute = false }) => {
 
         const onWindspeedData = (data) => {
             if (data && data.zoneId == selectedZoneId) {
+                setLastSensorUpdate(Date.now());
                 setCurrentWindspeed(parseFloat(data.windspeed || 0));
                 const isLongRange = ['5d', '7d', '30d'].includes(timeRange);
                 setWindHistory(prev => {
@@ -325,12 +389,13 @@ const DashboardHome = ({ isPublicRoute = false }) => {
         };
 
         const updateDashboardWithData = (data) => {
-            setLiveSensorData({ 
+            setLiveSensorData(prev => ({
+                ...prev,
                 temp: data.temp, 
                 hum: data.hum, 
                 nh3: data.nh3,
                 thi: data.thi 
-            });
+            }));
             setHistoryDataBySection(prev => {
                 const isLongRange = ['5d', '7d', '30d'].includes(timeRange);
                 const timeLabel = isLongRange 
@@ -355,6 +420,7 @@ const DashboardHome = ({ isPublicRoute = false }) => {
 
         const pollInterval = setInterval(() => {
             fetchInitialData();
+            setIsWsConnected(socket.connected); // FORCE CHECK SOCKET STATUS EVERY 30S
         }, 30000); // Sinkronisasi setiap 30 detik
 
         return () => {
@@ -364,7 +430,55 @@ const DashboardHome = ({ isPublicRoute = false }) => {
             socket.off('websocket:environment', onEnvironmentData);
             socket.off('websocket:windspeed', onWindspeedData);
         };
-    }, [selectedZoneId, selectedSectionId, timeRange, wasteFilter, performanceRange, performanceCowId]);
+    }, [selectedZoneId, selectedSectionId, timeRange, wasteFilter]);
+
+    useEffect(() => {
+        const fetchPerformance = async () => {
+            try {
+                let cleanChartCowIds = performanceChartCowIds.join(',');
+                let cleanTableCowIds = performanceTableCowIds.join(',');
+
+                if (cleanChartCowIds === '') {
+                    setPerformanceData([]);
+                }
+                if (cleanTableCowIds === '') {
+                    setPerformanceMultiSummaries([]);
+                }
+                
+                if (cleanChartCowIds !== '') {
+                    const res = await fetchApi(`/livestock/performance-chart?period=${performanceRange}&cowId=${cleanChartCowIds}`);
+                    if (res.ok) {
+                        const chartResult = await res.json();
+                        if (chartResult.isDummy) {
+                            setPerformanceData(chartResult.data);
+                            setIsDummyChart(chartResult.isDummy);
+                            setSelectedCowsForChart(chartResult.selectedCows || []);
+                        } else {
+                            setPerformanceData(chartResult.data || []);
+                            setIsDummyChart(false);
+                            setSelectedCowsForChart(performanceChartCowIds);
+                        }
+                    }
+                }
+
+                if (cleanTableCowIds !== '') {
+                    const tableRes = await fetchApi(`/livestock/performance-chart?period=${performanceRange}&cowId=${cleanTableCowIds}`);
+                    if (tableRes.ok) {
+                        const tableResult = await tableRes.json();
+                        setPerformanceMultiSummaries(tableResult.multiSummaries || []);
+                    }
+                }
+            } catch (e) { 
+                console.error("Performance fetch error", e); 
+                setPerformanceData([]);
+                setIsDummyChart(false);
+                setPerformanceMultiSummaries([]);
+            }
+        };
+
+        fetchPerformance();
+    }, [performanceRange, performanceChartCowIds, performanceTableCowIds]);
+
 
     const handleSaveChecklistConfig = async () => {
         setIsSavingConfig(true);
@@ -471,16 +585,26 @@ const DashboardHome = ({ isPublicRoute = false }) => {
         }
     };
 
-    const handleDelete = async (item) => {
+    const handleDelete = (item) => {
         const itemLabel = item.type === 'LIMBAH_KANDANG' ? item.title : `${item.title} sapi ${item.cattleId}`;
-        if (!confirm(`Apakah Anda yakin ingin menghapus data ${itemLabel}?`)) return;
+        setDeleteConfirm({ isOpen: true, item: item, label: itemLabel, isBatch: false });
+    };
+
+    const confirmDelete = async () => {
+        const { item } = deleteConfirm;
+        if (!item) return;
+        
         try {
-            const id = item.id;
             let endpoint = '';
-            if (item.type === 'PAKAN') endpoint = `/livestock/feed/${id}`;
-            else if (item.type === 'TIMBANGAN') endpoint = `/livestock/weight/${id}`;
-            else if (item.type === 'LIMBAH') endpoint = `/livestock/waste/${id}`;
-            else if (item.type === 'LIMBAH_KANDANG') endpoint = `/livestock/waste/zone/${id}`;
+            if (deleteConfirm.isBatch) {
+                endpoint = `/livestock/history/batch/${item.batchId}`;
+            } else {
+                const id = item.id;
+                if (item.type === 'PAKAN') endpoint = `/livestock/feed/${id}`;
+                else if (item.type === 'TIMBANGAN') endpoint = `/livestock/weight/${id}`;
+                else if (item.type === 'LIMBAH') endpoint = `/livestock/waste/${id}`;
+                else if (item.type === 'LIMBAH_KANDANG') endpoint = `/livestock/waste/zone/${id}`;
+            }
 
             const res = await fetchApi(endpoint, { method: 'DELETE' });
             if (res.ok) {
@@ -494,6 +618,8 @@ const DashboardHome = ({ isPublicRoute = false }) => {
         } catch (e) {
             console.error(e);
             alert('Terjadi kesalahan.');
+        } finally {
+            setDeleteConfirm({ isOpen: false, item: null, label: '' });
         }
     }; 
 
@@ -576,20 +702,6 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                 </div>
                 
                 <div className="flex items-center gap-3 flex-wrap">
-                    {/* Button to open Checklist & Koreksi Modal */}
-                    {userRole === 'STAFF' && (
-                        <button 
-                            onClick={() => setIsChecklistModalOpen(true)}
-                            className="flex items-center gap-2 px-4 py-2 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:hover:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-900/50 rounded-xl font-semibold text-sm transition shadow-sm"
-                            title="Tugas Harian & Koreksi"
-                        >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
-                            </svg>
-                            <span>Tugas Harian Operator</span>
-                        </button>
-                    )}
-
                     {/* Indikator Status Sistem */}
                     <div className="flex items-center gap-2 bg-white dark:bg-slate-800 px-4 py-2 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
                         <span className="relative flex h-3 w-3">
@@ -819,17 +931,32 @@ const DashboardHome = ({ isPublicRoute = false }) => {
 
             {/* --- KARTU STATISTIK TERNAK --- */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
-                    <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Total Populasi</p>
-                    <p className="text-3xl font-bold text-slate-800 dark:text-slate-100 mt-2">{livestockStats.total} <span className="text-sm font-normal text-slate-500">Ekor</span></p>
+                <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex justify-between items-start">
+                    <div>
+                        <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Total Populasi</p>
+                        <p className="text-3xl font-bold text-slate-800 dark:text-slate-100 mt-2">{livestockStats.total} <span className="text-sm font-normal text-slate-500">Ekor</span></p>
+                    </div>
+                    <div className="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-xl">
+                        <Beef size={24} className="text-blue-500" />
+                    </div>
                 </div>
-                <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
-                    <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Kondisi Sehat</p>
-                    <p className="text-3xl font-bold text-green-600 mt-2">{livestockStats.healthy}</p>
+                <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex justify-between items-start">
+                    <div>
+                        <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Kondisi Sehat</p>
+                        <p className="text-3xl font-bold text-green-600 mt-2">{livestockStats.healthy}</p>
+                    </div>
+                    <div className="p-3 bg-green-50 dark:bg-green-900/30 rounded-xl">
+                        <HeartPulse size={24} className="text-green-500" />
+                    </div>
                 </div>
-                <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
-                    <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Perlu Perawatan</p>
-                    <p className="text-3xl font-bold text-red-500 mt-2">{livestockStats.sick}</p>
+                <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex justify-between items-start">
+                    <div>
+                        <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Kondisi Sakit</p>
+                        <p className="text-3xl font-bold text-red-500 mt-2">{livestockStats.sick}</p>
+                    </div>
+                    <div className="p-3 bg-red-50 dark:bg-red-900/30 rounded-xl">
+                        <Activity size={24} className="text-red-500" />
+                    </div>
                 </div>
             </div>
 
@@ -869,6 +996,7 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                             </span>
                             <span className="text-teal-800 dark:text-teal-200 font-medium mb-1">m/s</span>
                         </div>
+                        <div className="mt-2 text-xs font-medium text-teal-700/70 dark:text-teal-300/70">Target: {'>'} 1 m/s</div>
                     </div>
 
                     {/* Kartu Suhu */}
@@ -885,6 +1013,7 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                             </span>
                             <span className="text-orange-800 dark:text-orange-200 font-medium mb-1">°C</span>
                         </div>
+                        <div className="mt-2 text-xs font-medium text-orange-700/70 dark:text-orange-300/70">Target: 25-28 °C</div>
                     </div>
 
                     {/* Kartu Kelembapan */}
@@ -901,6 +1030,7 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                             </span>
                             <span className="text-blue-800 dark:text-blue-200 font-medium mb-1">%</span>
                         </div>
+                        <div className="mt-2 text-xs font-medium text-blue-700/70 dark:text-blue-300/70">Target: 60-80 %</div>
                     </div>
 
                     {/* Kartu Amonia */}
@@ -917,6 +1047,7 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                             </span>
                             <span className="text-red-800 dark:text-red-200 font-medium mb-1">PPM</span>
                         </div>
+                        <div className="mt-2 text-xs font-medium text-red-700/70 dark:text-red-300/70">Batas: {'<'} 20 PPM</div>
                     </div>
 
                     {/* Kartu Stress Level (THI) */}
@@ -954,6 +1085,12 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                                 </span>
                                 <span className="text-slate-500 font-medium mb-1 text-xs">Indeks</span>
                             </div>
+                            <div className={`mt-2 text-xs font-medium ${
+                                !liveSensorData.thi ? 'text-slate-500/70' :
+                                liveSensorData.thi < 72 ? 'text-green-700/70' :
+                                liveSensorData.thi < 79 ? 'text-yellow-700/70' :
+                                'text-red-700/70'
+                            }`}>Target: {'<'} 72</div>
                             <p className={`text-[10px] font-bold uppercase mt-1 ${
                                 !liveSensorData.thi ? 'text-slate-400' :
                                 liveSensorData.thi < 72 ? 'text-green-500' :
@@ -1089,21 +1226,14 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                             <p className="text-sm text-slate-500">Bahan Kering (BK) Konsumsi vs Pertambahan Bobot</p>
                         </div>
                         <div className="flex flex-col sm:flex-row gap-3">
-                            <div className="relative sm:min-w-[200px]">
-                                <input 
-                                    type="text"
-                                    list="cow-ids"
-                                    placeholder="C-101, C-102 (Max 5/10)..."
-                                    title="Pisahkan dengan koma untuk multi-select"
-                                    value={performanceCowId}
-                                    onChange={(e) => setPerformanceCowId(e.target.value)}
-                                    className="w-full px-3 py-1.5 text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                            <div className="relative">
+                                <MultiSelectDropdown 
+                                    options={cows} 
+                                    selectedIds={performanceChartCowIds} 
+                                    onChange={setPerformanceChartCowIds} 
+                                    maxSelection={5} 
+                                    placeholder="Pilih Sapi (Maks 5)" 
                                 />
-                                <datalist id="cow-ids">
-                                    {cows.map(c => (
-                                        <option key={c.id} value={c.cattleId} />
-                                    ))}
-                                </datalist>
                             </div>
                             <div className="flex bg-slate-100 dark:bg-slate-900 p-1 rounded-lg border border-slate-200 dark:border-slate-700">
                                 <button onClick={() => setPerformanceRange('hari')} className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${performanceRange === 'hari' ? 'bg-white dark:bg-slate-800 text-amber-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>Hari Ini</button>
@@ -1132,8 +1262,8 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                                         const colorAdg = colors[(idx * 2 + 1) % colors.length];
                                         const isAll = cowId === 'ALL';
                                         return [
-                                            <Line key={`${cowId}_bk`} yAxisId="left" type="monotone" dataKey={isAll ? 'bk' : `${cowId}_bk`} name={`DMI BK (kg) ${!isAll ? cowId : ''}`} stroke={colorBk} strokeWidth={3} dot={{r:4}} />,
-                                            <Line key={`${cowId}_adg`} yAxisId="left" type="monotone" dataKey={isAll ? 'adg' : `${cowId}_adg`} name={`ADG (kg) ${!isAll ? cowId : ''}`} stroke={colorAdg} strokeWidth={3} dot={{r:4}} />
+                                            <Line key={`${cowId}_bk`} yAxisId="left" type="monotone" dataKey={isAll ? 'bk' : `${cowId}_bk`} name={`DMI BK (kg) ${!isAll ? cowId : ''}`} stroke={colorBk} strokeWidth={3} dot={{r:4}} isAnimationActive={false} />,
+                                            <Line key={`${cowId}_adg`} yAxisId="left" type="monotone" dataKey={isAll ? 'adg' : `${cowId}_adg`} name={`ADG (kg) ${!isAll ? cowId : ''}`} stroke={colorAdg} strokeWidth={3} dot={{r:4}} isAnimationActive={false} />
                                         ];
                                     })}
                                 </LineChart>
@@ -1145,13 +1275,27 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                         )}
                     </div>
                     
+                    
                     {/* Ringkasan Performa Table (Multi-Cows) */}
-                    <div className="mt-6 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <div className="mt-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-visible bg-white dark:bg-slate-900/50">
+                        <div className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 p-3 flex justify-between items-center rounded-t-xl">
+                            <h5 className="text-sm font-bold text-slate-700 dark:text-slate-200">Tabel Komparasi Performa</h5>
+                            <div className="relative sm:min-w-[250px] z-50">
+                                <MultiSelectDropdown 
+                                    options={cows} 
+                                    selectedIds={performanceTableCowIds} 
+                                    onChange={setPerformanceTableCowIds} 
+                                    maxSelection={10} 
+                                    placeholder="Filter Sapi (Maks 10)" 
+                                />
+                            </div>
+                        </div>
+                        <div className="overflow-x-auto relative z-10">
                         <table className="w-full text-sm text-left">
                             <thead className="bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs uppercase font-bold tracking-wider">
                                 <tr>
                                     <th className="px-4 py-3 border-b border-slate-200 dark:border-slate-700">ID Sapi</th>
-                                    <th className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 text-center">Total DMI (Kg)</th>
+                                    <th className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 text-center">Total DMI (Kg BK)</th>
                                     <th className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 text-center">Bobot Awal</th>
                                     <th className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 text-center">Bobot Akhir</th>
                                     <th className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 text-center">ADG (Kg/hari)</th>
@@ -1161,20 +1305,39 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                             <tbody className="bg-white dark:bg-slate-900/50 divide-y divide-slate-100 dark:divide-slate-800/50">
                                 {performanceMultiSummaries.length > 0 ? performanceMultiSummaries.map((sum) => (
                                     <tr key={sum.cowId} className="hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors">
-                                        <td className="px-4 py-3 font-bold text-slate-800 dark:text-slate-200">{sum.cowId === 'ALL' ? 'Semua Sapi (Rata-rata)' : sum.cowId}</td>
+                                        <td className="px-4 py-3 font-bold text-slate-800 dark:text-slate-200">
+                                            {sum.cowId}
+                                            {sum.isEstimated && <span className="ml-1 text-[10px] text-amber-500 font-normal">(Estimasi)</span>}
+                                        </td>
                                         <td className="px-4 py-3 text-center text-slate-600 dark:text-slate-300">{sum.totalBk}</td>
                                         <td className="px-4 py-3 text-center text-slate-600 dark:text-slate-300">{sum.startWeight}</td>
-                                        <td className="px-4 py-3 text-center font-semibold text-slate-700 dark:text-slate-200">{sum.endWeight}</td>
+                                        <td className="px-4 py-3 text-center font-semibold text-slate-700 dark:text-slate-200">
+                                            {sum.endWeight}
+                                            {sum.isEstimated && <span className="block text-[9px] text-amber-500/80 -mt-0.5">~estimasi</span>}
+                                        </td>
                                         <td className="px-4 py-3 text-center font-bold text-emerald-600 dark:text-emerald-400">{sum.adg}</td>
                                         <td className="px-4 py-3 text-center font-bold text-purple-600 dark:text-purple-400">{sum.fcr}</td>
                                     </tr>
-                                )) : (
+                                )) : performanceTableCowIds.length === 0 ? (
+                                    <tr>
+                                        <td colSpan="6" className="px-4 py-12 text-center">
+                                            <div className="flex flex-col items-center justify-center">
+                                                <svg width="40" height="40" fill="none" stroke="currentColor" viewBox="0 0 24 24" className="text-slate-300 dark:text-slate-600 mb-2">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path>
+                                                </svg>
+                                                <span className="text-slate-500 dark:text-slate-400 font-medium">Pilih sapi terlebih dahulu</span>
+                                                <span className="text-xs text-slate-400 mt-1">Gunakan dropdown di atas untuk memilih sapi</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ) : (
                                     <tr>
                                         <td colSpan="6" className="px-4 py-8 text-center text-slate-400 italic">Data ringkasan tidak tersedia</td>
                                     </tr>
                                 )}
                             </tbody>
                         </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1289,7 +1452,12 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                         {/* Modal Body */}
                         <div className="p-6 space-y-4">
                             <p className="text-xs text-slate-500 dark:text-slate-400">
-                                Sapi ID: <b>{selectedItem?.cattleId}</b> | Silakan masukkan data koreksi terbaru di bawah ini.
+                                {selectedItem?.type === 'LIMBAH_KANDANG' ? (
+                                    <>Kandang: <b>{selectedItem?.zoneName}</b> | </>
+                                ) : (
+                                    <>Sapi ID: <b>{selectedItem?.cattleId}</b> | </>
+                                )}
+                                Silakan masukkan data koreksi terbaru di bawah ini.
                             </p>
 
                             {/* PAKAN */}
@@ -1322,8 +1490,8 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                                 </div>
                             )}
 
-                            {/* LIMBAH */}
-                            {selectedItem?.type === 'LIMBAH' && (
+                            {/* LIMBAH & LIMBAH KANDANG */}
+                            {(selectedItem?.type === 'LIMBAH' || selectedItem?.type === 'LIMBAH_KANDANG') && (
                                 <div className="space-y-3">
                                     <div className="space-y-1">
                                         <label className="text-xs font-bold text-slate-500 dark:text-slate-400">Feces Baru (Kg)</label>
@@ -1333,7 +1501,7 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                                             value={editValue}
                                             onChange={(e) => setEditValue(e.target.value)}
                                             placeholder="Contoh: 12.4"
-                                            className="w-full px-4 py-2.5 bg-slate-55 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-sm text-slate-800 dark:text-slate-100 font-medium"
+                                            className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-sm text-slate-800 dark:text-slate-100 font-medium"
                                         />
                                     </div>
                                     <div className="space-y-1">
@@ -1344,7 +1512,7 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                                             value={editValue2}
                                             onChange={(e) => setEditValue2(e.target.value)}
                                             placeholder="Contoh: 8.5"
-                                            className="w-full px-4 py-2.5 bg-slate-55 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-sm text-slate-800 dark:text-slate-100 font-medium"
+                                            className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-sm text-slate-800 dark:text-slate-100 font-medium"
                                         />
                                     </div>
                                 </div>
@@ -1364,6 +1532,35 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                                 className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition shadow-sm"
                             >
                                 Simpan Perubahan
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* Modal Konfirmasi Hapus Data Dashboard */}
+            {deleteConfirm.isOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-700 p-6 text-center animate-slide-up">
+                        <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                            </svg>
+                        </div>
+                        <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2">Konfirmasi Hapus</h3>
+                        <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">Apakah Anda yakin ingin menghapus data <b>{deleteConfirm.label}</b>?</p>
+                        
+                        <div className="flex gap-3">
+                            <button 
+                                onClick={() => setDeleteConfirm({ isOpen: false, item: null, label: '' })} 
+                                className="flex-1 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition"
+                            >
+                                Batal
+                            </button>
+                            <button 
+                                onClick={confirmDelete} 
+                                className="flex-1 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold shadow-lg shadow-red-500/30 transition"
+                            >
+                                Ya, Hapus
                             </button>
                         </div>
                     </div>

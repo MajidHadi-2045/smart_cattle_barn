@@ -1,8 +1,15 @@
 import axios, { AxiosError } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Alamat Production HTTPS Nginx
+// ==========================================
+// KONFIGURASI BASE URL API BACKEND
+// ==========================================
+// [MODE PRODUKSI] Gunakan alamat server production HTTPS di bawah ini ketika akan melakukan build APK:
 const BASE_URL = 'https://smartcattlebarn.site'; 
+
+// [MODE PENGEMBANGAN] Saat ini sedang diarahkan ke IP lokal PC (Jaringan Wi-Fi).
+// Pastikan IP disesuaikan dengan yang muncul di terminal Expo Metro (contoh: 10.125.171.115) dan port server backend (4000).
+// const BASE_URL = 'http://10.66.181.115:4000';
 
 const apiClient = axios.create({
   baseURL: `${BASE_URL}/api`,
@@ -34,8 +41,9 @@ export const injectToastHandler = (handler: typeof toastHandler) => {
 apiClient.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
-    // Hindari trigger toast otomatis secara global untuk background query/caching
-    // agar tidak mengganggu user experience. Layar (screen) akan menangani error secara mandiri jika diperlukan.
+    // Secara sengaja menonaktifkan trigger toast notifikasi error secara global pada level Axios.
+    // Hal ini bertujuan untuk mencegah background fetch/caching menghasilkan spam pesan error yang mengganggu pengalaman pengguna.
+    // Penanganan error (seperti menampilkan pesan gagal) sepenuhnya didelegasikan kepada masing-masing UI/screen.
     return Promise.reject(error);
   }
 );

@@ -1,5 +1,5 @@
 // src/livestock/livestock.service.ts
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Redis } from 'ioredis';
 import { ActivityService } from '../activity/activity.service';
@@ -62,6 +62,20 @@ export class LivestockService {
     return result;
   }
 
+  async getHistoricalVitals(cattleId: string) {
+    try {
+      const records = await this.prisma.livestockVital.findMany({
+        where: { cattleId },
+        orderBy: { timestamp: 'desc' },
+        take: 30, // Ambil 30 data terakhir untuk chart
+      });
+      return records.reverse(); // Urutkan dari terlama ke terbaru
+    } catch (err) {
+      console.warn(`Error fetching historical vitals for ${cattleId}:`, err);
+      return [];
+    }
+  }
+
   /**
    * Helper untuk memformat data Prisma sesuai struktur Frontend
    */
@@ -75,7 +89,7 @@ export class LivestockService {
     const latestTemp = cattle.vitals?.find((v: any) => v.bodyTemperature !== null)?.bodyTemperature || 0;
 
     const fedCountToday = cattle.feedRecords?.length || 0;
-    const feedingFrequency = config?.feed?.goal || config?.feedGoal || cattle.feedingFrequency || 2;
+    const feedingFrequency = cattle.feedingFrequency || config?.feed?.goal || config?.feedGoal || 2;
 
     return {
       id: cattle.cattleId,
@@ -262,10 +276,32 @@ export class LivestockService {
   /**
    * 6. PERBARUI DATA SAPI
    */
+  async updateBulkNutrition(cattleIds: string[], data: { targetBkPercent?: number, forageRatio?: number, concentrateRatio?: number, forageDM?: number, concentrateDM?: number, feedingFrequency?: number }, author: string = 'Admin') {
+    const updated = await (this.prisma.livestock as any).updateMany({
+      where: { cattleId: { in: cattleIds } },
+      data: {
+        targetBkPercent: data.targetBkPercent !== undefined ? parseFloat(data.targetBkPercent as any) : undefined,
+        forageRatio: data.forageRatio !== undefined ? parseFloat(data.forageRatio as any) : undefined,
+        concentrateRatio: data.concentrateRatio !== undefined ? parseFloat(data.concentrateRatio as any) : undefined,
+        forageDM: data.forageDM !== undefined ? parseFloat(data.forageDM as any) : undefined,
+        concentrateDM: data.concentrateDM !== undefined ? parseFloat(data.concentrateDM as any) : undefined,
+        feedingFrequency: data.feedingFrequency !== undefined ? parseInt(data.feedingFrequency as any) : undefined,
+      }
+    });
+
+    await this.activityService.log(author, 'EDIT', 'TERNAK', `Memperbarui nutrisi massal untuk ${updated.count} ekor sapi`);
+    await this.clearLivestockCache();
+    return { success: true, count: updated.count };
+  }
+
   async update(id: number, data: any, author: string = 'Admin') {
     const updated = await (this.prisma.livestock as any).update({
       where: { id: parseInt(id as any) },
       data: {
+        cattleId: data.cattleId,
+        breed: data.breed,
+        gender: data.gender,
+        initialWeight: data.initialWeight ? parseFloat(data.initialWeight) : undefined,
         status: data.status,
         sectionId: data.sectionId ? parseInt(data.sectionId) : undefined,
         currentWeight: data.currentWeight
@@ -348,30 +384,38 @@ export class LivestockService {
     const goal = config.waste?.goal || 1;
     const startDate = this.getStartDateForPeriod(period);
 
-    for (const cattleId of cattleIds) {
-        const count = await this.prisma.livestockWaste.count({
-            where: {
-                cattleId,
-                date: { gte: startDate }
-            }
-        });
-        if (count >= goal) {
-            throw new BadRequestException(`Batas pencatatan limbah (${goal} kali per ${period === 'monthly' ? 'bulan' : period === 'weekly' ? 'minggu' : 'hari'}) sudah tercapai untuk sapi ${cattleId}.`);
+    // Optimasi N+1 Query: Gunakan groupBy alih-alih loop berulang
+    const counts = await this.prisma.livestockWaste.groupBy({
+      by: ['cattleId'],
+      where: {
+        cattleId: { in: cattleIds },
+        date: { gte: startDate }
+      },
+      _count: { _all: true }
+    });
+
+    for (const item of counts) {
+        if (item._count._all >= goal) {
+            throw new BadRequestException(`Batas pencatatan limbah (${goal} kali per ${period === 'monthly' ? 'bulan' : period === 'weekly' ? 'minggu' : 'hari'}) sudah tercapai untuk sapi ${item.cattleId}.`);
         }
     }
 
     const today = new Date();
     today.setUTCHours(0, 0, 0, 0);
 
-    const promises = cattleIds.map(cattleId => 
-      this.prisma.livestockWaste.upsert({
-        where: { cattleId_date: { cattleId, date: today } },
-        update: { fecesKg, urineL, isAuto: false },
-        create: { cattleId, date: today, fecesKg, urineL, isAuto: false }
-      })
-    );
-
-    await Promise.all(promises);
+    // Menggunakan teknik Chunking/Batching (50 queries per proses) untuk mencegah Connection Pool Exhaustion
+    const chunkSize = 50;
+    for (let i = 0; i < cattleIds.length; i += chunkSize) {
+      const chunk = cattleIds.slice(i, i + chunkSize);
+      const promises = chunk.map(cattleId => 
+        this.prisma.livestockWaste.upsert({
+          where: { cattleId_date: { cattleId, date: today } },
+          update: { fecesKg, urineL, isAuto: false },
+          create: { cattleId, date: today, fecesKg, urineL, isAuto: false }
+        })
+      );
+      await Promise.all(promises);
+    }
 
     const cattleList = cattleIds.length > 3 ? `${cattleIds.slice(0, 3).join(', ')}... (+${cattleIds.length - 3} lainnya)` : cattleIds.join(', ');
     await this.activityService.log(author, 'TAMBAH', 'TERNAK', `Mencatat limbah manual untuk sapi: ${cattleList}`);
@@ -526,8 +570,25 @@ export class LivestockService {
     return record;
   }
 
+  // 10. Hapus Batch / Kolektif
+  async deleteBatch(batchId: string, author: string = 'Admin') {
+    const feeds = await this.prisma.livestockFeedRecord.deleteMany({ where: { batchId } });
+    const weights = await this.prisma.livestockWeightRecord.deleteMany({ where: { batchId } });
+    const wastes = await this.prisma.livestockWaste.deleteMany({ where: { batchId } });
+    const zoneWastes = await this.prisma.zoneWaste.deleteMany({ where: { batchId } });
+
+    await this.activityService.log(author, 'HAPUS', 'TERNAK', `Menghapus input kolektif dengan batchId: ${batchId}`);
+    return { 
+      success: true, 
+      deletedFeeds: feeds.count, 
+      deletedWeights: weights.count, 
+      deletedWastes: wastes.count,
+      deletedZoneWastes: zoneWastes.count
+    };
+  }
+
   // 2. Catat Pemberian Pakan per Sapi
-  async recordFeed(cattleId: string, feedType: string, weightKg: number, bkPercent: number = 100, author: string = 'Admin') {
+  async recordFeed(cattleId: string, feedType: string, weightKg: number, bkPercent: number = 100, author: string = 'Admin', siloId?: number) {
     const cow = await this.getFeedNeeds(cattleId);
     const config = this.loadChecklistConfig();
     const period = config.feed?.period || 'daily';
@@ -549,9 +610,91 @@ export class LivestockService {
     const asFedWeight = weightKg; // Berat yang diberikan
     const bkConsumed = weightKg * (bkPercent / 100); // Berat BK sesungguhnya
 
-    const record = await this.prisma.livestockFeedRecord.create({
+    // 1. Tentukan Kebutuhan per Komponen Pakan
+    let reqHijauan = 0;
+    let reqKonsentrat = 0;
+    const typeStr = feedType.toLowerCase();
+
+    if (typeStr.includes('konsentrat+hijauan') || typeStr === 'tmr') {
+        const fRatio = cow.prefs?.forageRatio || 60;
+        const cRatio = cow.prefs?.concentrateRatio || 40;
+        reqHijauan = weightKg * (fRatio / 100);
+        reqKonsentrat = weightKg * (cRatio / 100);
+    } else if (typeStr.includes('konsentrat')) {
+        reqKonsentrat = weightKg;
+    } else {
+        reqHijauan = weightKg;
+    }
+
+    // 2. Ambil Semua Silo dan Prioritaskan silo yang dipilih user
+    let allSilos = await this.prisma.silo.findMany({ orderBy: { currentStock: 'desc' } });
+    if (siloId) {
+        const selectedSilo = allSilos.find(s => s.id === parseInt(siloId as any));
+        if (selectedSilo) {
+            allSilos = [selectedSilo, ...allSilos.filter(s => s.id !== selectedSilo.id)];
+        }
+    }
+
+    // 3. Hitung Pemotongan Stok dari berbagai Silo
+    const deductions: { id: number, name: string, deductAmount: number, oldStock: number, capacity: number }[] = [];
+    
+    const fulfill = (amountNeeded: number, keyword: string) => {
+        let remaining = amountNeeded;
+        for (const silo of allSilos) {
+            if (remaining <= 0) break;
+            const sType = (silo.feedType || '').toLowerCase();
+            const sName = (silo.name || '').toLowerCase();
+            if (sType.includes(keyword) || sName.includes(keyword) || (keyword === 'hijauan' && (sType.includes('rumput') || sName.includes('rumput')))) {
+                const available = silo.currentStock - (deductions.find(d => d.id === silo.id)?.deductAmount || 0);
+                if (available > 0) {
+                    const take = Math.min(remaining, available);
+                    const existingDeduction = deductions.find(d => d.id === silo.id);
+                    if (existingDeduction) {
+                        existingDeduction.deductAmount += take;
+                    } else {
+                        deductions.push({ id: silo.id, name: silo.name, deductAmount: take, oldStock: silo.currentStock, capacity: silo.capacity });
+                    }
+                    remaining -= take;
+                }
+            }
+        }
+        if (remaining > 0.01) { 
+            throw new BadRequestException(`Gagal! Stok ${keyword} tidak mencukupi (Kurang ${remaining.toFixed(2)} Kg di seluruh silo)`);
+        }
+    };
+
+    if (reqHijauan > 0) fulfill(reqHijauan, 'hijauan');
+    if (reqKonsentrat > 0) fulfill(reqKonsentrat, 'konsentrat');
+
+    // 4. Lakukan Transaksi Database (Rekam Pakan + Update Semua Silo)
+    const transactionOps: any[] = [];
+    
+    transactionOps.push(this.prisma.livestockFeedRecord.create({
       data: { cattleId, feedType, weightKg, bkPercent, asFedWeight }
-    });
+    }));
+
+    for (const d of deductions) {
+        const newStock = d.oldStock - d.deductAmount;
+        const newStatus = newStock <= (d.capacity * 0.2) ? 'KRITIS' : 'AMAN';
+        
+        transactionOps.push(this.prisma.silo.update({
+            where: { id: d.id },
+            data: { currentStock: newStock, status: newStatus }
+        }));
+        
+        transactionOps.push(this.prisma.siloTransaction.create({
+            data: {
+                siloId: d.id,
+                type: 'KELUAR',
+                weightKg: d.deductAmount,
+                description: `Pemberian pakan sapi ${cattleId}`,
+                creator: author
+            }
+        }));
+    }
+
+    const results = await this.prisma.$transaction(transactionOps);
+    const record = results[0];
 
     try {
       await this.redis.del('feed:schedules');
@@ -560,6 +703,146 @@ export class LivestockService {
     await this.clearLivestockCache();
     await this.activityService.log(author, 'TAMBAH', 'TERNAK', `Mencatat pakan sapi ${cattleId}: ${feedType} ${weightKg}kg`);
     return record;
+  }
+
+  // 2b. Catat Pemberian Pakan Bulk
+  async recordFeedBulk(cattleIds: string[], feedType: string, weightKgPerCow: number, bkPercent: number = 100, author: string = 'Admin', siloForageId?: number, siloConcentrateId?: number) {
+    if (!cattleIds || cattleIds.length === 0) throw new BadRequestException('Tidak ada sapi yang dipilih');
+    
+    const crypto = require('crypto');
+    const batchId = crypto.randomUUID();
+    
+    let totalHijauan = 0;
+    let totalKonsentrat = 0;
+    
+    // Asumsi frontend mengirim rata-rata per sapi (weightKgPerCow)
+    const totalInputAsFed = weightKgPerCow * cattleIds.length;
+
+    const typeStr = feedType.toLowerCase();
+    let totalBkRequirement = 0;
+    const cowNeedsList: any[] = [];
+    
+    // First pass: get all cattle BK requirements
+    for (const cattleId of cattleIds) {
+      const cow = await this.getFeedNeeds(cattleId);
+      totalBkRequirement += cow.bkRequirement;
+      cowNeedsList.push(cow);
+    }
+    
+    const cowActualFeedList = cowNeedsList.map(cow => {
+       // Distribusi proporsional berdasarkan kebutuhan nutrisi masing-masing sapi (BK Target)
+       const proportion = totalBkRequirement > 0 ? (cow.bkRequirement / totalBkRequirement) : (1 / cattleIds.length);
+       const cowAsFed = totalInputAsFed * proportion;
+       
+       let reqHijauan = 0;
+       let reqKonsentrat = 0;
+       
+       if (typeStr.includes('konsentrat+hijauan') || typeStr === 'tmr') {
+           const fRatio = cow.prefs?.forageRatio || 60;
+           const cRatio = cow.prefs?.concentrateRatio || 40;
+           reqHijauan = cowAsFed * (fRatio / 100);
+           reqKonsentrat = cowAsFed * (cRatio / 100);
+       } else if (typeStr.includes('konsentrat')) {
+           reqKonsentrat = cowAsFed;
+       } else {
+           reqHijauan = cowAsFed;
+       }
+       
+       totalHijauan += reqHijauan;
+       totalKonsentrat += reqKonsentrat;
+       
+       const trueCowBkPct = (cowAsFed > 0 && cow.bkRequirement > 0) ? (cow.bkRequirement / cowAsFed) : (bkPercent / 100);
+       
+       return { 
+           cattleId: cow.cattleId, 
+           asFedWeight: parseFloat(cowAsFed.toFixed(2)), 
+           trueBkPct: trueCowBkPct,
+           bkConsumed: parseFloat((cowAsFed * trueCowBkPct).toFixed(2))
+       };
+    });
+
+    const allSilos = await this.prisma.silo.findMany({ orderBy: { currentStock: 'desc' } });
+    const deductions: { id: number, name: string, deductAmount: number, oldStock: number, capacity: number }[] = [];
+    
+    const fulfill = (amountNeeded: number, keyword: string, preferredSiloId?: number) => {
+        let remaining = amountNeeded;
+        let silosToUse = [...allSilos];
+        if (preferredSiloId) {
+            const preferred = silosToUse.find(s => s.id === parseInt(preferredSiloId as any));
+            if (preferred) {
+                silosToUse = [preferred, ...silosToUse.filter(s => s.id !== preferred.id)];
+            }
+        }
+
+        for (const silo of silosToUse) {
+            if (remaining <= 0) break;
+            const sType = (silo.feedType || '').toLowerCase();
+            const sName = (silo.name || '').toLowerCase();
+            if (sType.includes(keyword) || sName.includes(keyword) || (keyword === 'hijauan' && (sType.includes('rumput') || sName.includes('rumput')))) {
+                const available = silo.currentStock - (deductions.find(d => d.id === silo.id)?.deductAmount || 0);
+                if (available > 0) {
+                    const take = Math.min(remaining, available);
+                    const existingDeduction = deductions.find(d => d.id === silo.id);
+                    if (existingDeduction) {
+                        existingDeduction.deductAmount += take;
+                    } else {
+                        deductions.push({ id: silo.id, name: silo.name, deductAmount: take, oldStock: silo.currentStock, capacity: silo.capacity });
+                    }
+                    remaining -= take;
+                }
+            }
+        }
+        if (remaining > 0.01) { 
+            throw new BadRequestException(`Gagal! Stok ${keyword} tidak mencukupi (Kurang ${remaining.toFixed(2)} Kg di seluruh silo)`);
+        }
+    };
+
+    if (totalHijauan > 0) fulfill(totalHijauan, 'hijauan', siloForageId);
+    if (totalKonsentrat > 0) fulfill(totalKonsentrat, 'konsentrat', siloConcentrateId);
+
+    const results = await this.prisma.$transaction(async (prisma) => {
+      for (const d of deductions) {
+        await prisma.siloTransaction.create({
+          data: {
+            siloId: d.id,
+            type: 'KELUAR',
+            weightKg: d.deductAmount,
+            description: `Pemberian pakan kolektif untuk ${cattleIds.length} sapi (Sapi: ${cattleIds.join(', ')})`,
+            creator: author
+          }
+        });
+        await prisma.silo.update({
+          where: { id: d.id },
+          data: { currentStock: d.oldStock - d.deductAmount }
+        });
+      }
+
+      const records: any[] = [];
+      const feedDate = new Date();
+      for (const cowActual of cowActualFeedList) {
+        const record = await prisma.livestockFeedRecord.create({
+          data: {
+            cattleId: cowActual.cattleId,
+            feedType,
+            weightKg: cowActual.asFedWeight,
+            bkPercent: cowActual.trueBkPct * 100,
+            asFedWeight: cowActual.asFedWeight,
+            feedDate: feedDate,
+            batchId: batchId
+          }
+        });
+        records.push(record);
+      }
+      return records;
+    });
+
+    try {
+      await this.redis.del('feed:schedules');
+    } catch (err) {}
+
+    await this.clearLivestockCache();
+    await this.activityService.log(author, 'TAMBAH', 'TERNAK', `Mencatat pakan BARENGAN untuk ${cattleIds.length} sapi: ${feedType} (${weightKgPerCow}kg/sapi)`);
+    return { success: true, count: results.length };
   }
 
   private loadChecklistConfig() {
@@ -629,6 +912,7 @@ export class LivestockService {
     const feedGoal = config.feed?.goal || config.feedGoal || 1;
 
     return {
+      cattleId,
       weight,
       bkRequirement,
       suggestedForageAsFed,
@@ -696,6 +980,17 @@ export class LivestockService {
       console.warn('Error fetching chart data from database:', err.message);
     }
 
+    // OPTIMISASI: Pra-hitung string tanggal untuk menghindari pembuatan objek Date berulang dalam loop bersarang
+    const precomputedFeeds = feeds.map(f => ({
+      ...f,
+      dateStr: new Date(f.feedDate).toISOString().split('T')[0]
+    }));
+
+    const precomputedWeights = weightRecords.map(w => ({
+      ...w,
+      dateStr: new Date(w.weighDate).toISOString().split('T')[0]
+    }));
+
     const chartData: any[] = [];
     const targetIds = isAllCows ? ['ALL'] : cowIds;
     
@@ -727,9 +1022,8 @@ export class LivestockService {
         let dailyBk = 0;
         let dailyAdg = 0;
 
-        const dailyFeeds = feeds.filter(f => 
-          new Date(f.feedDate).toISOString().split('T')[0] === dateStr &&
-          (isAllCows || f.cattleId === id)
+        const dailyFeeds = precomputedFeeds.filter(f => 
+          f.dateStr === dateStr && (isAllCows || f.cattleId === id)
         );
 
         dailyBk = dailyFeeds.reduce((acc, f) => acc + (f.weightKg * ((f.bkPercent || 100) / 100)), 0);
@@ -760,12 +1054,14 @@ export class LivestockService {
     const finalSummaries = targetIds.map(id => {
       const sum = summaries[id];
       let adgTotal = days > 0 ? sum.totalWeightGain / days : 0;
+      let isEstimated = false;
       
       const cowWeights = weightRecords.filter(w => w.cattleId === id);
       if (isAllCows || cowWeights.length === 0) {
           adgTotal = days > 0 ? (sum.totalDmi * 0.15 / days) : 0; 
           sum.endWeight = sum.startWeight + (adgTotal * days);
           sum.totalWeightGain = sum.endWeight - sum.startWeight;
+          isEstimated = true;
       }
 
       let fcr = 0;
@@ -779,7 +1075,8 @@ export class LivestockService {
          startWeight: parseFloat(sum.startWeight.toFixed(2)),
          endWeight: parseFloat(sum.endWeight.toFixed(2)),
          adg: parseFloat(adgTotal.toFixed(2)),
-         fcr: parseFloat(fcr.toFixed(2))
+         fcr: parseFloat(fcr.toFixed(2)),
+         isEstimated
       };
     });
 
@@ -829,6 +1126,7 @@ export class LivestockService {
           title: `Pemberian Pakan`,
           details: `${f.feedType} - ${f.weightKg} kg`,
           date: f.feedDate,
+          batchId: f.batchId,
           raw: f
         });
       });
@@ -841,6 +1139,7 @@ export class LivestockService {
           title: `Penimbangan Sapi`,
           details: `${w.weight} kg`,
           date: w.weighDate,
+          batchId: w.batchId,
           raw: w
         });
       });
@@ -853,6 +1152,7 @@ export class LivestockService {
           title: `Pencatatan Limbah`,
           details: `Feces: ${w.fecesKg} kg, Urine: ${w.urineL} L`,
           date: w.date,
+          batchId: w.batchId,
           raw: w
         });
       });
@@ -866,6 +1166,7 @@ export class LivestockService {
           title: `Limbah Kandang (${zw.zone?.name || `Kandang #${zw.zoneId}`})`,
           details: `Feces: ${zw.fecesKg} kg, Urine: ${zw.urineL} L`,
           date: zw.date,
+          batchId: zw.batchId,
           raw: zw
         });
       });
@@ -898,6 +1199,9 @@ export class LivestockService {
   }
 
   async deleteFeedRecord(id: number, author: string = 'Admin') {
+    const old = await this.prisma.livestockFeedRecord.findUnique({ where: { id } });
+    if (!old) throw new NotFoundException('Data pakan tidak ditemukan');
+
     const deleted = await this.prisma.livestockFeedRecord.delete({ where: { id } });
     try {
       await this.redis.del('feed:schedules');
@@ -931,6 +1235,9 @@ export class LivestockService {
   }
 
   async deleteWeightRecord(id: number, author: string = 'Admin') {
+    const old = await this.prisma.livestockWeightRecord.findUnique({ where: { id } });
+    if (!old) throw new NotFoundException('Data timbangan tidak ditemukan');
+
     const deleted = await this.prisma.livestockWeightRecord.delete({ where: { id } });
     
     // Cari berat terakhir yang tersisa
@@ -971,6 +1278,9 @@ export class LivestockService {
   }
 
   async deleteWasteRecord(id: number, author: string = 'Admin') {
+    const old = await this.prisma.livestockWaste.findUnique({ where: { id } });
+    if (!old) throw new NotFoundException('Data limbah tidak ditemukan');
+
     const deleted = await this.prisma.livestockWaste.delete({ where: { id } });
     await this.activityService.log(author, 'HAPUS', 'TERNAK', `Menghapus limbah sapi ${deleted.cattleId}`);
     return { success: true };
@@ -995,6 +1305,9 @@ export class LivestockService {
   }
 
   async deleteZoneWasteRecord(id: number, author: string = 'Admin') {
+    const old = await this.prisma.zoneWaste.findUnique({ where: { id }, include: { zone: true } });
+    if (!old) throw new NotFoundException('Data limbah kandang tidak ditemukan');
+
     const deleted = await this.prisma.zoneWaste.delete({ where: { id }, include: { zone: true } });
     await this.activityService.log(author, 'HAPUS', 'TERNAK', `Menghapus limbah kandang ${deleted.zone?.name || deleted.zoneId}`);
     return { success: true };

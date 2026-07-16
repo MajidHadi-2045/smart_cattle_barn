@@ -1,0 +1,222 @@
+{
+  "info": {
+    "_postman_id": "b3e34b2a-7188-4c9f-9b2f-92716183e870",
+    "name": "Smart Cattle Barn - Full Black-Box Testing",
+    "description": "Koleksi Postman komprehensif untuk pengujian fungsionalitas utama (Tabel 4.1), Keamanan RBAC (Tabel 4.2), dan Modul Ekstra (Kesehatan, Zona, Laporan).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Tabel 4.1: Pengujian Fungsionalitas Utama (CRUD)",
+      "item": [
+        {
+          "name": "1. Authentication (Tabel 4.1 No 1)",
+          "event": [{"listen": "test","script": {"exec": ["pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });","var jsonData = pm.response.json();","if (jsonData.access_token) { pm.environment.set(\"jwt_token\", jsonData.access_token); }"],"type": "text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n    \"email\": \"{{admin_email}}\",\n    \"password\": \"{{admin_password}}\",\n    \"role\": \"SUPER_ADMIN\"\n}"},
+            "url": {"raw": "{{base_url}}/auth/login", "host": ["{{base_url}}"], "path": ["auth", "login"]}
+          }
+        },
+        {
+          "name": "2. Data Ternak (Tabel 4.1 No 2)",
+          "event": [{"listen": "test","script": {"exec": ["pm.test(\"Status code is 201\", function () { pm.response.to.have.status(201); });"],"type": "text/javascript"}}],
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{jwt_token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n    \"cattleId\": \"C-888\",\n    \"name\": \"Sapi Pengujian\",\n    \"breed\": \"Brahman\",\n    \"gender\": \"Jantan\",\n    \"initialWeight\": 350\n}"},
+            "url": {"raw": "{{base_url}}/livestock", "host": ["{{base_url}}"], "path": ["livestock"]}
+          }
+        },
+        {
+          "name": "3. Kalkulator DMI (Tabel 4.1 No 3)",
+          "event": [{"listen": "test","script": {"exec": ["pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });"],"type": "text/javascript"}}],
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{jwt_token}}", "type": "string"}]},
+            "method": "GET",
+            "url": {"raw": "{{base_url}}/livestock/feed-needs/C-576", "host": ["{{base_url}}"], "path": ["livestock", "feed-needs", "C-576"]}
+          }
+        },
+        {
+          "name": "4. Log Pakan & Silo (Tabel 4.1 No 4)",
+          "event": [{"listen": "test","script": {"exec": ["pm.test(\"Status code is 201\", function () { pm.response.to.have.status(201); });"],"type": "text/javascript"}}],
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{jwt_token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n    \"cattleId\": \"C-576\",\n    \"feedWeight\": 12,\n    \"feedType\": \"Campuran\"\n}"},
+            "url": {"raw": "{{base_url}}/feed/log", "host": ["{{base_url}}"], "path": ["feed", "log"]}
+          }
+        },
+        {
+          "name": "5. Manajemen Limbah (Tabel 4.1 No 5)",
+          "event": [{"listen": "test","script": {"exec": ["pm.test(\"Status code is 201\", function () { pm.response.to.have.status(201); });"],"type": "text/javascript"}}],
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{jwt_token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n    \"zoneId\": 1,\n    \"wasteWeight\": 20.5,\n    \"wasteType\": \"Feses\"\n}"},
+            "url": {"raw": "{{base_url}}/activities/waste", "host": ["{{base_url}}"], "path": ["activities", "waste"]}
+          }
+        },
+        {
+          "name": "6. Telemetri Lingkungan (Tabel 4.1 No 6)",
+          "event": [{"listen": "test","script": {"exec": ["pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });"],"type": "text/javascript"}}],
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{jwt_token}}", "type": "string"}]},
+            "method": "GET",
+            "url": {"raw": "{{base_url}}/environment/current", "host": ["{{base_url}}"], "path": ["environment", "current"]}
+          }
+        },
+        {
+          "name": "7. Laporan & Dasbor (Tabel 4.1 No 7)",
+          "event": [{"listen": "test","script": {"exec": ["pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });"],"type": "text/javascript"}}],
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{jwt_token}}", "type": "string"}]},
+            "method": "GET",
+            "url": {"raw": "{{base_url}}/dashboard/summary", "host": ["{{base_url}}"], "path": ["dashboard", "summary"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tabel 4.2: Pengujian Keamanan (RBAC)",
+      "item": [
+        {
+          "name": "A. Login Sebagai SUPER ADMIN",
+          "event": [{"listen": "test","script": {"exec": ["var jsonData = pm.response.json(); if(jsonData.access_token){ pm.environment.set(\"jwt_token\", jsonData.access_token); }"],"type": "text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n    \"email\": \"{{admin_email}}\",\n    \"password\": \"{{admin_password}}\",\n    \"role\": \"SUPER_ADMIN\"\n}"},
+            "url": {"raw": "{{base_url}}/auth/login", "host": ["{{base_url}}"], "path": ["auth", "login"]}
+          }
+        },
+        {
+          "name": "B. (Tabel 4.2 No 1) Buat Staf Baru (Admin = 201)",
+          "event": [{"listen": "test","script": {"exec": ["pm.test(\"Sukses (201 Created)\", function () { pm.response.to.have.status(201); });"],"type": "text/javascript"}}],
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{jwt_token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n    \"email\": \"tes_staf@mail.com\",\n    \"password\": \"pass123\",\n    \"role\": \"STAFF\",\n    \"name\": \"Testing\"\n}"},
+            "url": {"raw": "{{base_url}}/users/staff", "host": ["{{base_url}}"], "path": ["users", "staff"]}
+          }
+        },
+        {
+          "name": "C. Login Sebagai STAF KANDANG",
+          "event": [{"listen": "test","script": {"exec": ["var jsonData = pm.response.json(); if(jsonData.access_token){ pm.environment.set(\"jwt_token\", jsonData.access_token); }"],"type": "text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n    \"email\": \"staf_kandang@smartbarn.com\",\n    \"password\": \"password123\",\n    \"role\": \"STAFF\"\n}"},
+            "url": {"raw": "{{base_url}}/auth/login", "host": ["{{base_url}}"], "path": ["auth", "login"]}
+          }
+        },
+        {
+          "name": "D. (Tabel 4.2 No 2) Buat Staf Baru (Staf = 403 Ditolak)",
+          "event": [{"listen": "test","script": {"exec": ["pm.test(\"Ditolak oleh RBAC (403 Forbidden)\", function () { pm.response.to.have.status(403); });"],"type": "text/javascript"}}],
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{jwt_token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n    \"email\": \"hacker@mail.com\",\n    \"password\": \"pass123\",\n    \"role\": \"STAFF\"\n}"},
+            "url": {"raw": "{{base_url}}/users/staff", "host": ["{{base_url}}"], "path": ["users", "staff"]}
+          }
+        },
+        {
+          "name": "E. (Tabel 4.2 No 4) Hapus Sapi (Staf = 403 Ditolak)",
+          "event": [{"listen": "test","script": {"exec": ["pm.test(\"Ditolak oleh RBAC (403 Forbidden)\", function () { pm.response.to.have.status(403); });"],"type": "text/javascript"}}],
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{jwt_token}}", "type": "string"}]},
+            "method": "DELETE",
+            "url": {"raw": "{{base_url}}/livestock/C-999", "host": ["{{base_url}}"], "path": ["livestock", "C-999"]}
+          }
+        },
+        {
+          "name": "F. Login Sebagai VETERINER",
+          "event": [{"listen": "test","script": {"exec": ["var jsonData = pm.response.json(); if(jsonData.access_token){ pm.environment.set(\"jwt_token\", jsonData.access_token); }"],"type": "text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n    \"email\": \"dokter@smartbarn.com\",\n    \"password\": \"password123\",\n    \"role\": \"VETERINER\"\n}"},
+            "url": {"raw": "{{base_url}}/auth/login", "host": ["{{base_url}}"], "path": ["auth", "login"]}
+          }
+        },
+        {
+          "name": "G. (Tabel 4.2 No 3) Intip Antrean (Vet = 403 Ditolak)",
+          "event": [{"listen": "test","script": {"exec": ["pm.test(\"Ditolak oleh RBAC (403 Forbidden)\", function () { pm.response.to.have.status(403); });"],"type": "text/javascript"}}],
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{jwt_token}}", "type": "string"}]},
+            "method": "GET",
+            "url": {"raw": "{{base_url}}/users/pending", "host": ["{{base_url}}"], "path": ["users", "pending"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "Folder 3: Ekstra Fungsionalitas Modul Pendukung",
+      "item": [
+        {
+          "name": "A. Login Kembali Sebagai ADMIN (Wajib sebelum mulai folder ini)",
+          "event": [{"listen": "test","script": {"exec": ["var jsonData = pm.response.json(); if(jsonData.access_token){ pm.environment.set(\"jwt_token\", jsonData.access_token); }"],"type": "text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n    \"email\": \"{{admin_email}}\",\n    \"password\": \"{{admin_password}}\",\n    \"role\": \"SUPER_ADMIN\"\n}"},
+            "url": {"raw": "{{base_url}}/auth/login", "host": ["{{base_url}}"], "path": ["auth", "login"]}
+          }
+        },
+        {
+          "name": "B. GET All Zones (Kandang)",
+          "event": [{"listen": "test","script": {"exec": ["pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });"],"type": "text/javascript"}}],
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{jwt_token}}", "type": "string"}]},
+            "method": "GET",
+            "url": {"raw": "{{base_url}}/zones", "host": ["{{base_url}}"], "path": ["zones"]}
+          }
+        },
+        {
+          "name": "C. POST Create New Zone",
+          "event": [{"listen": "test","script": {"exec": ["pm.test(\"Status code is 201\", function () { pm.response.to.have.status(201); });"],"type": "text/javascript"}}],
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{jwt_token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n    \"name\": \"Kandang Karantina Baru\",\n    \"description\": \"Zona Isolasi Sapi Sakit\"\n}"},
+            "url": {"raw": "{{base_url}}/zones", "host": ["{{base_url}}"], "path": ["zones"]}
+          }
+        },
+        {
+          "name": "D. GET Health Summary (Kesehatan)",
+          "event": [{"listen": "test","script": {"exec": ["pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });"],"type": "text/javascript"}}],
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{jwt_token}}", "type": "string"}]},
+            "method": "GET",
+            "url": {"raw": "{{base_url}}/health/summary", "host": ["{{base_url}}"], "path": ["health", "summary"]}
+          }
+        },
+        {
+          "name": "E. GET Silos (Stok Pakan)",
+          "event": [{"listen": "test","script": {"exec": ["pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });"],"type": "text/javascript"}}],
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{jwt_token}}", "type": "string"}]},
+            "method": "GET",
+            "url": {"raw": "{{base_url}}/feed/silos", "host": ["{{base_url}}"], "path": ["feed", "silos"]}
+          }
+        },
+        {
+          "name": "F. GET User Profile",
+          "event": [{"listen": "test","script": {"exec": ["pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });"],"type": "text/javascript"}}],
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{jwt_token}}", "type": "string"}]},
+            "method": "GET",
+            "url": {"raw": "{{base_url}}/users/profile/1", "host": ["{{base_url}}"], "path": ["users", "profile", "1"]}
+          }
+        }
+      ]
+    }
+  ]
+}

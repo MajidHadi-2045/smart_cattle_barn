@@ -30,6 +30,7 @@ const UserManagement = () => {
         name: '',
         username: '',
         email: '',
+        phone: '', // Menambahkan properti phone
         password: '',
         role: userRole === 'VETERINER' ? 'veteriner' : 'staff',
         reason: ''
@@ -98,6 +99,7 @@ const UserManagement = () => {
             requester: currentUserName,
             calonName: formData.name,
             calonEmail: formData.email,
+            calonPhone: formData.phone, // Kirim nomer HP
             posisi: formData.role.toUpperCase(),
             alasan: formData.reason
         };
@@ -116,7 +118,7 @@ const UserManagement = () => {
             {
                 loading: isSuperAdmin ? 'Membuat pengguna baru...' : 'Mengirim permintaan akses...',
                 success: (result) => {
-                    setFormData({ name: '', username: '', email: '', password: '', role: userRole === 'VETERINER' ? 'veteriner' : 'staff', reason: '' });
+                    setFormData({ name: '', username: '', email: '', phone: '', password: '', role: userRole === 'VETERINER' ? 'veteriner' : 'staff', reason: '' });
                     setActiveTab('list');
                     
                     if (isSuperAdmin) {
@@ -454,6 +456,10 @@ const UserManagement = () => {
                                         <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Email Utama</label>
                                         <input type="email" className="w-full px-4 py-2 border rounded-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white" required value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
                                     </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Nomor Kontak / HP</label>
+                                        <input type="text" placeholder="0812xxxxxx" className="w-full px-4 py-2 border rounded-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white" required value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
+                                    </div>
                                 </div>
                                 {userRole === 'SUPER_ADMIN' && (
                                     <div>
@@ -465,14 +471,14 @@ const UserManagement = () => {
                                     <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Pilih Role Akses</label>
                                     {userRole === 'SUPER_ADMIN' ? (
                                         <select className="w-full px-4 py-2 border rounded-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value })}>
-                                            <option value="staff">Staf Kandang (Operasional)</option>
+                                            <option value="super_admin">Super Admin (Manajer)</option>
                                             <option value="veteriner">Dokter Hewan (Veteriner)</option>
-                                            <option value="super_admin">Super Admin (IT)</option>
+                                            <option value="staff">Staff (Operator Kandang)</option>
                                         </select>
                                     ) : (
                                         <select disabled className="w-full px-4 py-2 border rounded-lg bg-slate-105 dark:bg-slate-700 dark:text-white" value={formData.role}>
-                                            <option value="staff">Staf Kandang (Operasional)</option>
                                             <option value="veteriner">Dokter Hewan (Veteriner)</option>
+                                            <option value="staff">Staff (Operator Kandang)</option>
                                         </select>
                                     )}
                                 </div>
@@ -506,6 +512,16 @@ const UserManagement = () => {
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 user={selectedUser}
+                onProfileUpdate={(id, updatedData) => {
+                    // Update state users agar list langsung terefresh
+                    setUsers(prevUsers => prevUsers.map(u => 
+                        u.id === id ? { ...u, ...updatedData } : u
+                    ));
+                    // Update selectedUser jika sedang dibuka
+                    if (selectedUser && selectedUser.id === id) {
+                        setSelectedUser({ ...selectedUser, ...updatedData });
+                    }
+                }}
             />
 
             {/* Render Modal Konfirmasi Global */}

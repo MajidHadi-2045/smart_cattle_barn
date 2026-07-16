@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { 
   StyleSheet, 
   View, 
@@ -12,6 +12,7 @@ import {
   Alert
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { COLORS, SPACING, SHADOWS } from '../theme';
 import { 
   ChevronLeft, 
@@ -27,7 +28,8 @@ import {
   HeartPulse, 
   Plus,
   Scale,
-  Settings
+  Settings,
+  X
 } from 'lucide-react-native';
 import apiClient from '../api/client';
 import { useSocket } from '../hooks/useSocket';
@@ -43,19 +45,24 @@ const LivestockDetailScreen = ({ route, navigation }: any) => {
   const [feedNeeds, setFeedNeeds] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [heartRateData, setHeartRateData] = useState<number[]>(new Array(20).fill(70));
+  const [tempData, setTempData] = useState<number[]>(new Array(20).fill(38));
+  const [vitalModalVisible, setVitalModalVisible] = useState(false);
+  const [vitalModalType, setVitalModalType] = useState<'heartRate'|'temp'>('heartRate');
   const [editVisible, setEditVisible] = useState(false);
   const [wasteVisible, setWasteVisible] = useState(false);
   const [wasteForm, setWasteForm] = useState({ fecesKg: '', urineL: '' });
   const [feedWeightVisible, setFeedWeightVisible] = useState(false);
-  const [feedForm, setFeedForm] = useState({ feedType: 'Hijauan', weightKg: '' });
+  const [feedForm, setFeedForm] = useState({ feedType: 'Hijauan', weightKg: '', siloId: '' });
+  const [silos, setSilos] = useState<any[]>([]);
   const [weightForm, setWeightForm] = useState({ weightKg: '' });
   const [modalConfig, setModalConfig] = useState<any>({ visible: false, type: 'success', title: '', message: '' });
+  const [userRole, setUserRole] = useState<string | null>(null);
 
-  // Health history state variables
+  // Variabel state untuk menyimpan data riwayat medis sapi
   const [healthHistory, setHealthHistory] = useState<any[]>([]);
   const [isHistoryExtended, setIsHistoryExtended] = useState(false);
 
-  // Target Nutrition Modal States
+  // State management khusus untuk Modal Konfigurasi Nutrisi
   const [nutritionModalVisible, setNutritionModalVisible] = useState(false);
   const [feedingMethod, setFeedingMethod] = useState('CAMPURAN'); // CAMPURAN, HIJAUAN_SAJA, KONSENTRAT_SAJA, TMR
   const [nutritionForm, setNutritionForm] = useState({
@@ -70,10 +77,31 @@ const LivestockDetailScreen = ({ route, navigation }: any) => {
   
   // Listen ke data vital sapi spesifik ini (Gunakan cattleId RFID untuk sinkronisasi sensor)
   const { data: socketData } = useSocket(item ? [`vital-update-${item.cattleId}`] : []);
+  const lastTempChartUpdate = useRef<number>(Date.now());
 
   useEffect(() => {
     fetchDetail();
+    checkUserRole();
   }, [id]);
+
+  // Handle autoOpenNutrition parameter from LivestockScreen
+  useEffect(() => {
+    if (item && route.params?.autoOpenNutrition) {
+      // Small timeout to allow the UI to render the detail page first
+      const timer = setTimeout(() => {
+        openNutritionConfigModal();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [item, route.params?.autoOpenNutrition]);
+
+  const checkUserRole = async () => {
+    const userStr = await AsyncStorage.getItem('user');
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      setUserRole(user.role);
+    }
+  };
 
   useEffect(() => {
     const vitalData = item ? socketData[`vital-update-${item.cattleId}`] : null;
@@ -82,14 +110,20 @@ const LivestockDetailScreen = ({ route, navigation }: any) => {
       setItem((prev: any) => ({
         ...prev,
         lastHeartRate: vitalData.heartRate,
-        lastTemp: vitalData.temperature
+        lastTemp: vitalData.bodyTemperature
       }));
 
-      // Update data grafik
-      setHeartRateData(prev => {
-        const newData = [...prev.slice(1), vitalData.heartRate];
-        return newData;
-      });
+      // Update grafik detak jantung (setiap detik)
+      if (vitalData.heartRate) {
+        setHeartRateData(prev => [...prev.slice(1), vitalData.heartRate]);
+      }
+      
+      // Update grafik suhu tubuh HANYA 1 menit sekali sesuai permintaan
+      const now = Date.now();
+      if (vitalData.bodyTemperature && (now - lastTempChartUpdate.current >= 60000)) {
+        setTempData(prev => [...prev.slice(1), vitalData.bodyTemperature]);
+        lastTempChartUpdate.current = now;
+      }
     }
   }, [socketData]);
 
@@ -137,6 +171,31 @@ const LivestockDetailScreen = ({ route, navigation }: any) => {
         }
       } catch (err) {
         console.log("Failed to load medical history on mobile detail", err);
+      }
+
+      // Fetch silos
+      try {
+        const siloRes = await apiClient.get('/feed/silo');
+        setSilos(siloRes.data);
+      } catch (err) {}
+
+      try {
+        const vitalsRes = await apiClient.get(`/livestock/vital/history/${response.data.cattleId}`);
+        if (vitalsRes.data && vitalsRes.data.length > 0) {
+          const hrData = vitalsRes.data.filter((v: any) => v.heartRate !== null).map((v: any) => v.heartRate).slice(-20);
+          const tmData = vitalsRes.data.filter((v: any) => v.bodyTemperature !== null).map((v: any) => v.bodyTemperature).slice(-20);
+          
+          if (hrData.length > 0) {
+            const paddedHr = [...new Array(Math.max(0, 20 - hrData.length)).fill(hrData[0]), ...hrData];
+            setHeartRateData(paddedHr);
+          }
+          if (tmData.length > 0) {
+            const paddedTm = [...new Array(Math.max(0, 20 - tmData.length)).fill(tmData[0]), ...tmData];
+            setTempData(paddedTm);
+          }
+        }
+      } catch (err) {
+        console.log("Failed to load historical vitals on mobile detail", err);
       }
     } catch (error) {
       console.error('Error fetching detail:', error);
@@ -278,11 +337,30 @@ const LivestockDetailScreen = ({ route, navigation }: any) => {
     }
   };
 
-  const generatePath = () => {
-    const step = (width - 40) / (heartRateData.length - 1);
-    return heartRateData.map((val, i) => {
+  const generatePath = (type: 'heartRate' | 'temp') => {
+    const data = type === 'heartRate' ? heartRateData : tempData;
+    let minVal = type === 'heartRate' ? 40 : 35;
+    let maxVal = type === 'heartRate' ? 120 : 42;
+    
+    if (data.length > 0) {
+      const dataMin = Math.min(...data);
+      const dataMax = Math.max(...data);
+      if (type === 'temp') {
+        minVal = dataMin - 0.5;
+        maxVal = dataMax + 0.5;
+      } else {
+        minVal = Math.max(0, dataMin - 10);
+        maxVal = dataMax + 10;
+      }
+    }
+
+    const step = (width - 80) / Math.max(1, data.length - 1);
+    
+    return data.map((val, i) => {
       const x = i * step;
-      const y = 100 - ((val - 40) / (120 - 40)) * 80;
+      const clampedVal = Math.max(minVal, Math.min(val, maxVal));
+      const range = maxVal - minVal || 1;
+      const y = 100 - ((clampedVal - minVal) / range) * 80;
       return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
     }).join(' ');
   };
@@ -303,12 +381,7 @@ const LivestockDetailScreen = ({ route, navigation }: any) => {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Detail Sapi</Text>
         <View style={styles.headerActions}>
-          <TouchableOpacity onPress={() => setEditVisible(true)} style={styles.actionButton}>
-            <Edit2 size={20} color={COLORS.primary} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={confirmDelete} style={styles.actionButton}>
-            <Trash2 size={20} color={COLORS.danger} />
-          </TouchableOpacity>
+          {/* Ikon Edit dan Hapus telah dihilangkan sesuai permintaan UI */}
         </View>
       </View>
 
@@ -329,7 +402,7 @@ const LivestockDetailScreen = ({ route, navigation }: any) => {
             <View style={styles.infoItem}>
               <Activity size={18} color={COLORS.textLight} />
               <Text style={styles.infoLabel}>Status: </Text>
-              <Text style={[styles.infoValue, { color: item.healthStatus === 'SEHAT' ? COLORS.success : item.healthStatus === 'DALAM_PERAWATAN' ? '#3b82f6' : item.healthStatus === 'KRITIS' ? '#f97316' : item.healthStatus === 'MATI' ? '#64748b' : COLORS.danger }]}>{item.healthStatus ? item.healthStatus.replace('_', ' ') : 'N/A'}</Text>
+              <Text style={[styles.infoValue, { color: item.healthStatus === 'SEHAT' ? COLORS.success : item.healthStatus === 'SAKIT' ? COLORS.danger : item.healthStatus === 'DALAM_PERAWATAN' ? '#3b82f6' : item.healthStatus === 'KRITIS' ? '#f97316' : item.healthStatus === 'MATI' ? '#64748b' : COLORS.danger }]}>{item.healthStatus ? item.healthStatus.replace('_', ' ') : 'N/A'}</Text>
             </View>
             <View style={styles.infoItem}>
               <MapPin size={18} color={COLORS.textLight} />
@@ -343,50 +416,54 @@ const LivestockDetailScreen = ({ route, navigation }: any) => {
             </View>
           </View>
 
-          <View style={styles.actionGrid}>
-            <TouchableOpacity 
-              style={[styles.actionGridItem, { backgroundColor: '#fdf2f2' }]}
-              onPress={() => setWasteVisible(true)}
-            >
-              <Droplets size={18} color={COLORS.danger} />
-              <Text style={styles.actionGridText}>Catat Limbah</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.actionGridItem, { backgroundColor: '#fef3c7' }]}
-              onPress={() => setFeedWeightVisible(true)}
-            >
-              <Scale size={18} color="#d97706" />
-              <Text style={styles.actionGridText}>Timbang & Pakan</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.actionGridItem, { backgroundColor: '#f0fdf4' }]}
-              onPress={() => {
-                setModalConfig({
-                  visible: true,
-                  type: 'info',
-                  title: 'Rekam Medis',
-                  message: 'Fitur input diagnosa baru sedang dalam pengembangan.',
-                  onConfirm: () => setModalConfig({...modalConfig, visible: false})
-                });
-              }}
-            >
-              <HeartPulse size={18} color={COLORS.success} />
-              <Text style={styles.actionGridText}>Tambah Medik</Text>
-            </TouchableOpacity>
-          </View>
+          {userRole === 'STAFF' && (
+            <View style={styles.actionGrid}>
+              <TouchableOpacity 
+                style={[styles.actionGridItem, { backgroundColor: '#fdf2f2' }]}
+                onPress={() => setWasteVisible(true)}
+              >
+                <Droplets size={18} color={COLORS.danger} />
+                <Text style={styles.actionGridText}>Catat Limbah</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.actionGridItem, { backgroundColor: '#fef3c7' }]}
+                onPress={() => setFeedWeightVisible(true)}
+              >
+                <Scale size={18} color="#d97706" />
+                <Text style={styles.actionGridText}>Timbang & Pakan</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.actionGridItem, { backgroundColor: '#f0fdf4' }]}
+                onPress={() => {
+                  setModalConfig({
+                    visible: true,
+                    type: 'info',
+                    title: 'Rekam Medis',
+                    message: 'Fitur input diagnosa baru sedang dalam pengembangan.',
+                    onConfirm: () => setModalConfig({...modalConfig, visible: false})
+                  });
+                }}
+              >
+                <HeartPulse size={18} color={COLORS.success} />
+                <Text style={styles.actionGridText}>Tambah Medik</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
 
-        {/* --- PREMIUM TARGET & KEBUTUHAN NUTRISI CARD --- */}
+        {/* --- KARTU INFORMASI TARGET DAN KEBUTUHAN NUTRISI PREMIUM --- */}
         <View style={styles.nutritionCard}>
           <View style={styles.cardHeaderRow}>
             <Text style={styles.nutritionCardTitle}>Target & Kebutuhan Nutrisi</Text>
-            <TouchableOpacity 
-              style={styles.editConfigBtn}
-              onPress={openNutritionConfigModal}
-            >
-              <Settings size={14} color={COLORS.primary} />
-              <Text style={styles.editConfigBtnText}>Atur Manual</Text>
-            </TouchableOpacity>
+            {userRole === 'STAFF' && (
+              <TouchableOpacity 
+                style={styles.editConfigBtn}
+                onPress={openNutritionConfigModal}
+              >
+                <Settings size={14} color={COLORS.primary} />
+                <Text style={styles.editConfigBtnText}>Atur Manual</Text>
+              </TouchableOpacity>
+            )}
           </View>
 
           <View style={styles.nutritionStatsGrid}>
@@ -487,45 +564,35 @@ const LivestockDetailScreen = ({ route, navigation }: any) => {
           </View>
         </View>
 
-        {/* Real-time Monitoring Section */}
+        {/* Bagian Monitoring Vital Sign secara Real-time */}
         <Text style={styles.sectionTitle}>Monitoring Real-time</Text>
         
         <View style={styles.monitoringRow}>
-          <View style={[styles.vitalCard, { backgroundColor: '#fee2e2' }]}>
+          <TouchableOpacity 
+            style={[styles.vitalCard, { backgroundColor: '#fee2e2' }]}
+            onPress={() => { setVitalModalType('heartRate'); setVitalModalVisible(true); }}
+          >
             <Heart size={24} color="#ef4444" />
             <Text style={styles.vitalValue}>{item.lastHeartRate || '--'}</Text>
             <Text style={styles.vitalUnit}>BPM</Text>
             <Text style={styles.vitalLabel}>Detak Jantung</Text>
-          </View>
+            <Text style={{ fontSize: 10, color: COLORS.textLight, marginTop: 4 }}>
+              {item.lastHeartRate ? new Date(lastVitalTimestamp).toLocaleTimeString('id-ID') : '--:--'}
+            </Text>
+          </TouchableOpacity>
 
-          <View style={[styles.vitalCard, { backgroundColor: '#dcfce7' }]}>
+          <TouchableOpacity 
+            style={[styles.vitalCard, { backgroundColor: '#dcfce7' }]}
+            onPress={() => { setVitalModalType('temp'); setVitalModalVisible(true); }}
+          >
             <Thermometer size={24} color="#10b981" />
             <Text style={styles.vitalValue}>{item.lastTemp || '--'}</Text>
             <Text style={styles.vitalUnit}>°C</Text>
             <Text style={styles.vitalLabel}>Suhu Tubuh</Text>
-          </View>
-        </View>
-
-        {/* EKG Graph */}
-        <View style={styles.graphCard}>
-          <View style={styles.graphHeader}>
-            <Activity size={18} color={COLORS.primary} />
-            <Text style={styles.graphTitle}>Grafik EKG (Live)</Text>
-          </View>
-          
-          <View style={styles.svgContainer}>
-            <Svg height="120" width={width - 80}>
-              <Path
-                d={generatePath()}
-                fill="none"
-                stroke={COLORS.primary}
-                strokeWidth="3"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </Svg>
-          </View>
-          <Text style={styles.graphFooter}>Sinkronisasi data otomatis via WebSocket</Text>
+            <Text style={{ fontSize: 10, color: COLORS.textLight, marginTop: 4 }}>
+              {item.lastTemp ? new Date(lastVitalTimestamp).toLocaleTimeString('id-ID') : '--:--'}
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* Riwayat Kesehatan (Rekam Medis) */}
@@ -545,6 +612,7 @@ const LivestockDetailScreen = ({ route, navigation }: any) => {
                 const getStatusColor = (status: string) => {
                   switch (status) {
                     case 'SEMBUH': return COLORS.success;
+                    case 'SAKIT': return COLORS.danger;
                     case 'DALAM_PERAWATAN': return COLORS.warning;
                     case 'KRITIS': return COLORS.danger;
                     case 'MATI': return '#64748b';
@@ -737,6 +805,41 @@ const LivestockDetailScreen = ({ route, navigation }: any) => {
               </View>
 
               <View style={styles.inputGroup}>
+                <Text style={styles.label}>Pilih Silo (Opsional)</Text>
+                <View style={{ gap: 8, marginTop: 4 }}>
+                  <TouchableOpacity
+                    style={[styles.pickerFakeItem, !feedForm.siloId && styles.pickerFakeItemActive, { padding: 10, borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 8 }]}
+                    onPress={() => setFeedForm({ ...feedForm, siloId: '' })}
+                  >
+                    <Text style={[styles.pickerFakeText, !feedForm.siloId && styles.pickerFakeTextActive]}>
+                      -- Pilih Silo (Otomatis) --
+                    </Text>
+                  </TouchableOpacity>
+                  {(silos || [])
+                    .filter((s: any) => {
+                      const fType = feedForm.feedType.toLowerCase();
+                      const sType = (s.feedType || '').toLowerCase();
+                      const sName = (s.name || '').toLowerCase();
+                      if (fType.includes('konsentrat+hijauan') || fType === 'tmr') {
+                        return sType.includes('hijauan') || sType.includes('konsentrat') || sName.includes('hijauan') || sName.includes('konsentrat');
+                      }
+                      return sType.includes(fType) || sName.includes(fType);
+                    })
+                    .map((s: any) => (
+                      <TouchableOpacity
+                        key={s.id}
+                        style={[styles.pickerFakeItem, feedForm.siloId === s.id.toString() && styles.pickerFakeItemActive, { padding: 10, borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 8 }]}
+                        onPress={() => setFeedForm({ ...feedForm, siloId: s.id.toString() })}
+                      >
+                        <Text style={[styles.pickerFakeText, feedForm.siloId === s.id.toString() && styles.pickerFakeTextActive]}>
+                          {s.name} - Sisa {s.currentStock} {s.unit}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                </View>
+              </View>
+
+              <View style={styles.inputGroup}>
                 <Text style={styles.label}>Berat Pakan Diberikan (Kg)</Text>
                 <View style={styles.inputRow}>
                   <TextInput 
@@ -765,9 +868,10 @@ const LivestockDetailScreen = ({ route, navigation }: any) => {
                           cattleId: item.cattleId,
                           feedType: feedForm.feedType,
                           weightKg: parseFloat(feedForm.weightKg),
-                          bkPercent: computedBkPercent
+                          bkPercent: computedBkPercent,
+                          siloId: feedForm.siloId ? parseInt(feedForm.siloId) : undefined
                         });
-                        setFeedForm({ ...feedForm, weightKg: '' });
+                        setFeedForm({ ...feedForm, weightKg: '', siloId: '' });
                         setModalConfig({
                           visible: true,
                           type: 'success',
@@ -775,8 +879,8 @@ const LivestockDetailScreen = ({ route, navigation }: any) => {
                           message: 'Pencatatan pakan berhasil disimpan!',
                           onConfirm: () => { setModalConfig({...modalConfig, visible: false}); fetchDetail(); }
                         });
-                      } catch (err) {
-                        alert('Gagal menyimpan catatan pakan');
+                      } catch (err: any) {
+                        alert(err.response?.data?.message || 'Gagal menyimpan catatan pakan');
                       }
                     }}
                   >
@@ -932,6 +1036,36 @@ const LivestockDetailScreen = ({ route, navigation }: any) => {
         confirmText={modalConfig.confirmText}
         cancelText={modalConfig.cancelText}
       />
+
+      {/* MODAL GRAFIK VITAL */}
+      <Modal visible={vitalModalVisible} animationType="fade" transparent={true} onRequestClose={() => setVitalModalVisible(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {vitalModalType === 'heartRate' ? 'Grafik Detak Jantung' : 'Grafik Suhu Tubuh'}
+              </Text>
+              <TouchableOpacity onPress={() => setVitalModalVisible(false)}>
+                <X size={20} color={COLORS.text} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={[styles.svgContainer, { padding: 0 }]}>
+              <Svg height="120" width={width - 80}>
+                <Path
+                  d={generatePath(vitalModalType)}
+                  fill="none"
+                  stroke={vitalModalType === 'heartRate' ? '#ef4444' : '#10b981'}
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </Svg>
+            </View>
+            <Text style={[styles.graphFooter, { textAlign: 'center', marginTop: 12 }]}>Sinkronisasi data otomatis via WebSocket</Text>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -1092,6 +1226,7 @@ const styles = StyleSheet.create({
   },
   actionGrid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 12,
     marginTop: SPACING.lg,
     borderTopWidth: 1,
@@ -1100,6 +1235,7 @@ const styles = StyleSheet.create({
   },
   actionGridItem: {
     flex: 1,
+    minWidth: '45%',
     padding: 12,
     borderRadius: 12,
     alignItems: 'center',
@@ -1121,6 +1257,12 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 24,
     ...SHADOWS.md,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.md,
   },
   modalTitle: {
     fontSize: 20,
@@ -1205,11 +1347,13 @@ const styles = StyleSheet.create({
   },
   feedTypeButtons: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
     marginTop: 4,
   },
   feedTypeBtn: {
-    flex: 1,
+    minWidth: '30%',
+    paddingHorizontal: 8,
     height: 40,
     backgroundColor: '#f1f5f9',
     borderRadius: 8,
@@ -1339,14 +1483,14 @@ const styles = StyleSheet.create({
   pickerFakeContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
+    justifyContent: 'space-between',
     marginBottom: 6,
   },
   pickerFakeItem: {
-    flex: 1,
-    minWidth: '45%',
+    width: '48%',
+    marginBottom: 10,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 14,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: '#e2e8f0',
@@ -1460,7 +1604,7 @@ const styles = StyleSheet.create({
   historyExpandBtnText: {
     color: COLORS.primary,
     fontWeight: 'bold',
-    fontSize: 13,
+    fontSize: 12,
   },
 });
 

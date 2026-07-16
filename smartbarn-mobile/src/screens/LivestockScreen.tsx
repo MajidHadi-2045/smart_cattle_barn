@@ -26,7 +26,9 @@ import {
   Trash2, 
   Check, 
   Info,
-  Calendar
+  Calendar,
+  Home,
+  Activity
 } from 'lucide-react-native';
 import apiClient from '../api/client';
 import useSWR from 'swr';
@@ -34,17 +36,20 @@ import LivestockFormModal from '../components/LivestockFormModal';
 import CustomModal from '../components/CustomModal';
 import { useToast } from '../context/ToastContext';
 import Skeleton from '../components/Skeleton';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const fetcherMulti = async () => {
-  const [liveRes, checklistRes, zonesRes] = await Promise.all([
+  const [liveRes, checklistRes, zonesRes, siloRes] = await Promise.all([
     apiClient.get('/livestock'),
     apiClient.get('/dashboard/daily-checklist').catch(() => null),
-    apiClient.get('/zones').catch(() => ({ data: [] }))
+    apiClient.get('/zones').catch(() => ({ data: [] })),
+    apiClient.get('/feed/silo').catch(() => ({ data: [] }))
   ]);
   return {
     livestock: liveRes.data,
     checklist: checklistRes?.data?.config,
-    zones: zonesRes.data || []
+    zones: zonesRes.data || [],
+    silos: siloRes.data || []
   };
 };
 
@@ -75,14 +80,35 @@ const LivestockScreen = ({ navigation }: any) => {
   const [groupWeight, setGroupWeight] = useState('');
   const [groupFeedType, setGroupFeedType] = useState('Hijauan');
   const [groupFeedWeight, setGroupFeedWeight] = useState('');
+  const [groupSiloId, setGroupSiloId] = useState('');
+  const [groupSiloId2, setGroupSiloId2] = useState('');
+  const [silos, setSilos] = useState<any[]>([]);
   const [selectedFeedWeightCows, setSelectedFeedWeightCows] = useState<string[]>([]);
   const [selectFeedWeightAll, setSelectFeedWeightAll] = useState(false);
+  const [fabExpanded, setFabExpanded] = useState(false);
+  const [modalSearch, setModalSearch] = useState('');
+  const [modalZoneFilter, setModalZoneFilter] = useState('ALL');
   const [feedGoal, setFeedGoal] = useState(1);
+  const [userRole, setUserRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const userStr = await AsyncStorage.getItem('user');
+        if (userStr) {
+          const u = JSON.parse(userStr);
+          setUserRole(u.role);
+        }
+      } catch (err) {}
+    };
+    fetchUser();
+  }, []);
 
   useEffect(() => {
     if (swrData) {
       setLivestock(swrData.livestock);
       setZones(swrData.zones);
+      setSilos(swrData.silos);
       if (swrData.checklist) {
         setFeedGoal(swrData.checklist.feedGoal || 1);
       }
@@ -107,7 +133,14 @@ const LivestockScreen = ({ navigation }: any) => {
   const handleAdd = async (data: any) => {
     setLoading(true);
     try {
-      await apiClient.post('/livestock', data);
+      const payload = {
+        ...data,
+        sectionId: parseInt(data.sectionId),
+        initialWeight: parseFloat(data.weight),
+        weight: parseFloat(data.weight),
+        currentWeight: parseFloat(data.weight)
+      };
+      await apiClient.post('/livestock', payload);
       setFormVisible(false);
       showToast(`Sapi ${data.cattleId} berhasil ditambahkan`, 'success');
       fetchLivestock();
@@ -122,6 +155,13 @@ const LivestockScreen = ({ navigation }: any) => {
     item.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     item.cattleId?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const filteredModalLivestock = livestock.filter(item => {
+    const searchMatch = item.name?.toLowerCase().includes(modalSearch.toLowerCase()) || 
+                        item.cattleId?.toLowerCase().includes(modalSearch.toLowerCase());
+    const zoneMatch = modalZoneFilter === 'ALL' || item.zoneId === modalZoneFilter;
+    return searchMatch && zoneMatch;
+  });
 
   const totalPages = Math.ceil(filteredLivestock.length / ITEMS_PER_PAGE);
   const paginatedLivestock = filteredLivestock.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
@@ -331,22 +371,27 @@ const LivestockScreen = ({ navigation }: any) => {
         case 'Tmr': computedBkPercent = 50; break;
       }
 
-      targetIds.forEach(cowId => {
-        promises.push(
-          apiClient.post('/livestock/feed', {
-            cattleId: cowId,
-            feedType: groupFeedType,
-            weightKg: parseFloat(groupFeedWeight),
-            bkPercent: computedBkPercent
-          })
-        );
-      });
+      let payload: any = {
+        cattleIds: targetIds,
+        feedType: groupFeedType,
+        weightKg: parseFloat(groupFeedWeight),
+        bkPercent: computedBkPercent,
+      };
 
-      await Promise.all(promises);
+      if (groupFeedType.toLowerCase().includes('konsentrat+hijauan') || groupFeedType.toLowerCase() === 'tmr') {
+        payload.siloForageId = groupSiloId ? parseInt(groupSiloId) : undefined;
+        payload.siloConcentrateId = groupSiloId2 ? parseInt(groupSiloId2) : undefined;
+      } else {
+        payload.siloForageId = groupSiloId ? parseInt(groupSiloId) : undefined;
+      }
+
+      await apiClient.post('/livestock/feed-bulk', payload);
       showToast(`Berhasil mencatat pemberian pakan untuk ${targetIds.length} ekor sapi!`, 'success');
       
       setFeedModalVisible(false);
       setGroupFeedWeight('');
+      setGroupSiloId('');
+      setGroupSiloId2('');
       setSelectedFeedWeightCows([]);
       setSelectFeedWeightAll(false);
       fetchLivestock();
@@ -399,14 +444,24 @@ const LivestockScreen = ({ navigation }: any) => {
         </View>
       </View>
 
-      <View style={styles.actionButtons}>
+      <View style={[styles.actionButtons, { flexDirection: 'row', gap: 8 }]}>
         <TouchableOpacity 
-          style={styles.actionBtnOutlineFull}
+          style={[styles.actionBtnOutlineFull, { flex: 1 }]}
           onPress={() => navigation.navigate('LivestockDetail', { id: item.dbId })}
         >
-          <Settings size={14} color={COLORS.primary} />
-          <Text style={[styles.actionBtnText, {color: COLORS.primary}]}>Detail & Target Nutrisi</Text>
+          <Beef size={14} color={COLORS.primary} />
+          <Text style={[styles.actionBtnText, {color: COLORS.primary}]}>Detail</Text>
         </TouchableOpacity>
+
+        {userRole === 'STAFF' && (
+          <TouchableOpacity 
+            style={[styles.actionBtnOutlineFull, { flex: 1, borderColor: '#d97706', backgroundColor: '#fffbeb' }]}
+            onPress={() => navigation.navigate('LivestockDetail', { id: item.dbId, autoOpenNutrition: true })}
+          >
+            <Settings size={14} color="#d97706" />
+            <Text style={[styles.actionBtnText, {color: '#d97706'}]}>Atur Nutrisi</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <View style={styles.cardFooter}>
@@ -442,35 +497,7 @@ const LivestockScreen = ({ navigation }: any) => {
         />
       </View>
 
-      {/* Action Bar for Collective Operations */}
-      <View style={styles.actionBar}>
-        <View style={styles.actionBarRow}>
-          <TouchableOpacity 
-            style={styles.wasteGroupBtn} 
-            onPress={() => setWasteModalVisible(true)}
-          >
-            <Trash2 size={15} color={COLORS.white} />
-            <Text style={styles.actionBtnTextWhite}>Limbah Kelompok</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.actionBarRow}>
-          <TouchableOpacity 
-            style={styles.weightGroupBtn} 
-            onPress={() => setWeightModalVisible(true)}
-          >
-            <Scale size={15} color={COLORS.white} />
-            <Text style={styles.actionBtnTextWhite}>Timbang Kelompok</Text>
-          </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={styles.feedGroupBtn} 
-            onPress={() => setFeedModalVisible(true)}
-          >
-            <Beef size={15} color={COLORS.white} />
-            <Text style={styles.actionBtnTextWhite}>Pakan Kelompok</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
 
       {loading && !refreshing ? (
         <View style={{ paddingHorizontal: SPACING.lg }}>
@@ -524,13 +551,15 @@ const LivestockScreen = ({ navigation }: any) => {
         />
       )}
 
-      {/* Floating Action Button - Tambah Sapi */}
-      <TouchableOpacity 
-        style={styles.fab} 
-        onPress={() => setFormVisible(true)}
-      >
-        <Plus size={30} color={COLORS.white} />
-      </TouchableOpacity>
+      {/* Floating Action Button - Tambah Sapi (Hanya untuk Admin/Non-Staff) */}
+      {userRole !== 'STAFF' && (
+        <TouchableOpacity 
+          style={styles.fab} 
+          onPress={() => setFormVisible(true)}
+        >
+          <Plus size={30} color={COLORS.white} />
+        </TouchableOpacity>
+      )}
 
       {/* MODAL 1: COLLECTIVE WASTE LOGGING */}
       <Modal visible={wasteModalVisible} animationType="slide" transparent>
@@ -619,7 +648,7 @@ const LivestockScreen = ({ navigation }: any) => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Timbang Kelompok</Text>
+              <Text style={styles.modalTitle}>Timbang Berat</Text>
               <TouchableOpacity onPress={() => setWeightModalVisible(false)}>
                 <Text style={styles.closeBtnText}>Tutup</Text>
               </TouchableOpacity>
@@ -662,8 +691,35 @@ const LivestockScreen = ({ navigation }: any) => {
                   </TouchableOpacity>
                 </View>
 
+                {/* MODAL SEARCH & FILTER */}
+                <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+                  <View style={[styles.searchContainer, { flex: 1, margin: 0, height: 40 }]}>
+                    <Search color={COLORS.textLight} size={18} />
+                    <TextInput
+                      style={styles.searchInput}
+                      placeholder="Cari ID/Nama Sapi..."
+                      value={modalSearch}
+                      onChangeText={setModalSearch}
+                      placeholderTextColor={COLORS.textLight}
+                    />
+                  </View>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ maxHeight: 40 }}>
+                    <TouchableOpacity 
+                      style={[styles.pickerFakeItem, { width: 'auto', marginBottom: 0, paddingVertical: 8, marginRight: 8 }, modalZoneFilter === 'ALL' && styles.pickerFakeItemActive]}
+                      onPress={() => setModalZoneFilter('ALL')}
+                    ><Text style={[styles.pickerFakeText, modalZoneFilter === 'ALL' && styles.pickerFakeTextActive]}>Semua</Text></TouchableOpacity>
+                    {zones.map(z => (
+                      <TouchableOpacity 
+                        key={z.id}
+                        style={[styles.pickerFakeItem, { width: 'auto', marginBottom: 0, paddingVertical: 8, marginRight: 8 }, modalZoneFilter === z.id && styles.pickerFakeItemActive]}
+                        onPress={() => setModalZoneFilter(z.id)}
+                      ><Text style={[styles.pickerFakeText, modalZoneFilter === z.id && styles.pickerFakeTextActive]}>{z.name}</Text></TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+
                 <View style={styles.cowSelectGrid}>
-                  {livestock.map(cow => {
+                  {filteredModalLivestock.map(cow => {
                     const isSelected = selectedFeedWeightCows.includes(cow.cattleId) || selectFeedWeightAll;
                     return (
                       <TouchableOpacity 
@@ -690,7 +746,7 @@ const LivestockScreen = ({ navigation }: any) => {
                 style={[styles.submitGroupBtn, { backgroundColor: '#2563eb' }]} 
                 onPress={submitGroupWeight}
               >
-                <Text style={styles.submitGroupBtnText}>Simpan Timbang Kelompok</Text>
+                <Text style={styles.submitGroupBtnText}>Simpan Timbang Berat</Text>
               </TouchableOpacity>
             </ScrollView>
           </View>
@@ -702,7 +758,7 @@ const LivestockScreen = ({ navigation }: any) => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Pemberian Pakan Kelompok</Text>
+              <Text style={styles.modalTitle}>Pemberian Pakan</Text>
               <TouchableOpacity onPress={() => setFeedModalVisible(false)}>
                 <Text style={styles.closeBtnText}>Tutup</Text>
               </TouchableOpacity>
@@ -736,8 +792,79 @@ const LivestockScreen = ({ navigation }: any) => {
                   </View>
                 </View>
 
+                <View style={{ marginBottom: 12 }}>
+                  { (groupFeedType.toLowerCase().includes('konsentrat+hijauan') || groupFeedType.toLowerCase() === 'tmr') ? (
+                    <View style={{ gap: 12 }}>
+                      <View>
+                        <Text style={styles.inputLabel}>Pilih Silo 1 (Hijauan)</Text>
+                        <View style={{ gap: 8, marginTop: 4 }}>
+                          <TouchableOpacity
+                            style={[styles.pickerFakeItem, !groupSiloId && styles.pickerFakeItemActive, { padding: 10, borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 8 }]}
+                            onPress={() => setGroupSiloId('')}
+                          >
+                            <Text style={[styles.pickerFakeText, !groupSiloId && styles.pickerFakeTextActive]}>-- Otomatis --</Text>
+                          </TouchableOpacity>
+                          {(silos || []).filter(s => (s.feedType || '').toLowerCase().includes('hijauan') || (s.name || '').toLowerCase().includes('hijauan')).map(s => (
+                            <TouchableOpacity
+                              key={s.id}
+                              style={[styles.pickerFakeItem, groupSiloId === s.id.toString() && styles.pickerFakeItemActive, { padding: 10, borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 8 }]}
+                              onPress={() => setGroupSiloId(s.id.toString())}
+                            >
+                              <Text style={[styles.pickerFakeText, groupSiloId === s.id.toString() && styles.pickerFakeTextActive]}>{s.name} - Sisa {s.currentStock} {s.unit}</Text>
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+                      </View>
+                      <View>
+                        <Text style={styles.inputLabel}>Pilih Silo 2 (Konsentrat)</Text>
+                        <View style={{ gap: 8, marginTop: 4 }}>
+                          <TouchableOpacity
+                            style={[styles.pickerFakeItem, !groupSiloId2 && styles.pickerFakeItemActive, { padding: 10, borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 8 }]}
+                            onPress={() => setGroupSiloId2('')}
+                          >
+                            <Text style={[styles.pickerFakeText, !groupSiloId2 && styles.pickerFakeTextActive]}>-- Otomatis --</Text>
+                          </TouchableOpacity>
+                          {(silos || []).filter(s => (s.feedType || '').toLowerCase().includes('konsentrat') || (s.name || '').toLowerCase().includes('konsentrat')).map(s => (
+                            <TouchableOpacity
+                              key={s.id}
+                              style={[styles.pickerFakeItem, groupSiloId2 === s.id.toString() && styles.pickerFakeItemActive, { padding: 10, borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 8 }]}
+                              onPress={() => setGroupSiloId2(s.id.toString())}
+                            >
+                              <Text style={[styles.pickerFakeText, groupSiloId2 === s.id.toString() && styles.pickerFakeTextActive]}>{s.name} - Sisa {s.currentStock} {s.unit}</Text>
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+                      </View>
+                    </View>
+                  ) : (
+                    <View>
+                      <Text style={styles.inputLabel}>Pilih Silo (Opsional)</Text>
+                      <View style={{ gap: 8, marginTop: 4 }}>
+                        <TouchableOpacity
+                          style={[styles.pickerFakeItem, !groupSiloId && styles.pickerFakeItemActive, { padding: 10, borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 8 }]}
+                          onPress={() => setGroupSiloId('')}
+                        >
+                          <Text style={[styles.pickerFakeText, !groupSiloId && styles.pickerFakeTextActive]}>-- Otomatis --</Text>
+                        </TouchableOpacity>
+                        {(silos || []).filter(s => {
+                          const fType = groupFeedType.toLowerCase();
+                          return (s.feedType || '').toLowerCase().includes(fType) || (s.name || '').toLowerCase().includes(fType);
+                        }).map(s => (
+                          <TouchableOpacity
+                            key={s.id}
+                            style={[styles.pickerFakeItem, groupSiloId === s.id.toString() && styles.pickerFakeItemActive, { padding: 10, borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 8 }]}
+                            onPress={() => setGroupSiloId(s.id.toString())}
+                          >
+                            <Text style={[styles.pickerFakeText, groupSiloId === s.id.toString() && styles.pickerFakeTextActive]}>{s.name} - Sisa {s.currentStock} {s.unit}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    </View>
+                  )}
+                </View>
+
                 <View style={{ marginBottom: 4 }}>
-                  <Text style={styles.inputLabel}>Berat Pakan (Kg per Sapi)</Text>
+                  <Text style={styles.inputLabel}>{(selectFeedWeightAll ? livestock.length : selectedFeedWeightCows.length) > 1 ? 'Rata-rata Pakan per Sapi (Kg)' : 'Berat Pakan (Kg per Sapi)'}</Text>
                   <TextInput
                     style={styles.textInput}
                     placeholder="Contoh: 12.5"
@@ -745,7 +872,9 @@ const LivestockScreen = ({ navigation }: any) => {
                     value={groupFeedWeight}
                     onChangeText={setGroupFeedWeight}
                   />
-                  <Text style={styles.unitLabel}>Masukkan porsi makan per sapi</Text>
+                  <Text style={styles.unitLabel}>
+                    {(selectFeedWeightAll ? livestock.length : selectedFeedWeightCows.length) > 1 ? '*Total pakan akan didistribusikan secara proporsional sesuai kebutuhan BK.' : 'Masukkan porsi makan per sapi'}
+                  </Text>
                 </View>
               </View>
 
@@ -802,7 +931,7 @@ const LivestockScreen = ({ navigation }: any) => {
                         </View>
                         <View style={{ borderTopWidth: 1, borderTopColor: '#e0f2fe', paddingTop: 4, marginTop: 2 }}>
                           <Text style={{ fontSize: 10, fontWeight: '500', color: COLORS.textLight }}>
-                            Porsi per Sapi ({feedGoal}x): H: {(recs.totalForageAsFed / (cowCount * feedGoal)).toFixed(2)} kg | K: {(recs.totalConcentrateAsFed / (cowCount * feedGoal)).toFixed(2)} kg
+                            Distribusi per Sapi ({feedGoal}x): {cowCount > 1 ? 'Proporsional (Sesuai Kebutuhan BK)' : `H: ${(recs.totalForageAsFed / feedGoal).toFixed(2)} kg | K: ${(recs.totalConcentrateAsFed / feedGoal).toFixed(2)} kg`}
                           </Text>
                         </View>
                       </View>
@@ -813,12 +942,12 @@ const LivestockScreen = ({ navigation }: any) => {
                           <Text style={{ fontSize: 11, fontWeight: 'bold', color: COLORS.text }}>{selectedRecTotal.toFixed(2)} kg</Text>
                         </View>
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                          <Text style={{ fontSize: 11, color: COLORS.textLight }}>Total Harian (Per Sapi):</Text>
+                          <Text style={{ fontSize: 11, color: COLORS.textLight }}>{cowCount > 1 ? 'Rata-rata Harian (Per Sapi):' : 'Total Harian (Per Sapi):'}</Text>
                           <Text style={{ fontSize: 11, fontWeight: 'bold', color: COLORS.text }}>{recPerCow.toFixed(2)} kg</Text>
                         </View>
                         {feedGoal > 1 && (
                           <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                            <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#059669' }}>Porsi 1x (Per Sapi):</Text>
+                            <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#059669' }}>{cowCount > 1 ? 'Rata-rata 1x (Per Sapi):' : 'Porsi 1x (Per Sapi):'}</Text>
                             <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#059669' }}>{recPerCowSession.toFixed(2)} kg</Text>
                           </View>
                         )}
@@ -830,7 +959,7 @@ const LivestockScreen = ({ navigation }: any) => {
                         style={{ flex: 1, backgroundColor: '#eff6ff', borderWidth: 1, borderColor: '#bfdbfe', paddingVertical: 6, borderRadius: 6, alignItems: 'center' }}
                         onPress={() => setGroupFeedWeight(recPerCow.toFixed(2))}
                       >
-                        <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#1e40af' }}>🎯 Harian ({recPerCow.toFixed(2)} kg)</Text>
+                        <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#1e40af' }}>🎯 Harian ({cowCount > 1 ? 'Rata-rata ' : ''}{recPerCow.toFixed(2)} kg)</Text>
                       </TouchableOpacity>
                       
                       {feedGoal > 1 && (
@@ -838,10 +967,63 @@ const LivestockScreen = ({ navigation }: any) => {
                           style={{ flex: 1, backgroundColor: '#ecfdf5', borderWidth: 1, borderColor: '#a7f3d0', paddingVertical: 6, borderRadius: 6, alignItems: 'center' }}
                           onPress={() => setGroupFeedWeight(recPerCowSession.toFixed(2))}
                         >
-                          <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#065f46' }}>🎯 Porsi 1x ({recPerCowSession.toFixed(2)} kg)</Text>
+                          <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#065f46' }}>🎯 Porsi 1x ({cowCount > 1 ? 'Rata-rata ' : ''}{recPerCowSession.toFixed(2)} kg)</Text>
                         </TouchableOpacity>
                       )}
                     </View>
+
+                    {/* Proportional Distribution Breakdown */}
+                    {groupFeedWeight && parseFloat(groupFeedWeight) > 0 && cowCount > 1 && (() => {
+                      const asFedInputVal = parseFloat(groupFeedWeight);
+                      const totalInputAsFed = asFedInputVal * cowCount;
+                      const feedType = groupFeedType;
+                      let bkPct = 0;
+                      if (feedType === 'Hijauan') bkPct = 20;
+                      else if (feedType === 'Konsentrat') bkPct = 86;
+                      else if (feedType === 'Tmr') bkPct = 53;
+                      else if (feedType === 'Konsentrat+hijauan') bkPct = 53;
+                      
+                      return (
+                        <View style={{ marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: '#bae6fd' }}>
+                          <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#0369a1', marginBottom: 4 }}>Rincian Distribusi (Total: {totalInputAsFed.toFixed(2)} kg):</Text>
+                          <View style={{ maxHeight: 150 }}>
+                            <ScrollView nestedScrollEnabled={true}>
+                              {livestock.filter(c => selectFeedWeightAll || selectedFeedWeightCows.includes(c.cattleId)).map(cow => {
+                                const cowWeight = cow.weight || 300;
+                                const bkReq = cowWeight * ((cow.targetBkPercent ?? 2.5) / 100);
+                                const proportion = recs.totalBk > 0 ? (bkReq / recs.totalBk) : (1 / cowCount);
+                                const cowAsFed = totalInputAsFed * proportion;
+                                const forageRatio = cow.forageRatio ?? 60;
+                                const concentrateRatio = cow.concentrateRatio ?? 40;
+                                const forageDM = cow.forageDM ?? 20;
+                                const concentrateDM = cow.concentrateDM ?? 86;
+                                let expectedAsFed = 0;
+                                if (feedType === 'Hijauan') {
+                                    expectedAsFed = bkReq / (forageDM / 100);
+                                } else if (feedType === 'Konsentrat') {
+                                    expectedAsFed = bkReq / (concentrateDM / 100);
+                                } else if (feedType === 'Tmr') {
+                                    expectedAsFed = bkReq / (forageDM / 100);
+                                } else {
+                                    expectedAsFed = (bkReq * (forageRatio / 100)) / (forageDM / 100) + (bkReq * (concentrateRatio / 100)) / (concentrateDM / 100);
+                                }
+                                const trueBkPct = expectedAsFed > 0 ? (bkReq / expectedAsFed) : (bkPct / 100);
+                                const cowBk = cowAsFed * trueBkPct;
+                                return (
+                                  <View key={cow.id} style={{ flexDirection: 'row', justifyContent: 'space-between', backgroundColor: '#fff', padding: 6, borderRadius: 4, marginBottom: 4, borderWidth: 1, borderColor: '#e0f2fe' }}>
+                                    <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#334155' }}>{cow.cattleId}</Text>
+                                    <Text style={{ fontSize: 10, color: '#475569' }}>
+                                      <Text style={{ fontWeight: 'bold' }}>{cowAsFed.toFixed(2)} kg</Text> <Text style={{ fontSize: 9 }}>({cowBk.toFixed(2)} kg BK)</Text>
+                                    </Text>
+                                  </View>
+                                );
+                              })}
+                            </ScrollView>
+                          </View>
+                        </View>
+                      );
+                    })()}
+
                   </View>
                 );
               })()}
@@ -860,8 +1042,35 @@ const LivestockScreen = ({ navigation }: any) => {
                   </TouchableOpacity>
                 </View>
 
+                {/* MODAL SEARCH & FILTER */}
+                <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+                  <View style={[styles.searchContainer, { flex: 1, margin: 0, height: 40 }]}>
+                    <Search color={COLORS.textLight} size={18} />
+                    <TextInput
+                      style={styles.searchInput}
+                      placeholder="Cari ID/Nama Sapi..."
+                      value={modalSearch}
+                      onChangeText={setModalSearch}
+                      placeholderTextColor={COLORS.textLight}
+                    />
+                  </View>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ maxHeight: 40 }}>
+                    <TouchableOpacity 
+                      style={[styles.pickerFakeItem, { width: 'auto', marginBottom: 0, paddingVertical: 8, marginRight: 8 }, modalZoneFilter === 'ALL' && styles.pickerFakeItemActive]}
+                      onPress={() => setModalZoneFilter('ALL')}
+                    ><Text style={[styles.pickerFakeText, modalZoneFilter === 'ALL' && styles.pickerFakeTextActive]}>Semua</Text></TouchableOpacity>
+                    {zones.map(z => (
+                      <TouchableOpacity 
+                        key={z.id}
+                        style={[styles.pickerFakeItem, { width: 'auto', marginBottom: 0, paddingVertical: 8, marginRight: 8 }, modalZoneFilter === z.id && styles.pickerFakeItemActive]}
+                        onPress={() => setModalZoneFilter(z.id)}
+                      ><Text style={[styles.pickerFakeText, modalZoneFilter === z.id && styles.pickerFakeTextActive]}>{z.name}</Text></TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+
                 <View style={styles.cowSelectGrid}>
-                  {livestock.map(cow => {
+                  {filteredModalLivestock.map(cow => {
                     const isSelected = selectedFeedWeightCows.includes(cow.cattleId) || selectFeedWeightAll;
                     return (
                       <TouchableOpacity 
@@ -900,6 +1109,7 @@ const LivestockScreen = ({ navigation }: any) => {
         onClose={() => setFormVisible(false)}
         onSubmit={handleAdd}
         loading={loading}
+        zones={zones}
       />
 
       <CustomModal 
@@ -909,6 +1119,41 @@ const LivestockScreen = ({ navigation }: any) => {
         message={modalConfig.message}
         onConfirm={modalConfig.onConfirm}
       />
+
+      {/* FLOATING ACTION BUTTON (SPEED DIAL) FOR STAFF */}
+      {userRole === 'STAFF' && (
+        <View style={styles.fabContainer}>
+          {fabExpanded && (
+            <View style={styles.fabMenu}>
+              <TouchableOpacity style={styles.fabMenuItem} onPress={() => { setFabExpanded(false); setWasteModalVisible(true); }}>
+                <Text style={styles.fabMenuLabel}>Manajemen Limbah</Text>
+                <View style={[styles.fabIconBtn, { backgroundColor: '#d97706' }]}>
+                  <Trash2 size={20} color={COLORS.white} />
+                </View>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.fabMenuItem} onPress={() => { setFabExpanded(false); setWeightModalVisible(true); }}>
+                <Text style={styles.fabMenuLabel}>Timbang Berat</Text>
+                <View style={[styles.fabIconBtn, { backgroundColor: '#2563eb' }]}>
+                  <Scale size={20} color={COLORS.white} />
+                </View>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.fabMenuItem} onPress={() => { setFabExpanded(false); setFeedModalVisible(true); }}>
+                <Text style={styles.fabMenuLabel}>Beri Pakan Massal</Text>
+                <View style={[styles.fabIconBtn, { backgroundColor: '#10b981' }]}>
+                  <Beef size={20} color={COLORS.white} />
+                </View>
+              </TouchableOpacity>
+            </View>
+          )}
+          <TouchableOpacity 
+            style={[styles.fabMainBtn, fabExpanded && { backgroundColor: '#ef4444' }]} 
+            onPress={() => setFabExpanded(!fabExpanded)}
+            activeOpacity={0.8}
+          >
+            <Plus size={28} color={COLORS.white} style={fabExpanded ? { transform: [{ rotate: '45deg' }] } : undefined} />
+          </TouchableOpacity>
+        </View>
+      )}
     </SafeAreaView>
   );
 };
@@ -947,54 +1192,6 @@ const styles = StyleSheet.create({
     flex: 1,
     marginLeft: SPACING.sm,
     fontSize: 16,
-  },
-  actionBar: {
-    flexDirection: 'column',
-    gap: 8,
-    paddingHorizontal: SPACING.lg,
-    marginBottom: SPACING.md,
-  },
-  actionBarRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  wasteGroupBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    backgroundColor: '#d97706',
-    borderRadius: 12,
-    height: 40,
-    ...SHADOWS.sm
-  },
-  weightGroupBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    backgroundColor: '#2563eb',
-    borderRadius: 12,
-    height: 40,
-    ...SHADOWS.sm
-  },
-  feedGroupBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    backgroundColor: '#059669',
-    borderRadius: 12,
-    height: 40,
-    ...SHADOWS.sm
-  },
-  actionBtnTextWhite: {
-    color: COLORS.white,
-    fontWeight: 'bold',
-    fontSize: 12
   },
   listContent: {
     padding: SPACING.lg,
@@ -1317,14 +1514,14 @@ const styles = StyleSheet.create({
   pickerFakeContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
     marginBottom: 6,
+    justifyContent: 'space-between',
   },
   pickerFakeItem: {
-    flex: 1,
-    minWidth: '45%',
+    width: '48%',
+    marginBottom: 10,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 14,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: '#e2e8f0',
@@ -1343,6 +1540,51 @@ const styles = StyleSheet.create({
   },
   pickerFakeTextActive: {
     color: '#d97706',
+  },
+  fabContainer: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    alignItems: 'flex-end',
+    zIndex: 999,
+  },
+  fabMenu: {
+    alignItems: 'flex-end',
+    marginBottom: 16,
+    gap: 16,
+  },
+  fabMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  fabMenuLabel: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#334155',
+    ...SHADOWS.sm,
+    overflow: 'hidden'
+  },
+  fabIconBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...SHADOWS.md,
+  },
+  fabMainBtn: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...SHADOWS.md,
   },
 });
 

@@ -54,6 +54,7 @@ const Feed = () => {
 
     // State untuk Manajemen Silo
     const [showSiloModal, setShowSiloModal] = useState(false);
+    const [showNewScheduleModal, setShowNewScheduleModal] = useState(false);
     const [siloFormData, setSiloFormData] = useState({
         id: null,
         name: '',
@@ -72,6 +73,8 @@ const Feed = () => {
         expiryDate: '',
         description: ''
     });
+
+    const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, id: null, type: '', title: '' });
 
     // State Laporan Pakan & Sapi
     const [feedReport, setFeedReport] = useState({
@@ -104,13 +107,15 @@ const Feed = () => {
         e.preventDefault();
         setIsSubmitting(true);
 
+        const finalFeedType = newSchedule.feedType;
+
         toast.promise(
             fetchApi('/feed/schedule', {
                 method: 'POST',
                 body: JSON.stringify({
                     time: `${newSchedule.timeStart} - ${newSchedule.timeEnd}`,
                     zoneId: newSchedule.zoneId,
-                    feedType: newSchedule.feedType,
+                    feedType: finalFeedType,
                     status: newSchedule.status
                 })
             }).then(async (res) => {
@@ -122,12 +127,38 @@ const Feed = () => {
                 success: (savedSchedule) => {
                     mutateSchedules(); // Update Cache SWR
                     setNewSchedule({ timeStart: '', timeEnd: '', zoneId: '', feedType: '', status: 'BELUM' });
-                    setActiveTab('overview');
+                    setShowNewScheduleModal(false);
                     return 'Jadwal berhasil ditambahkan!';
                 },
                 error: (err) => `Gagal: ${err.message}`,
             }
         ).finally(() => setIsSubmitting(false));
+    };
+
+    // --- 3.1 QUICK TOGGLE JADWAL ---
+    const handleToggleStatus = async (sch) => {
+        if (userRole !== 'STAFF') return;
+        
+        // Cek status saat ini, jika BELUM -> SUDAH, jika SUDAH/TELAT -> BELUM
+        const newStatus = (sch.status === 'BELUM') ? 'SUDAH' : 'BELUM';
+        
+        toast.promise(
+            fetchApi(`/feed/schedule/${sch.id}`, {
+                method: 'PATCH',
+                body: JSON.stringify({ status: newStatus })
+            }).then(async (res) => {
+                if (!res.ok) throw new Error('Gagal update status jadwal');
+                return res.json();
+            }),
+            {
+                loading: 'Mengupdate status...',
+                success: () => {
+                    mutateSchedules();
+                    return `Jadwal ditandai ${newStatus}`;
+                },
+                error: 'Gagal update status'
+            }
+        );
     };
 
     // --- 3.1 FUNGSI MANAJEMEN SILO (CRUD) ---
@@ -159,14 +190,24 @@ const Feed = () => {
         ).finally(() => setIsSubmitting(false));
     };
 
-    const handleDeleteSilo = async (id) => {
-        if (!window.confirm('Hapus silo ini? Seluruh data stok akan hilang.')) return;
+    const handleDeleteSilo = (id) => {
+        setDeleteConfirm({
+            isOpen: true,
+            id: id,
+            type: 'silo',
+            title: 'Hapus stok silo ini? Seluruh data stok akan hilang permanen.'
+        });
+    };
+
+    const confirmDeleteSilo = async (id) => {
         try {
             await fetchApi(`/feed/silo/${id}`, { method: 'DELETE' });
             mutateSilos(); // Update Cache SWR
             toast.success('Silo berhasil dihapus');
         } catch (err) {
             toast.error('Gagal menghapus: ' + err.message);
+        } finally {
+            setDeleteConfirm({ isOpen: false, id: null, type: '', title: '' });
         }
     };
 
@@ -223,8 +264,16 @@ const Feed = () => {
     };
 
     // --- 4. FUNGSI HAPUS JADWAL (DELETE) ---
-    const handleDeleteSchedule = async (id) => {
-        if (!window.confirm('Hapus jadwal ini?')) return;
+    const handleDeleteSchedule = (id) => {
+        setDeleteConfirm({
+            isOpen: true,
+            id: id,
+            type: 'schedule',
+            title: 'Hapus jadwal pakan ini?'
+        });
+    };
+
+    const confirmDeleteSchedule = async (id) => {
         try {
             await fetchApi(`/feed/schedule/${id}`, {
                 method: 'DELETE'
@@ -233,6 +282,8 @@ const Feed = () => {
             toast.success('Jadwal berhasil dihapus');
         } catch (err) {
             toast.error('Gagal menghapus: ' + err.message);
+        } finally {
+            setDeleteConfirm({ isOpen: false, id: null, type: '', title: '' });
         }
     };
 
@@ -302,7 +353,7 @@ const Feed = () => {
                             onClick={() => setActiveTab('schedule')} 
                             className={`px-4 py-2 text-sm font-bold rounded-md transition ${activeTab === 'schedule' ? 'bg-white dark:bg-slate-700 text-primary-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
                         >
-                            Atur Jadwal
+                            Jadwal Pakan
                         </button>
                     )}
                     <button 
@@ -501,12 +552,34 @@ const Feed = () => {
                                 </button>
                             )}
                             
-                            {/* Daftar Jadwal Hari Ini */}
-                            <div className="md:col-span-3 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
-                                <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-4">Jadwal Pemberian Pakan (Hari Ini)</h3>
+                        </div>
+                    )}
+
+                    {/* --- TAB: SCHEDULE (JADWAL PAKAN) --- */}
+                    {activeTab === 'schedule' && (
+                        <div className="space-y-6">
+                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+                                <div>
+                                    <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">Daftar Jadwal Pakan</h3>
+                                    <p className="text-sm text-slate-500">Kelola jadwal pemberian pakan harian untuk semua kandang</p>
+                                </div>
+                                {userRole === 'STAFF' && (
+                                    <button 
+                                        onClick={() => setShowNewScheduleModal(true)}
+                                        className="px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-bold shadow-lg shadow-primary-500/20 transition flex items-center gap-2"
+                                    >
+                                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                        </svg>
+                                        Tambah Jadwal
+                                    </button>
+                                )}
+                            </div>
+
+                            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
                                 <div className="space-y-4">
                                     {schedules.length > 0 ? schedules.map(sch => (
-                                        <div key={sch.id} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-slate-100 dark:border-slate-600">
+                                        <div key={sch.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-slate-100 dark:border-slate-600 gap-4">
                                             <div className="flex items-center gap-4">
                                                 <div className="px-3 py-2 bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 rounded-lg font-bold">
                                                     {sch.time}
@@ -518,13 +591,18 @@ const Feed = () => {
                                                     </p>
                                                 </div>
                                             </div>
-                                            <div className="flex items-center gap-2">
-                                                <span className={`px-3 py-1 text-xs font-bold rounded-full ${
-                                                    sch.status === 'SUDAH' ? 'bg-green-100 text-green-700' :
-                                                    'bg-slate-200 text-slate-600 dark:bg-slate-600 dark:text-slate-300'
-                                                }`}>
-                                                    {sch.status}
-                                                </span>
+                                            <div className="flex items-center gap-2 self-start sm:self-auto">
+                                                <button 
+                                                    onClick={() => handleToggleStatus(sch)}
+                                                    disabled={userRole !== 'STAFF'}
+                                                    className={`px-3 py-1 text-xs font-bold rounded-full transition ${
+                                                        sch.status === 'SUDAH' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 hover:bg-green-200' :
+                                                        sch.status === 'SUDAH_TELAT' || sch.status === 'TELAT' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 hover:bg-red-200' :
+                                                        'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300 hover:bg-slate-300'
+                                                    }`}
+                                                >
+                                                    {sch.status === 'SUDAH_TELAT' ? 'SUDAH (TELAT)' : sch.status}
+                                                </button>
                                                 {userRole === 'STAFF' && (
                                                     <div className="flex gap-1 ml-2">
                                                         <button onClick={() => openEditSchedule(sch)} className="p-1.5 text-slate-400 hover:text-blue-500 transition" title="Edit Jadwal">
@@ -538,55 +616,10 @@ const Feed = () => {
                                             </div>
                                         </div>
                                     )) : (
-                                        <p className="text-slate-500 text-center py-4">Belum ada jadwal pakan hari ini.</p>
+                                        <p className="text-slate-500 text-center py-4">Belum ada jadwal pakan.</p>
                                     )}
                                 </div>
                             </div>
-                        </div>
-                    )}
-
-                    {/* --- TAB: SCHEDULE (FORM JADWAL BARU) --- */}
-                    {activeTab === 'schedule' && (
-                        <div className="max-w-2xl mx-auto bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 md:p-8">
-                            <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-6">Buat Jadwal Baru</h3>
-                            <form onSubmit={handleScheduleSubmit} className="space-y-5">
-                                <div className="grid grid-cols-2 gap-5">
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Waktu Mulai</label>
-                                        <input type="time" required value={newSchedule.timeStart} onChange={e => setNewSchedule({...newSchedule, timeStart: e.target.value})} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none dark:text-white" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Waktu Selesai</label>
-                                        <input type="time" required value={newSchedule.timeEnd} onChange={e => setNewSchedule({...newSchedule, timeEnd: e.target.value})} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none dark:text-white" />
-                                    </div>
-                                    <div className="col-span-2">
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Jenis Pakan</label>
-                                        <input type="text" required placeholder="Cth: Rumput Kering" value={newSchedule.feedType} onChange={e => setNewSchedule({...newSchedule, feedType: e.target.value})} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none dark:text-white" />
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Pilih Kandang</label>
-                                    <select 
-                                        required 
-                                        value={newSchedule.zoneId} 
-                                        onChange={e => {
-                                            setNewSchedule({...newSchedule, zoneId: e.target.value});
-                                        }} 
-                                        className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none dark:text-white"
-                                    >
-                                        <option value="">-- Pilih Kandang --</option>
-                                        {zones.map(z => (
-                                            <option key={z.id} value={z.id}>{z.name}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                
-                                <div className="pt-4">
-                                    <button type="submit" disabled={isSubmitting} className="w-full py-3 bg-primary-600 text-white font-bold rounded-lg hover:bg-primary-700 transition shadow-lg shadow-primary-500/30 disabled:opacity-70">
-                                        {isSubmitting ? 'Menyimpan...' : 'Simpan Jadwal Pakan'}
-                                    </button>
-                                </div>
-                            </form>
                         </div>
                     )}
 
@@ -962,6 +995,102 @@ const Feed = () => {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Tambah Jadwal Pakan */}
+            {showNewScheduleModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in overflow-y-auto">
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-700 my-8 animate-slide-up">
+                        <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
+                            <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">Buat Jadwal Baru</h3>
+                            <button onClick={() => setShowNewScheduleModal(false)} className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition">
+                                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </button>
+                        </div>
+                        <div className="p-6">
+                            <form onSubmit={handleScheduleSubmit} className="space-y-5">
+                                <div className="grid grid-cols-2 gap-5">
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Waktu Mulai</label>
+                                        <input type="time" required value={newSchedule.timeStart} onChange={e => setNewSchedule({...newSchedule, timeStart: e.target.value})} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none dark:text-white" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Waktu Selesai</label>
+                                        <input type="time" required value={newSchedule.timeEnd} onChange={e => setNewSchedule({...newSchedule, timeEnd: e.target.value})} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none dark:text-white" />
+                                    </div>
+                                    <div className="col-span-2">
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Jenis Pakan</label>
+                                        <select required value={newSchedule.feedType} onChange={e => setNewSchedule({...newSchedule, feedType: e.target.value})} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none dark:text-white">
+                                            <option value="">Pilih Metode/Jenis Pakan</option>
+                                            <option value="Hijauan">Hijauan</option>
+                                            <option value="Konsentrat">Konsentrat</option>
+                                            <option value="Hijauan + Konsentrat">Hijauan + Konsentrat</option>
+                                            <option value="TMR">TMR</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Pilih Kandang</label>
+                                    <select 
+                                        required 
+                                        value={newSchedule.zoneId} 
+                                        onChange={e => {
+                                            setNewSchedule({...newSchedule, zoneId: e.target.value});
+                                        }} 
+                                        className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none dark:text-white"
+                                    >
+                                        <option value="">-- Pilih Kandang --</option>
+                                        {zones.map(z => (
+                                            <option key={z.id} value={z.id}>{z.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                
+                                <div className="pt-4 flex gap-3">
+                                    <button type="button" onClick={() => setShowNewScheduleModal(false)} className="flex-1 py-3 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 font-bold rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition">
+                                        Batal
+                                    </button>
+                                    <button type="submit" disabled={isSubmitting} className="flex-1 py-3 bg-primary-600 text-white font-bold rounded-lg hover:bg-primary-700 transition shadow-lg shadow-primary-500/30 disabled:opacity-70">
+                                        {isSubmitting ? 'Menyimpan...' : 'Simpan Jadwal'}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* --- MODAL KONFIRMASI HAPUS --- */}
+            {deleteConfirm.isOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-700 p-6 text-center animate-slide-up">
+                        <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                            </svg>
+                        </div>
+                        <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2">Konfirmasi Hapus</h3>
+                        <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">{deleteConfirm.title}</p>
+                        
+                        <div className="flex gap-3">
+                            <button 
+                                onClick={() => setDeleteConfirm({ isOpen: false, id: null, type: '', title: '' })} 
+                                className="flex-1 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition"
+                            >
+                                Batal
+                            </button>
+                            <button 
+                                onClick={() => {
+                                    if (deleteConfirm.type === 'schedule') confirmDeleteSchedule(deleteConfirm.id);
+                                    if (deleteConfirm.type === 'silo') confirmDeleteSilo(deleteConfirm.id);
+                                }} 
+                                className="flex-1 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold shadow-lg shadow-red-500/30 transition"
+                            >
+                                Ya, Hapus
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

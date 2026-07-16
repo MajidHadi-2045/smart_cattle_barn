@@ -108,7 +108,18 @@ const ActivityFeed = () => {
                         )}
                     </div>
                     
-                    <div className="p-3 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-700 text-center">
+                    <div className="p-3 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-700 flex flex-col gap-2 text-center">
+                        {localStorage.getItem('userRole') === 'STAFF' && (
+                            <button 
+                                onClick={() => {
+                                    setIsOpen(false);
+                                    window.dispatchEvent(new CustomEvent('openHistoryKoreksi'));
+                                }} 
+                                className="text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 py-2 px-4 rounded-lg w-full transition-colors flex items-center justify-center gap-1"
+                            >
+                                <span>✏️</span> Koreksi Data
+                            </button>
+                        )}
                         <button onClick={fetchActivities} className="text-[10px] font-bold text-primary-600 hover:text-primary-700 uppercase">Refresh Log</button>
                     </div>
                 </div>

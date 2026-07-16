@@ -1,0 +1,9 @@
+{
+  "name": "SmartBarn - Staff",
+  "values": [
+    { "key": "baseUrl", "value": "http://localhost:4000/api", "type": "default", "enabled": true },
+    { "key": "token", "value": "", "type": "secret", "enabled": true },
+    { "key": "currentRole", "value": "STAFF", "type": "default", "enabled": true }
+  ],
+  "_postman_variable_scope": "environment"
+}

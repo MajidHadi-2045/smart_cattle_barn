@@ -5,20 +5,40 @@ import {
   Text, 
   FlatList, 
   ActivityIndicator,
-  RefreshControl
+  RefreshControl,
+  TouchableOpacity,
+  Alert,
+  Modal,
+  TextInput,
+  ScrollView
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, SPACING, SHADOWS } from '../theme';
-import { HeartPulse, User, Calendar, ClipboardList } from 'lucide-react-native';
+import { HeartPulse, User, Calendar, ClipboardList, Plus, X, Edit, Trash2 } from 'lucide-react-native';
 import apiClient from '../api/client';
 import LoadingSpinner from '../components/LoadingSpinner';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const HealthScreen = () => {
   const [records, setRecords] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const ITEMS_PER_PAGE = 10;
+  
+  const [modalVisible, setModalVisible] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [selectedRecordId, setSelectedRecordId] = useState<number | null>(null);
+  const [examType, setExamType] = useState('INDIVIDU'); // INDIVIDU | MASSAL
+  const [formData, setFormData] = useState({
+    cattleId: '',
+    diagnosa: '',
+    penanganan: '',
+    status: 'SAKIT',
+    pemeriksa: ''
+  });
 
   const fetchRecords = async () => {
     try {
@@ -39,12 +59,93 @@ const HealthScreen = () => {
   };
 
   useEffect(() => {
+    const getRole = async () => {
+      const userStr = await AsyncStorage.getItem('user');
+      if (userStr) {
+        const userObj = JSON.parse(userStr);
+        setUserRole(userObj.role);
+        setFormData(prev => ({ ...prev, pemeriksa: userObj.name || '' }));
+      }
+    };
+    getRole();
     fetchRecords();
   }, []);
+
+  const handleOpenAddForm = () => {
+    setIsEditing(false);
+    setSelectedRecordId(null);
+    setFormData(prev => ({ ...prev, cattleId: '', diagnosa: '', penanganan: '', status: 'SAKIT' }));
+    setModalVisible(true);
+  };
+
+  const handleOpenEditForm = (item: any) => {
+    setIsEditing(true);
+    setSelectedRecordId(item.id);
+    setFormData({
+      cattleId: item.cattleId,
+      diagnosa: item.diagnosa,
+      penanganan: item.penanganan,
+      status: item.status,
+      pemeriksa: item.pemeriksa || formData.pemeriksa
+    });
+    setModalVisible(true);
+  };
+
+  const handleDelete = (id: number) => {
+    Alert.alert(
+      'Konfirmasi Hapus',
+      'Yakin ingin menghapus rekam medis ini?',
+      [
+        { text: 'Batal', style: 'cancel' },
+        { 
+          text: 'Hapus', 
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await apiClient.delete(`/health/${id}`);
+              Alert.alert('Sukses', 'Rekam medis berhasil dihapus!');
+              fetchRecords();
+            } catch (err) {
+              Alert.alert('Gagal', 'Terjadi kesalahan saat menghapus data.');
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const handleSubmit = async () => {
+    if (!formData.cattleId || !formData.diagnosa || !formData.penanganan) {
+      Alert.alert('Error', 'Semua field wajib diisi!');
+      return;
+    }
+    
+    setIsSubmitting(true);
+    try {
+      if (isEditing && selectedRecordId) {
+        await apiClient.patch(`/health/${selectedRecordId}`, formData);
+        Alert.alert('Sukses', 'Catatan pemeriksaan berhasil diperbarui!');
+      } else {
+        await apiClient.post('/health', formData);
+        Alert.alert('Sukses', 'Catatan pemeriksaan berhasil ditambahkan!');
+      }
+      setModalVisible(false);
+      setIsEditing(false);
+      setSelectedRecordId(null);
+      setFormData(prev => ({ ...prev, cattleId: '', diagnosa: '', penanganan: '', status: 'SAKIT' }));
+      fetchRecords(); // Refresh data
+    } catch (error) {
+      Alert.alert('Gagal', 'Terjadi kesalahan saat menyimpan data.');
+      console.error(error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'SEMBUH': return COLORS.success;
+      case 'SAKIT': return COLORS.danger;
       case 'DALAM_PERAWATAN': return COLORS.warning;
       case 'KRITIS': return COLORS.danger;
       case 'MATI': return '#64748b';
@@ -75,9 +176,21 @@ const HealthScreen = () => {
             <User size={14} color={COLORS.textLight} />
             <Text style={styles.metaText}>{item.pemeriksa}</Text>
           </View>
-          <View style={styles.meta}>
-            <Calendar size={14} color={COLORS.textLight} />
-            <Text style={styles.metaText}>{new Date(item.createdAt).toLocaleDateString('id-ID')}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <View style={styles.meta}>
+              <Calendar size={14} color={COLORS.textLight} />
+              <Text style={styles.metaText}>{new Date(item.createdAt).toLocaleDateString('id-ID')}</Text>
+            </View>
+            {userRole === 'VETERINER' && (
+              <View style={{ flexDirection: 'row', gap: 8, marginLeft: 8, borderLeftWidth: 1, borderLeftColor: '#e2e8f0', paddingLeft: 8 }}>
+                <TouchableOpacity onPress={() => handleOpenEditForm(item)}>
+                  <Edit size={16} color={COLORS.primary} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleDelete(item.id)}>
+                  <Trash2 size={16} color={COLORS.danger} />
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         </View>
       </View>
@@ -87,11 +200,22 @@ const HealthScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <HeartPulse size={32} color={COLORS.primary} />
-        <View style={styles.headerText}>
-          <Text style={styles.title}>Rekam Medis</Text>
-          <Text style={styles.subtitle}>Riwayat kesehatan ternak</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+          <HeartPulse size={32} color={COLORS.primary} />
+          <View style={styles.headerText}>
+            <Text style={styles.title}>Rekam Medis</Text>
+            <Text style={styles.subtitle}>Riwayat kesehatan ternak</Text>
+          </View>
         </View>
+        {userRole === 'VETERINER' && (
+          <TouchableOpacity 
+            style={styles.addButton}
+            onPress={handleOpenAddForm}
+          >
+            <Plus size={20} color={COLORS.white} />
+            <Text style={styles.addButtonText}>Baru</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {loading ? (
@@ -129,6 +253,145 @@ const HealthScreen = () => {
         />
         );
       })()}
+
+      {/* Modal Form Tambah Rekam Medis */}
+      <Modal
+        visible={modalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{isEditing ? 'Edit Catatan Pemeriksaan' : 'Catatan Pemeriksaan Baru'}</Text>
+              <TouchableOpacity onPress={() => setModalVisible(false)}>
+                <X size={24} color={COLORS.text} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView contentContainerStyle={styles.modalBody} showsVerticalScrollIndicator={false}>
+              
+              {!isEditing && (
+                <View style={styles.tabContainer}>
+                  <TouchableOpacity 
+                    style={[styles.tabBtn, examType === 'INDIVIDU' && styles.tabBtnActive]}
+                    onPress={() => setExamType('INDIVIDU')}
+                  >
+                    <Text style={[styles.tabBtnText, examType === 'INDIVIDU' && styles.tabBtnTextActive]}>Pemeriksaan Individu</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={[styles.tabBtn, examType === 'MASSAL' && styles.tabBtnActive]}
+                    onPress={() => setExamType('MASSAL')}
+                  >
+                    <Text style={[styles.tabBtnText, examType === 'MASSAL' && styles.tabBtnTextActive]}>Vaksinasi / Massal</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {examType === 'INDIVIDU' ? (
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>ID Sapi *</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Cth: C-302"
+                    value={formData.cattleId}
+                    onChangeText={(text) => setFormData({ ...formData, cattleId: text })}
+                  />
+                </View>
+              ) : (
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Pilih Target Sapi *</Text>
+                  <View style={styles.infoBox}>
+                    <Text style={styles.infoText}>Semua sapi yang terdaftar di peternakan akan dicatat rekam medis kesehatannya sekaligus.</Text>
+                  </View>
+                </View>
+              )}
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Status Pasca Periksa</Text>
+                <View style={styles.statusGroup}>
+                  {['SAKIT', 'DALAM_PERAWATAN', 'SEMBUH', 'KRITIS', 'MATI'].map((status) => {
+                    const statusLabel = status === 'DALAM_PERAWATAN' ? 'Dalam Perawatan' : 
+                                        status === 'SAKIT' ? 'Sakit' : 
+                                        status === 'SEMBUH' ? 'Sembuh' : 
+                                        status === 'KRITIS' ? 'Kritis' : 'Mati';
+                    return (
+                      <TouchableOpacity
+                        key={status}
+                        style={[
+                          styles.statusOption,
+                          formData.status === status && { backgroundColor: COLORS.primary, borderColor: COLORS.primary }
+                        ]}
+                        onPress={() => setFormData({ ...formData, status })}
+                      >
+                        <Text style={[
+                          styles.statusOptionText,
+                          formData.status === status && { color: COLORS.white }
+                        ]}>
+                          {statusLabel}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>{examType === 'MASSAL' ? 'Nama Vaksin / Diagnosis *' : 'Diagnosis Penyakit *'}</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder={examType === 'MASSAL' ? 'Vaksinasi' : 'Cth: Flu Bovine'}
+                  value={formData.diagnosa}
+                  onChangeText={(text) => setFormData({ ...formData, diagnosa: text })}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>{examType === 'MASSAL' ? 'Detail Vaksinasi / Penanganan *' : 'Penanganan / Obat *'}</Text>
+                <TextInput
+                  style={[styles.input, { height: 80, textAlignVertical: 'top' }]}
+                  placeholder={examType === 'MASSAL' ? 'Vaksin PMK Dosis 1' : 'Cth: Injeksi Vitamin C'}
+                  multiline
+                  value={formData.penanganan}
+                  onChangeText={(text) => setFormData({ ...formData, penanganan: text })}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Petugas / Dokter Hewan Bertugas</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Nama Pemeriksa / Petugas"
+                  value={formData.pemeriksa}
+                  onChangeText={(text) => setFormData({ ...formData, pemeriksa: text })}
+                />
+              </View>
+            </ScrollView>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity 
+                style={[styles.btn, styles.btnCancel]} 
+                onPress={() => setModalVisible(false)}
+                disabled={isSubmitting}
+              >
+                <Text style={styles.btnCancelText}>Batal</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.btn, styles.btnSubmit]} 
+                onPress={handleSubmit}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <ActivityIndicator color={COLORS.white} size="small" />
+                ) : (
+                  <Text style={styles.btnSubmitText}>Simpan Data</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -138,10 +401,25 @@ const styles = StyleSheet.create({
   header: { 
     flexDirection: 'row', 
     alignItems: 'center', 
+    justifyContent: 'space-between',
     padding: SPACING.lg, 
     backgroundColor: COLORS.white,
     borderBottomWidth: 1,
     borderBottomColor: '#f1f5f9'
+  },
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 4
+  },
+  addButtonText: {
+    color: COLORS.white,
+    fontWeight: 'bold',
+    fontSize: 14
   },
   headerText: { marginLeft: SPACING.md },
   title: { fontSize: 22, fontWeight: 'bold', color: COLORS.text },
@@ -176,6 +454,36 @@ const styles = StyleSheet.create({
   metaText: { fontSize: 12, color: COLORS.textLight },
   centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: SPACING.xl },
   emptyText: { color: COLORS.textLight, fontSize: 16 },
+  
+  // Modal Styles
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  modalContent: { backgroundColor: COLORS.white, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '90%' },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: SPACING.lg, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
+  modalTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.text },
+  modalBody: { padding: SPACING.lg, paddingBottom: 40 },
+  inputGroup: { marginBottom: SPACING.md },
+  inputLabel: { fontSize: 14, fontWeight: '600', color: COLORS.text, marginBottom: 8 },
+  input: { backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 8, padding: 12, fontSize: 16, color: COLORS.text },
+  statusGroup: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  statusOption: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: '#e2e8f0', backgroundColor: COLORS.white },
+  statusOptionText: { fontSize: 12, fontWeight: '600', color: COLORS.textLight },
+  modalFooter: { flexDirection: 'row', padding: SPACING.lg, gap: 12, borderTopWidth: 1, borderTopColor: '#f1f5f9' },
+  btn: { flex: 1, padding: 14, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  btnCancel: { backgroundColor: '#f1f5f9' },
+  btnCancelText: { color: COLORS.text, fontWeight: 'bold', fontSize: 16 },
+  btnSubmit: { backgroundColor: '#0284c7' }, // Adjusted to match the web's blue color
+  btnSubmitText: { color: COLORS.white, fontWeight: 'bold', fontSize: 16 },
+  
+  // Tabs
+  tabContainer: { flexDirection: 'row', backgroundColor: '#f8fafc', borderRadius: 8, padding: 4, marginBottom: SPACING.lg },
+  tabBtn: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 6 },
+  tabBtnActive: { backgroundColor: COLORS.white, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 },
+  tabBtnText: { color: COLORS.textLight, fontWeight: '600', fontSize: 14 },
+  tabBtnTextActive: { color: '#0284c7', fontWeight: 'bold' },
+  
+  // Info Box
+  infoBox: { backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 8, padding: 12 },
+  infoText: { fontSize: 13, color: COLORS.textLight, fontStyle: 'italic' },
 });
 
 export default HealthScreen;

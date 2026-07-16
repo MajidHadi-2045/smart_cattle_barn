@@ -1,0 +1,2875 @@
+{
+	"id": "77261557-a45a-4d68-a5ef-1a92c8c1e0be",
+	"name": "Smart Cattle Barn API",
+	"timestamp": "2026-06-23T05:04:58.239Z",
+	"collection_id": "42713575-b1c460d9-34f5-4b37-bf19-ed9bdfce3c73",
+	"folder_id": 0,
+	"environment_id": "42713575-a6a6fde7-9e7b-4989-8ada-aca71a5bee80",
+	"totalPass": 88,
+	"delay": 0,
+	"persist": true,
+	"status": "finished",
+	"startedAt": "2026-06-23T05:04:10.888Z",
+	"totalFail": 50,
+	"results": [
+		{
+			"id": "f31ba2d7-15b9-4519-be95-773c310a3771",
+			"name": "App Controller get Hello",
+			"url": "http://localhost:4000/api/",
+			"time": 6,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"[GET]::/ - Status code is 2xx": true,
+				"[GET]::/ - Content-Type is application/json": false,
+				"[GET]::/ - Response has JSON Body": false,
+				"[GET]::/ - Schema is valid": false
+			},
+			"testPassFailCounts": {
+				"[GET]::/ - Status code is 2xx": {
+					"pass": 1,
+					"fail": 0
+				},
+				"[GET]::/ - Content-Type is application/json": {
+					"pass": 0,
+					"fail": 1
+				},
+				"[GET]::/ - Response has JSON Body": {
+					"pass": 0,
+					"fail": 1
+				},
+				"[GET]::/ - Schema is valid": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				6
+			],
+			"allTests": [
+				{
+					"[GET]::/ - Status code is 2xx": true,
+					"[GET]::/ - Content-Type is application/json": false,
+					"[GET]::/ - Response has JSON Body": false,
+					"[GET]::/ - Schema is valid": false
+				}
+			]
+		},
+		{
+			"id": "03fa898d-cc3c-4c02-880a-70eaf267356b",
+			"name": "Auth Controller sign In",
+			"url": "http://localhost:4000/api/auth/login",
+			"time": 5088,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"[POST]::/auth/login - Status code is 2xx": true
+			},
+			"testPassFailCounts": {
+				"[POST]::/auth/login - Status code is 2xx": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				5088
+			],
+			"allTests": [
+				{
+					"[POST]::/auth/login - Status code is 2xx": true
+				}
+			]
+		},
+		{
+			"id": "5e8ca487-1b41-4ba5-940d-4233e4bd2629",
+			"name": "Auth Controller sign Up",
+			"url": "http://localhost:4000/api/auth/register",
+			"time": 412,
+			"responseCode": {
+				"code": 401,
+				"name": "Unauthorized"
+			},
+			"tests": {
+				"[POST]::/auth/register - Status code is 2xx": false
+			},
+			"testPassFailCounts": {
+				"[POST]::/auth/register - Status code is 2xx": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				412
+			],
+			"allTests": [
+				{
+					"[POST]::/auth/register - Status code is 2xx": false
+				}
+			]
+		},
+		{
+			"id": "a8a7541e-6d14-444e-9591-36d5c6652808",
+			"name": "Dashboard Controller get Summary",
+			"url": "http://localhost:4000/api/dashboard/summary",
+			"time": 407,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"[GET]::/dashboard/summary - Status code is 2xx": true,
+				"[GET]::/dashboard/summary - Content-Type is application/json": true,
+				"[GET]::/dashboard/summary - Response has JSON Body": true,
+				"[GET]::/dashboard/summary - Schema is valid": true
+			},
+			"testPassFailCounts": {
+				"[GET]::/dashboard/summary - Status code is 2xx": {
+					"pass": 1,
+					"fail": 0
+				},
+				"[GET]::/dashboard/summary - Content-Type is application/json": {
+					"pass": 1,
+					"fail": 0
+				},
+				"[GET]::/dashboard/summary - Response has JSON Body": {
+					"pass": 1,
+					"fail": 0
+				},
+				"[GET]::/dashboard/summary - Schema is valid": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				407
+			],
+			"allTests": [
+				{
+					"[GET]::/dashboard/summary - Status code is 2xx": true,
+					"[GET]::/dashboard/summary - Content-Type is application/json": true,
+					"[GET]::/dashboard/summary - Response has JSON Body": true,
+					"[GET]::/dashboard/summary - Schema is valid": true
+				}
+			]
+		},
+		{
+			"id": "f55ff7c8-0ca0-48e6-b0aa-d579e4ee8cb7",
+			"name": "Dashboard Controller get Waste Summary",
+			"url": "http://localhost:4000/api/dashboard/waste?filter=string",
+			"time": 1336,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"[GET]::/dashboard/waste - Status code is 2xx": true
+			},
+			"testPassFailCounts": {
+				"[GET]::/dashboard/waste - Status code is 2xx": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				1336
+			],
+			"allTests": [
+				{
+					"[GET]::/dashboard/waste - Status code is 2xx": true
+				}
+			]
+		},
+		{
+			"id": "c367b6b7-c148-4af9-b1ca-782b8d0945f8",
+			"name": "Dashboard Controller get Daily Checklist",
+			"url": "http://localhost:4000/api/dashboard/daily-checklist",
+			"time": 1672,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"[GET]::/dashboard/daily-checklist - Status code is 2xx": true
+			},
+			"testPassFailCounts": {
+				"[GET]::/dashboard/daily-checklist - Status code is 2xx": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				1672
+			],
+			"allTests": [
+				{
+					"[GET]::/dashboard/daily-checklist - Status code is 2xx": true
+				}
+			]
+		},
+		{
+			"id": "28c18288-ee09-4965-80e4-978aa22d4a79",
+			"name": "Dashboard Controller save Checklist Config",
+			"url": "http://localhost:4000/api/dashboard/checklist-config",
+			"time": 8,
+			"responseCode": {
+				"code": 403,
+				"name": "Forbidden"
+			},
+			"tests": {
+				"[POST] /dashboard/checklist-config - Akses untuk SUPER_ADMIN": true
+			},
+			"testPassFailCounts": {
+				"[POST] /dashboard/checklist-config - Akses untuk SUPER_ADMIN": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				8
+			],
+			"allTests": [
+				{
+					"[POST] /dashboard/checklist-config - Akses untuk SUPER_ADMIN": true
+				}
+			]
+		},
+		{
+			"id": "dbff841f-544e-4227-95a4-4030ce7b2736",
+			"name": "Livestock Controller receive Vital Data",
+			"url": "http://localhost:4000/api/livestock/vital",
+			"time": 4,
+			"responseCode": {
+				"code": 500,
+				"name": "Internal Server Error"
+			},
+			"tests": {
+				"[POST]::/livestock/vital - Status code is 2xx": false
+			},
+			"testPassFailCounts": {
+				"[POST]::/livestock/vital - Status code is 2xx": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				4
+			],
+			"allTests": [
+				{
+					"[POST]::/livestock/vital - Status code is 2xx": false
+				}
+			]
+		},
+		{
+			"id": "e6e3f8db-a9d9-433a-b949-2f5d4b8c4dcf",
+			"name": "Livestock Controller get Stats",
+			"url": "http://localhost:4000/api/livestock/stats/string",
+			"time": 7,
+			"responseCode": {
+				"code": 500,
+				"name": "Internal Server Error"
+			},
+			"tests": {
+				"[GET]::/livestock/stats/:sectionId - Status code is 2xx": false,
+				"[GET]::/livestock/stats/:sectionId - Content-Type is application/json": true,
+				"[GET]::/livestock/stats/:sectionId - Response has JSON Body": true,
+				"[GET]::/livestock/stats/:sectionId - Schema is valid": true
+			},
+			"testPassFailCounts": {
+				"[GET]::/livestock/stats/:sectionId - Status code is 2xx": {
+					"pass": 0,
+					"fail": 1
+				},
+				"[GET]::/livestock/stats/:sectionId - Content-Type is application/json": {
+					"pass": 1,
+					"fail": 0
+				},
+				"[GET]::/livestock/stats/:sectionId - Response has JSON Body": {
+					"pass": 1,
+					"fail": 0
+				},
+				"[GET]::/livestock/stats/:sectionId - Schema is valid": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				7
+			],
+			"allTests": [
+				{
+					"[GET]::/livestock/stats/:sectionId - Status code is 2xx": false,
+					"[GET]::/livestock/stats/:sectionId - Content-Type is application/json": true,
+					"[GET]::/livestock/stats/:sectionId - Response has JSON Body": true,
+					"[GET]::/livestock/stats/:sectionId - Schema is valid": true
+				}
+			]
+		},
+		{
+			"id": "e45d8523-5c18-4442-a7ce-503406f55860",
+			"name": "Livestock Controller get By Section",
+			"url": "http://localhost:4000/api/livestock/section/string",
+			"time": 6,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"[GET]::/livestock/section/:sectionId - Status code is 2xx": true,
+				"[GET]::/livestock/section/:sectionId - Content-Type is application/json": true,
+				"[GET]::/livestock/section/:sectionId - Response has JSON Body": true,
+				"[GET]::/livestock/section/:sectionId - Schema is valid": false
+			},
+			"testPassFailCounts": {
+				"[GET]::/livestock/section/:sectionId - Status code is 2xx": {
+					"pass": 1,
+					"fail": 0
+				},
+				"[GET]::/livestock/section/:sectionId - Content-Type is application/json": {
+					"pass": 1,
+					"fail": 0
+				},
+				"[GET]::/livestock/section/:sectionId - Response has JSON Body": {
+					"pass": 1,
+					"fail": 0
+				},
+				"[GET]::/livestock/section/:sectionId - Schema is valid": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				6
+			],
+			"allTests": [
+				{
+					"[GET]::/livestock/section/:sectionId - Status code is 2xx": true,
+					"[GET]::/livestock/section/:sectionId - Content-Type is application/json": true,
+					"[GET]::/livestock/section/:sectionId - Response has JSON Body": true,
+					"[GET]::/livestock/section/:sectionId - Schema is valid": false
+				}
+			]
+		},
+		{
+			"id": "f3077f3e-c106-443b-b21a-b3110d57e012",
+			"name": "Livestock Controller create",
+			"url": "http://localhost:4000/api/livestock",
+			"time": 4,
+			"responseCode": {
+				"code": 403,
+				"name": "Forbidden"
+			},
+			"tests": {
+				"[POST] /livestock - Akses untuk SUPER_ADMIN": true
+			},
+			"testPassFailCounts": {
+				"[POST] /livestock - Akses untuk SUPER_ADMIN": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				4
+			],
+			"allTests": [
+				{
+					"[POST] /livestock - Akses untuk SUPER_ADMIN": true
+				}
+			]
+		},
+		{
+			"id": "968bef93-41ee-499b-8ff0-d48d91e987ac",
+			"name": "Livestock Controller find All",
+			"url": "http://localhost:4000/api/livestock",
+			"time": 6726,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"[GET]::/livestock - Status code is 2xx": true,
+				"[GET]::/livestock - Content-Type is application/json": true,
+				"[GET]::/livestock - Response has JSON Body": true,
+				"[GET]::/livestock - Schema is valid": false
+			},
+			"testPassFailCounts": {
+				"[GET]::/livestock - Status code is 2xx": {
+					"pass": 1,
+					"fail": 0
+				},
+				"[GET]::/livestock - Content-Type is application/json": {
+					"pass": 1,
+					"fail": 0
+				},
+				"[GET]::/livestock - Response has JSON Body": {
+					"pass": 1,
+					"fail": 0
+				},
+				"[GET]::/livestock - Schema is valid": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				6726
+			],
+			"allTests": [
+				{
+					"[GET]::/livestock - Status code is 2xx": true,
+					"[GET]::/livestock - Content-Type is application/json": true,
+					"[GET]::/livestock - Response has JSON Body": true,
+					"[GET]::/livestock - Schema is valid": false
+				}
+			]
+		},
+		{
+			"id": "123e7750-4bad-4aa4-bbb7-8c2a3236aa7e",
+			"name": "Livestock Controller get Settings",
+			"url": "http://localhost:4000/api/livestock/waste/settings",
+			"time": 652,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"[GET]::/livestock/waste/settings - Status code is 2xx": true
+			},
+			"testPassFailCounts": {
+				"[GET]::/livestock/waste/settings - Status code is 2xx": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				652
+			],
+			"allTests": [
+				{
+					"[GET]::/livestock/waste/settings - Status code is 2xx": true
+				}
+			]
+		},
+		{
+			"id": "46da8674-af2e-40c2-93ef-b4b7262e3b6f",
+			"name": "Livestock Controller update Settings",
+			"url": "http://localhost:4000/api/livestock/waste/settings",
+			"time": 3,
+			"responseCode": {
+				"code": 403,
+				"name": "Forbidden"
+			},
+			"tests": {
+				"[POST] /livestock/waste/settings - Akses untuk SUPER_ADMIN": true
+			},
+			"testPassFailCounts": {
+				"[POST] /livestock/waste/settings - Akses untuk SUPER_ADMIN": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				3
+			],
+			"allTests": [
+				{
+					"[POST] /livestock/waste/settings - Akses untuk SUPER_ADMIN": true
+				}
+			]
+		},
+		{
+			"id": "23d41bc2-61bd-46d2-8e36-534692480e95",
+			"name": "Livestock Controller get Waste Summary",
+			"url": "http://localhost:4000/api/livestock/waste/summary",
+			"time": 415,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"[GET]::/livestock/waste/summary - Status code is 2xx": true
+			},
+			"testPassFailCounts": {
+				"[GET]::/livestock/waste/summary - Status code is 2xx": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				415
+			],
+			"allTests": [
+				{
+					"[GET]::/livestock/waste/summary - Status code is 2xx": true
+				}
+			]
+		},
+		{
+			"id": "20892393-60a5-41ce-80ed-72e9ca394d8c",
+			"name": "Livestock Controller record Waste",
+			"url": "http://localhost:4000/api/livestock/waste",
+			"time": 5,
+			"responseCode": {
+				"code": 403,
+				"name": "Forbidden"
+			},
+			"tests": {
+				"[POST] /livestock/waste - Akses untuk SUPER_ADMIN": true
+			},
+			"testPassFailCounts": {
+				"[POST] /livestock/waste - Akses untuk SUPER_ADMIN": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				5
+			],
+			"allTests": [
+				{
+					"[POST] /livestock/waste - Akses untuk SUPER_ADMIN": true
+				}
+			]
+		},
+		{
+			"id": "43f1f735-e21d-4c35-9b9c-4d04a3e0728c",
+			"name": "Livestock Controller record Zone Waste",
+			"url": "http://localhost:4000/api/livestock/waste/zone",
+			"time": 3,
+			"responseCode": {
+				"code": 403,
+				"name": "Forbidden"
+			},
+			"tests": {
+				"[POST] /livestock/waste/zone - Akses untuk SUPER_ADMIN": true
+			},
+			"testPassFailCounts": {
+				"[POST] /livestock/waste/zone - Akses untuk SUPER_ADMIN": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				3
+			],
+			"allTests": [
+				{
+					"[POST] /livestock/waste/zone - Akses untuk SUPER_ADMIN": true
+				}
+			]
+		},
+		{
+			"id": "741ed7d2-36f7-4988-adac-18d8971eabc3",
+			"name": "Livestock Controller auto Record Waste All",
+			"url": "http://localhost:4000/api/livestock/waste/auto-all",
+			"time": 2236,
+			"responseCode": {
+				"code": 201,
+				"name": "Created"
+			},
+			"tests": {
+				"[POST] /livestock/waste/auto-all - Akses untuk SUPER_ADMIN": false
+			},
+			"testPassFailCounts": {
+				"[POST] /livestock/waste/auto-all - Akses untuk SUPER_ADMIN": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				2236
+			],
+			"allTests": [
+				{
+					"[POST] /livestock/waste/auto-all - Akses untuk SUPER_ADMIN": false
+				}
+			]
+		},
+		{
+			"id": "7903f6f6-2097-4e65-834f-d860cc3959a2",
+			"name": "Livestock Controller get Performance Chart",
+			"url": "http://localhost:4000/api/livestock/performance-chart",
+			"time": 1498,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"[GET]::/livestock/performance-chart - Status code is 2xx": true
+			},
+			"testPassFailCounts": {
+				"[GET]::/livestock/performance-chart - Status code is 2xx": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				1498
+			],
+			"allTests": [
+				{
+					"[GET]::/livestock/performance-chart - Status code is 2xx": true
+				}
+			]
+		},
+		{
+			"id": "f946df64-8bb1-4550-b887-17ad69ef71ec",
+			"name": "Livestock Controller record Weight",
+			"url": "http://localhost:4000/api/livestock/weight",
+			"time": 3,
+			"responseCode": {
+				"code": 403,
+				"name": "Forbidden"
+			},
+			"tests": {
+				"[POST] /livestock/weight - Akses untuk SUPER_ADMIN": true
+			},
+			"testPassFailCounts": {
+				"[POST] /livestock/weight - Akses untuk SUPER_ADMIN": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				3
+			],
+			"allTests": [
+				{
+					"[POST] /livestock/weight - Akses untuk SUPER_ADMIN": true
+				}
+			]
+		},
+		{
+			"id": "7bed743d-4fba-499b-9c15-c989258676dc",
+			"name": "Livestock Controller record Feed",
+			"url": "http://localhost:4000/api/livestock/feed",
+			"time": 4,
+			"responseCode": {
+				"code": 403,
+				"name": "Forbidden"
+			},
+			"tests": {
+				"[POST] /livestock/feed - Akses untuk SUPER_ADMIN": true
+			},
+			"testPassFailCounts": {
+				"[POST] /livestock/feed - Akses untuk SUPER_ADMIN": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				4
+			],
+			"allTests": [
+				{
+					"[POST] /livestock/feed - Akses untuk SUPER_ADMIN": true
+				}
+			]
+		},
+		{
+			"id": "f4473b64-2850-475f-870e-9dd3bc16305a",
+			"name": "Livestock Controller get Feed Needs",
+			"url": "http://localhost:4000/api/livestock/feed-needs/string",
+			"time": 419,
+			"responseCode": {
+				"code": 500,
+				"name": "Internal Server Error"
+			},
+			"tests": {
+				"[GET]::/livestock/feed-needs/:cattleId - Status code is 2xx": false
+			},
+			"testPassFailCounts": {
+				"[GET]::/livestock/feed-needs/:cattleId - Status code is 2xx": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				419
+			],
+			"allTests": [
+				{
+					"[GET]::/livestock/feed-needs/:cattleId - Status code is 2xx": false
+				}
+			]
+		},
+		{
+			"id": "cc35610e-45f8-4089-babf-947816ca5e3f",
+			"name": "Livestock Controller get Recent Inputs",
+			"url": "http://localhost:4000/api/livestock/recent-inputs",
+			"time": 1703,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"[GET]::/livestock/recent-inputs - Status code is 2xx": true,
+				"[GET]::/livestock/recent-inputs - Content-Type is application/json": true,
+				"[GET]::/livestock/recent-inputs - Response has JSON Body": true,
+				"[GET]::/livestock/recent-inputs - Schema is valid": true
+			},
+			"testPassFailCounts": {
+				"[GET]::/livestock/recent-inputs - Status code is 2xx": {
+					"pass": 1,
+					"fail": 0
+				},
+				"[GET]::/livestock/recent-inputs - Content-Type is application/json": {
+					"pass": 1,
+					"fail": 0
+				},
+				"[GET]::/livestock/recent-inputs - Response has JSON Body": {
+					"pass": 1,
+					"fail": 0
+				},
+				"[GET]::/livestock/recent-inputs - Schema is valid": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				1703
+			],
+			"allTests": [
+				{
+					"[GET]::/livestock/recent-inputs - Status code is 2xx": true,
+					"[GET]::/livestock/recent-inputs - Content-Type is application/json": true,
+					"[GET]::/livestock/recent-inputs - Response has JSON Body": true,
+					"[GET]::/livestock/recent-inputs - Schema is valid": true
+				}
+			]
+		},
+		{
+			"id": "ce330fc9-fe8a-4128-a3bb-7ad91a908c79",
+			"name": "Livestock Controller update Feed",
+			"url": "http://localhost:4000/api/livestock/feed/string",
+			"time": 3,
+			"responseCode": {
+				"code": 403,
+				"name": "Forbidden"
+			},
+			"tests": {
+				"[PATCH] /livestock/feed/:id - Akses untuk SUPER_ADMIN": true
+			},
+			"testPassFailCounts": {
+				"[PATCH] /livestock/feed/:id - Akses untuk SUPER_ADMIN": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				3
+			],
+			"allTests": [
+				{
+					"[PATCH] /livestock/feed/:id - Akses untuk SUPER_ADMIN": true
+				}
+			]
+		},
+		{
+			"id": "95feaebc-547e-4de9-9581-21f0081fae8e",
+			"name": "Livestock Controller delete Feed",
+			"url": "http://localhost:4000/api/livestock/feed/string",
+			"time": 8,
+			"responseCode": {
+				"code": 403,
+				"name": "Forbidden"
+			},
+			"tests": {
+				"[DELETE] /livestock/feed/:id - Akses untuk SUPER_ADMIN": true
+			},
+			"testPassFailCounts": {
+				"[DELETE] /livestock/feed/:id - Akses untuk SUPER_ADMIN": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				8
+			],
+			"allTests": [
+				{
+					"[DELETE] /livestock/feed/:id - Akses untuk SUPER_ADMIN": true
+				}
+			]
+		},
+		{
+			"id": "a7e64401-8411-41b6-b7e4-8c8d93fa93f6",
+			"name": "Livestock Controller update Weight",
+			"url": "http://localhost:4000/api/livestock/weight/string",
+			"time": 5,
+			"responseCode": {
+				"code": 403,
+				"name": "Forbidden"
+			},
+			"tests": {
+				"[PATCH] /livestock/weight/:id - Akses untuk SUPER_ADMIN": true
+			},
+			"testPassFailCounts": {
+				"[PATCH] /livestock/weight/:id - Akses untuk SUPER_ADMIN": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				5
+			],
+			"allTests": [
+				{
+					"[PATCH] /livestock/weight/:id - Akses untuk SUPER_ADMIN": true
+				}
+			]
+		},
+		{
+			"id": "c61acf08-bbc4-4656-80cc-41921512a3c3",
+			"name": "Livestock Controller delete Weight",
+			"url": "http://localhost:4000/api/livestock/weight/string",
+			"time": 4,
+			"responseCode": {
+				"code": 403,
+				"name": "Forbidden"
+			},
+			"tests": {
+				"[DELETE] /livestock/weight/:id - Akses untuk SUPER_ADMIN": true
+			},
+			"testPassFailCounts": {
+				"[DELETE] /livestock/weight/:id - Akses untuk SUPER_ADMIN": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				4
+			],
+			"allTests": [
+				{
+					"[DELETE] /livestock/weight/:id - Akses untuk SUPER_ADMIN": true
+				}
+			]
+		},
+		{
+			"id": "01f4d800-2532-406e-9577-3ccec41b89e8",
+			"name": "Livestock Controller update Waste",
+			"url": "http://localhost:4000/api/livestock/waste/string",
+			"time": 5,
+			"responseCode": {
+				"code": 403,
+				"name": "Forbidden"
+			},
+			"tests": {
+				"[PATCH] /livestock/waste/:id - Akses untuk SUPER_ADMIN": true
+			},
+			"testPassFailCounts": {
+				"[PATCH] /livestock/waste/:id - Akses untuk SUPER_ADMIN": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				5
+			],
+			"allTests": [
+				{
+					"[PATCH] /livestock/waste/:id - Akses untuk SUPER_ADMIN": true
+				}
+			]
+		},
+		{
+			"id": "e7b755dc-d0d8-40db-b3c9-959a808b1a43",
+			"name": "Livestock Controller delete Waste",
+			"url": "http://localhost:4000/api/livestock/waste/string",
+			"time": 4,
+			"responseCode": {
+				"code": 403,
+				"name": "Forbidden"
+			},
+			"tests": {
+				"[DELETE] /livestock/waste/:id - Akses untuk SUPER_ADMIN": true
+			},
+			"testPassFailCounts": {
+				"[DELETE] /livestock/waste/:id - Akses untuk SUPER_ADMIN": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				4
+			],
+			"allTests": [
+				{
+					"[DELETE] /livestock/waste/:id - Akses untuk SUPER_ADMIN": true
+				}
+			]
+		},
+		{
+			"id": "d75c059a-21d8-4ce5-a864-d70e6d57e378",
+			"name": "Livestock Controller update Zone Waste",
+			"url": "http://localhost:4000/api/livestock/waste/zone/string",
+			"time": 3,
+			"responseCode": {
+				"code": 403,
+				"name": "Forbidden"
+			},
+			"tests": {
+				"[PATCH] /livestock/waste/zone/:id - Akses untuk SUPER_ADMIN": true
+			},
+			"testPassFailCounts": {
+				"[PATCH] /livestock/waste/zone/:id - Akses untuk SUPER_ADMIN": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				3
+			],
+			"allTests": [
+				{
+					"[PATCH] /livestock/waste/zone/:id - Akses untuk SUPER_ADMIN": true
+				}
+			]
+		},
+		{
+			"id": "176e1e55-f6f5-45a6-ac1d-bc5103d6e6d0",
+			"name": "Livestock Controller delete Zone Waste",
+			"url": "http://localhost:4000/api/livestock/waste/zone/string",
+			"time": 4,
+			"responseCode": {
+				"code": 403,
+				"name": "Forbidden"
+			},
+			"tests": {
+				"[DELETE] /livestock/waste/zone/:id - Akses untuk SUPER_ADMIN": true
+			},
+			"testPassFailCounts": {
+				"[DELETE] /livestock/waste/zone/:id - Akses untuk SUPER_ADMIN": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				4
+			],
+			"allTests": [
+				{
+					"[DELETE] /livestock/waste/zone/:id - Akses untuk SUPER_ADMIN": true
+				}
+			]
+		},
+		{
+			"id": "f18d4929-6c8d-4f86-bf74-546ecac1880c",
+			"name": "Livestock Controller find One",
+			"url": "http://localhost:4000/api/livestock/string",
+			"time": 3,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"[GET]::/livestock/:id - Status code is 2xx": true,
+				"[GET]::/livestock/:id - Content-Type is application/json": false,
+				"[GET]::/livestock/:id - Response has JSON Body": false,
+				"[GET]::/livestock/:id - Schema is valid": false
+			},
+			"testPassFailCounts": {
+				"[GET]::/livestock/:id - Status code is 2xx": {
+					"pass": 1,
+					"fail": 0
+				},
+				"[GET]::/livestock/:id - Content-Type is application/json": {
+					"pass": 0,
+					"fail": 1
+				},
+				"[GET]::/livestock/:id - Response has JSON Body": {
+					"pass": 0,
+					"fail": 1
+				},
+				"[GET]::/livestock/:id - Schema is valid": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				3
+			],
+			"allTests": [
+				{
+					"[GET]::/livestock/:id - Status code is 2xx": true,
+					"[GET]::/livestock/:id - Content-Type is application/json": false,
+					"[GET]::/livestock/:id - Response has JSON Body": false,
+					"[GET]::/livestock/:id - Schema is valid": false
+				}
+			]
+		},
+		{
+			"id": "769fa2b7-c724-448c-a4ae-cfca07539f11",
+			"name": "Livestock Controller update",
+			"url": "http://localhost:4000/api/livestock/string",
+			"time": 3,
+			"responseCode": {
+				"code": 403,
+				"name": "Forbidden"
+			},
+			"tests": {
+				"[PATCH] /livestock/:id - Akses untuk SUPER_ADMIN": true
+			},
+			"testPassFailCounts": {
+				"[PATCH] /livestock/:id - Akses untuk SUPER_ADMIN": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				3
+			],
+			"allTests": [
+				{
+					"[PATCH] /livestock/:id - Akses untuk SUPER_ADMIN": true
+				}
+			]
+		},
+		{
+			"id": "bc751fd2-d5f8-434a-a3ab-f512d4cf5c2c",
+			"name": "Livestock Controller remove",
+			"url": "http://localhost:4000/api/livestock/string",
+			"time": 4,
+			"responseCode": {
+				"code": 403,
+				"name": "Forbidden"
+			},
+			"tests": {
+				"[DELETE] /livestock/:cattleId - Akses untuk SUPER_ADMIN": true
+			},
+			"testPassFailCounts": {
+				"[DELETE] /livestock/:cattleId - Akses untuk SUPER_ADMIN": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				4
+			],
+			"allTests": [
+				{
+					"[DELETE] /livestock/:cattleId - Akses untuk SUPER_ADMIN": true
+				}
+			]
+		},
+		{
+			"id": "aae8ee72-3c02-4f9a-a58d-eb6d1bdc30d3",
+			"name": "Activity Controller get Recent",
+			"url": "http://localhost:4000/api/activities/recent",
+			"time": 547,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"[GET]::/activities/recent - Status code is 2xx": true
+			},
+			"testPassFailCounts": {
+				"[GET]::/activities/recent - Status code is 2xx": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				547
+			],
+			"allTests": [
+				{
+					"[GET]::/activities/recent - Status code is 2xx": true
+				}
+			]
+		},
+		{
+			"id": "b204c6ce-19df-453b-857d-1119ae848569",
+			"name": "Health Controller get Summary",
+			"url": "http://localhost:4000/api/health/summary",
+			"time": 989,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"[GET]::/health/summary - Status code is 2xx": true,
+				"[GET]::/health/summary - Content-Type is application/json": true,
+				"[GET]::/health/summary - Response has JSON Body": true,
+				"[GET]::/health/summary - Schema is valid": true
+			},
+			"testPassFailCounts": {
+				"[GET]::/health/summary - Status code is 2xx": {
+					"pass": 1,
+					"fail": 0
+				},
+				"[GET]::/health/summary - Content-Type is application/json": {
+					"pass": 1,
+					"fail": 0
+				},
+				"[GET]::/health/summary - Response has JSON Body": {
+					"pass": 1,
+					"fail": 0
+				},
+				"[GET]::/health/summary - Schema is valid": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				989
+			],
+			"allTests": [
+				{
+					"[GET]::/health/summary - Status code is 2xx": true,
+					"[GET]::/health/summary - Content-Type is application/json": true,
+					"[GET]::/health/summary - Response has JSON Body": true,
+					"[GET]::/health/summary - Schema is valid": true
+				}
+			]
+		},
+		{
+			"id": "2af3d318-7095-4a1e-8fa2-8ad5127011db",
+			"name": "Health Controller find All",
+			"url": "http://localhost:4000/api/health",
+			"time": 1472,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"[GET]::/health - Status code is 2xx": true,
+				"[GET]::/health - Content-Type is application/json": true,
+				"[GET]::/health - Response has JSON Body": true,
+				"[GET]::/health - Schema is valid": false
+			},
+			"testPassFailCounts": {
+				"[GET]::/health - Status code is 2xx": {
+					"pass": 1,
+					"fail": 0
+				},
+				"[GET]::/health - Content-Type is application/json": {
+					"pass": 1,
+					"fail": 0
+				},
+				"[GET]::/health - Response has JSON Body": {
+					"pass": 1,
+					"fail": 0
+				},
+				"[GET]::/health - Schema is valid": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				1472
+			],
+			"allTests": [
+				{
+					"[GET]::/health - Status code is 2xx": true,
+					"[GET]::/health - Content-Type is application/json": true,
+					"[GET]::/health - Response has JSON Body": true,
+					"[GET]::/health - Schema is valid": false
+				}
+			]
+		},
+		{
+			"id": "c3fdc470-bb9d-414d-a398-68755f253c58",
+			"name": "Health Controller create",
+			"url": "http://localhost:4000/api/health",
+			"time": 4,
+			"responseCode": {
+				"code": 403,
+				"name": "Forbidden"
+			},
+			"tests": {
+				"[POST] /health - Akses untuk SUPER_ADMIN": true
+			},
+			"testPassFailCounts": {
+				"[POST] /health - Akses untuk SUPER_ADMIN": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				4
+			],
+			"allTests": [
+				{
+					"[POST] /health - Akses untuk SUPER_ADMIN": true
+				}
+			]
+		},
+		{
+			"id": "26afdd80-f64b-45ea-85f9-98a9f9c95aa6",
+			"name": "Health Controller create Bulk",
+			"url": "http://localhost:4000/api/health/bulk",
+			"time": 4,
+			"responseCode": {
+				"code": 403,
+				"name": "Forbidden"
+			},
+			"tests": {
+				"[POST] /health/bulk - Akses untuk SUPER_ADMIN": true
+			},
+			"testPassFailCounts": {
+				"[POST] /health/bulk - Akses untuk SUPER_ADMIN": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				4
+			],
+			"allTests": [
+				{
+					"[POST] /health/bulk - Akses untuk SUPER_ADMIN": true
+				}
+			]
+		},
+		{
+			"id": "31a3f080-38ad-4acf-8ec9-cd376cd9ca96",
+			"name": "Health Controller update",
+			"url": "http://localhost:4000/api/health/string",
+			"time": 5,
+			"responseCode": {
+				"code": 403,
+				"name": "Forbidden"
+			},
+			"tests": {
+				"[PATCH] /health/:id - Akses untuk SUPER_ADMIN": true
+			},
+			"testPassFailCounts": {
+				"[PATCH] /health/:id - Akses untuk SUPER_ADMIN": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				5
+			],
+			"allTests": [
+				{
+					"[PATCH] /health/:id - Akses untuk SUPER_ADMIN": true
+				}
+			]
+		},
+		{
+			"id": "13e10a14-afd6-4122-8752-f5474d7e4186",
+			"name": "Health Controller remove",
+			"url": "http://localhost:4000/api/health/string",
+			"time": 3,
+			"responseCode": {
+				"code": 403,
+				"name": "Forbidden"
+			},
+			"tests": {
+				"[DELETE] /health/:id - Akses untuk SUPER_ADMIN": true
+			},
+			"testPassFailCounts": {
+				"[DELETE] /health/:id - Akses untuk SUPER_ADMIN": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				3
+			],
+			"allTests": [
+				{
+					"[DELETE] /health/:id - Akses untuk SUPER_ADMIN": true
+				}
+			]
+		},
+		{
+			"id": "ef08dcbf-f704-419a-98c8-d6b61eb21564",
+			"name": "Feed Controller get Silos",
+			"url": "http://localhost:4000/api/feed/silo",
+			"time": 816,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"[GET]::/feed/silo - Status code is 2xx": true
+			},
+			"testPassFailCounts": {
+				"[GET]::/feed/silo - Status code is 2xx": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				816
+			],
+			"allTests": [
+				{
+					"[GET]::/feed/silo - Status code is 2xx": true
+				}
+			]
+		},
+		{
+			"id": "85a2d10a-a8aa-4a45-81da-5056e63186a6",
+			"name": "Feed Controller create Silo",
+			"url": "http://localhost:4000/api/feed/silo",
+			"time": 5,
+			"responseCode": {
+				"code": 403,
+				"name": "Forbidden"
+			},
+			"tests": {
+				"[POST] /feed/silo - Akses untuk SUPER_ADMIN": true
+			},
+			"testPassFailCounts": {
+				"[POST] /feed/silo - Akses untuk SUPER_ADMIN": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				5
+			],
+			"allTests": [
+				{
+					"[POST] /feed/silo - Akses untuk SUPER_ADMIN": true
+				}
+			]
+		},
+		{
+			"id": "85f44ef7-34a3-461f-a0ce-6dfedc47806a",
+			"name": "Feed Controller update Silo",
+			"url": "http://localhost:4000/api/feed/silo/string",
+			"time": 4,
+			"responseCode": {
+				"code": 403,
+				"name": "Forbidden"
+			},
+			"tests": {
+				"[PATCH] /feed/silo/:id - Akses untuk SUPER_ADMIN": true
+			},
+			"testPassFailCounts": {
+				"[PATCH] /feed/silo/:id - Akses untuk SUPER_ADMIN": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				4
+			],
+			"allTests": [
+				{
+					"[PATCH] /feed/silo/:id - Akses untuk SUPER_ADMIN": true
+				}
+			]
+		},
+		{
+			"id": "9ac55407-87ab-4578-b1a1-50e2046943c3",
+			"name": "Feed Controller remove Silo",
+			"url": "http://localhost:4000/api/feed/silo/string",
+			"time": 4,
+			"responseCode": {
+				"code": 403,
+				"name": "Forbidden"
+			},
+			"tests": {
+				"[DELETE] /feed/silo/:id - Akses untuk SUPER_ADMIN": true
+			},
+			"testPassFailCounts": {
+				"[DELETE] /feed/silo/:id - Akses untuk SUPER_ADMIN": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				4
+			],
+			"allTests": [
+				{
+					"[DELETE] /feed/silo/:id - Akses untuk SUPER_ADMIN": true
+				}
+			]
+		},
+		{
+			"id": "a24f1ce5-de15-4f25-b580-f38443ea0c66",
+			"name": "Feed Controller update Stock",
+			"url": "http://localhost:4000/api/feed/silo/string/stock",
+			"time": 5,
+			"responseCode": {
+				"code": 403,
+				"name": "Forbidden"
+			},
+			"tests": {
+				"[PATCH]::/feed/silo/:id/stock - Status code is 2xx": false
+			},
+			"testPassFailCounts": {
+				"[PATCH]::/feed/silo/:id/stock - Status code is 2xx": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				5
+			],
+			"allTests": [
+				{
+					"[PATCH]::/feed/silo/:id/stock - Status code is 2xx": false
+				}
+			]
+		},
+		{
+			"id": "8df4dded-3b7e-4b03-a194-dc0cafeadbd4",
+			"name": "Feed Controller get Schedules",
+			"url": "http://localhost:4000/api/feed/schedule",
+			"time": 2042,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"[GET]::/feed/schedule - Status code is 2xx": true,
+				"[GET]::/feed/schedule - Content-Type is application/json": true,
+				"[GET]::/feed/schedule - Response has JSON Body": true,
+				"[GET]::/feed/schedule - Schema is valid": false
+			},
+			"testPassFailCounts": {
+				"[GET]::/feed/schedule - Status code is 2xx": {
+					"pass": 1,
+					"fail": 0
+				},
+				"[GET]::/feed/schedule - Content-Type is application/json": {
+					"pass": 1,
+					"fail": 0
+				},
+				"[GET]::/feed/schedule - Response has JSON Body": {
+					"pass": 1,
+					"fail": 0
+				},
+				"[GET]::/feed/schedule - Schema is valid": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				2042
+			],
+			"allTests": [
+				{
+					"[GET]::/feed/schedule - Status code is 2xx": true,
+					"[GET]::/feed/schedule - Content-Type is application/json": true,
+					"[GET]::/feed/schedule - Response has JSON Body": true,
+					"[GET]::/feed/schedule - Schema is valid": false
+				}
+			]
+		},
+		{
+			"id": "0412829e-0671-463b-a551-c98fde846f8f",
+			"name": "Feed Controller create Schedule",
+			"url": "http://localhost:4000/api/feed/schedule",
+			"time": 4,
+			"responseCode": {
+				"code": 403,
+				"name": "Forbidden"
+			},
+			"tests": {
+				"[POST]::/feed/schedule - Status code is 2xx": false,
+				"[POST]::/feed/schedule - Content-Type is application/json": true,
+				"[POST]::/feed/schedule - Response has JSON Body": true,
+				"[POST]::/feed/schedule - Schema is valid": true
+			},
+			"testPassFailCounts": {
+				"[POST]::/feed/schedule - Status code is 2xx": {
+					"pass": 0,
+					"fail": 1
+				},
+				"[POST]::/feed/schedule - Content-Type is application/json": {
+					"pass": 1,
+					"fail": 0
+				},
+				"[POST]::/feed/schedule - Response has JSON Body": {
+					"pass": 1,
+					"fail": 0
+				},
+				"[POST]::/feed/schedule - Schema is valid": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				4
+			],
+			"allTests": [
+				{
+					"[POST]::/feed/schedule - Status code is 2xx": false,
+					"[POST]::/feed/schedule - Content-Type is application/json": true,
+					"[POST]::/feed/schedule - Response has JSON Body": true,
+					"[POST]::/feed/schedule - Schema is valid": true
+				}
+			]
+		},
+		{
+			"id": "a8ac62de-f6fb-4d43-8062-51e90e962cf0",
+			"name": "Feed Controller update Schedule",
+			"url": "http://localhost:4000/api/feed/schedule/string",
+			"time": 3,
+			"responseCode": {
+				"code": 403,
+				"name": "Forbidden"
+			},
+			"tests": {
+				"[PATCH]::/feed/schedule/:id - Status code is 2xx": false,
+				"[PATCH]::/feed/schedule/:id - Content-Type is application/json": true,
+				"[PATCH]::/feed/schedule/:id - Response has JSON Body": true,
+				"[PATCH]::/feed/schedule/:id - Schema is valid": true
+			},
+			"testPassFailCounts": {
+				"[PATCH]::/feed/schedule/:id - Status code is 2xx": {
+					"pass": 0,
+					"fail": 1
+				},
+				"[PATCH]::/feed/schedule/:id - Content-Type is application/json": {
+					"pass": 1,
+					"fail": 0
+				},
+				"[PATCH]::/feed/schedule/:id - Response has JSON Body": {
+					"pass": 1,
+					"fail": 0
+				},
+				"[PATCH]::/feed/schedule/:id - Schema is valid": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				3
+			],
+			"allTests": [
+				{
+					"[PATCH]::/feed/schedule/:id - Status code is 2xx": false,
+					"[PATCH]::/feed/schedule/:id - Content-Type is application/json": true,
+					"[PATCH]::/feed/schedule/:id - Response has JSON Body": true,
+					"[PATCH]::/feed/schedule/:id - Schema is valid": true
+				}
+			]
+		},
+		{
+			"id": "e79668f0-daba-4891-bf6f-0a90fb67f5ff",
+			"name": "Feed Controller remove Schedule",
+			"url": "http://localhost:4000/api/feed/schedule/string",
+			"time": 4,
+			"responseCode": {
+				"code": 403,
+				"name": "Forbidden"
+			},
+			"tests": {
+				"[DELETE]::/feed/schedule/:id - Status code is 2xx": false
+			},
+			"testPassFailCounts": {
+				"[DELETE]::/feed/schedule/:id - Status code is 2xx": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				4
+			],
+			"allTests": [
+				{
+					"[DELETE]::/feed/schedule/:id - Status code is 2xx": false
+				}
+			]
+		},
+		{
+			"id": "6f6a9060-46f3-494e-b7d9-b3e635df9e42",
+			"name": "Feed Controller get Feed Report",
+			"url": "http://localhost:4000/api/feed/report",
+			"time": 1709,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"[GET]::/feed/report - Status code is 2xx": true
+			},
+			"testPassFailCounts": {
+				"[GET]::/feed/report - Status code is 2xx": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				1709
+			],
+			"allTests": [
+				{
+					"[GET]::/feed/report - Status code is 2xx": true
+				}
+			]
+		},
+		{
+			"id": "031d0fce-9cc7-4335-ad43-7afc10c19cef",
+			"name": "Feed Controller get Transactions",
+			"url": "http://localhost:4000/api/feed/silo/string/transaction",
+			"time": 4,
+			"responseCode": {
+				"code": 500,
+				"name": "Internal Server Error"
+			},
+			"tests": {
+				"[GET]::/feed/silo/:id/transaction - Status code is 2xx": false
+			},
+			"testPassFailCounts": {
+				"[GET]::/feed/silo/:id/transaction - Status code is 2xx": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				4
+			],
+			"allTests": [
+				{
+					"[GET]::/feed/silo/:id/transaction - Status code is 2xx": false
+				}
+			]
+		},
+		{
+			"id": "685b57b1-7d61-45d7-9c42-e88e00620b16",
+			"name": "Feed Controller create Transaction",
+			"url": "http://localhost:4000/api/feed/silo/string/transaction",
+			"time": 4,
+			"responseCode": {
+				"code": 403,
+				"name": "Forbidden"
+			},
+			"tests": {
+				"[POST]::/feed/silo/:id/transaction - Status code is 2xx": false
+			},
+			"testPassFailCounts": {
+				"[POST]::/feed/silo/:id/transaction - Status code is 2xx": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				4
+			],
+			"allTests": [
+				{
+					"[POST]::/feed/silo/:id/transaction - Status code is 2xx": false
+				}
+			]
+		},
+		{
+			"id": "26733f44-12bd-40e0-bfe2-d08bd039033d",
+			"name": "Users Controller get All Staff",
+			"url": "http://localhost:4000/api/users/staff",
+			"time": 4339,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"[GET]::/users/staff - Status code is 2xx": true,
+				"[GET]::/users/staff - Content-Type is application/json": true,
+				"[GET]::/users/staff - Response has JSON Body": true,
+				"[GET]::/users/staff - Schema is valid": false
+			},
+			"testPassFailCounts": {
+				"[GET]::/users/staff - Status code is 2xx": {
+					"pass": 1,
+					"fail": 0
+				},
+				"[GET]::/users/staff - Content-Type is application/json": {
+					"pass": 1,
+					"fail": 0
+				},
+				"[GET]::/users/staff - Response has JSON Body": {
+					"pass": 1,
+					"fail": 0
+				},
+				"[GET]::/users/staff - Schema is valid": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				4339
+			],
+			"allTests": [
+				{
+					"[GET]::/users/staff - Status code is 2xx": true,
+					"[GET]::/users/staff - Content-Type is application/json": true,
+					"[GET]::/users/staff - Response has JSON Body": true,
+					"[GET]::/users/staff - Schema is valid": false
+				}
+			]
+		},
+		{
+			"id": "0f239fab-db5d-41ad-8e85-6bc38a3537f0",
+			"name": "Users Controller create Staff",
+			"url": "http://localhost:4000/api/users/staff",
+			"time": 4,
+			"responseCode": {
+				"code": 500,
+				"name": "Internal Server Error"
+			},
+			"tests": {
+				"[POST]::/users/staff - Status code is 2xx": false
+			},
+			"testPassFailCounts": {
+				"[POST]::/users/staff - Status code is 2xx": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				4
+			],
+			"allTests": [
+				{
+					"[POST]::/users/staff - Status code is 2xx": false
+				}
+			]
+		},
+		{
+			"id": "1c080fd1-59d5-4b31-9373-9c7a7f18d1c2",
+			"name": "Users Controller get Profile",
+			"url": "http://localhost:4000/api/users/profile/string",
+			"time": 634,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"[GET]::/users/profile/:id - Status code is 2xx": true,
+				"[GET]::/users/profile/:id - Content-Type is application/json": false,
+				"[GET]::/users/profile/:id - Response has JSON Body": false,
+				"[GET]::/users/profile/:id - Schema is valid": false
+			},
+			"testPassFailCounts": {
+				"[GET]::/users/profile/:id - Status code is 2xx": {
+					"pass": 1,
+					"fail": 0
+				},
+				"[GET]::/users/profile/:id - Content-Type is application/json": {
+					"pass": 0,
+					"fail": 1
+				},
+				"[GET]::/users/profile/:id - Response has JSON Body": {
+					"pass": 0,
+					"fail": 1
+				},
+				"[GET]::/users/profile/:id - Schema is valid": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				634
+			],
+			"allTests": [
+				{
+					"[GET]::/users/profile/:id - Status code is 2xx": true,
+					"[GET]::/users/profile/:id - Content-Type is application/json": false,
+					"[GET]::/users/profile/:id - Response has JSON Body": false,
+					"[GET]::/users/profile/:id - Schema is valid": false
+				}
+			]
+		},
+		{
+			"id": "45b05791-4a13-40d0-a178-9f14b5bfdda6",
+			"name": "Users Controller update Photo",
+			"url": "http://localhost:4000/api/users/profile/string/photo",
+			"time": 422,
+			"responseCode": {
+				"code": 500,
+				"name": "Internal Server Error"
+			},
+			"tests": {
+				"[PATCH]::/users/profile/:id/photo - Status code is 2xx": false
+			},
+			"testPassFailCounts": {
+				"[PATCH]::/users/profile/:id/photo - Status code is 2xx": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				422
+			],
+			"allTests": [
+				{
+					"[PATCH]::/users/profile/:id/photo - Status code is 2xx": false
+				}
+			]
+		},
+		{
+			"id": "abcb4070-a8e8-40fe-91c8-8efcea25ee25",
+			"name": "Users Controller remove",
+			"url": "http://localhost:4000/api/users/string",
+			"time": 418,
+			"responseCode": {
+				"code": 500,
+				"name": "Internal Server Error"
+			},
+			"tests": {
+				"[DELETE] /users/:id - Akses untuk SUPER_ADMIN": false
+			},
+			"testPassFailCounts": {
+				"[DELETE] /users/:id - Akses untuk SUPER_ADMIN": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				418
+			],
+			"allTests": [
+				{
+					"[DELETE] /users/:id - Akses untuk SUPER_ADMIN": false
+				}
+			]
+		},
+		{
+			"id": "67974894-c66b-46e7-8e51-539fb366445f",
+			"name": "Users Controller get Pending",
+			"url": "http://localhost:4000/api/users/pending",
+			"time": 430,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"[GET]::/users/pending - Status code is 2xx": true
+			},
+			"testPassFailCounts": {
+				"[GET]::/users/pending - Status code is 2xx": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				430
+			],
+			"allTests": [
+				{
+					"[GET]::/users/pending - Status code is 2xx": true
+				}
+			]
+		},
+		{
+			"id": "f4e17ea2-1ff6-4701-887f-fd4054752964",
+			"name": "Users Controller approve",
+			"url": "http://localhost:4000/api/users/approve/string",
+			"time": 206,
+			"responseCode": {
+				"code": 400,
+				"name": "Bad Request"
+			},
+			"tests": {
+				"[PATCH]::/users/approve/:id - Status code is 2xx": false
+			},
+			"testPassFailCounts": {
+				"[PATCH]::/users/approve/:id - Status code is 2xx": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				206
+			],
+			"allTests": [
+				{
+					"[PATCH]::/users/approve/:id - Status code is 2xx": false
+				}
+			]
+		},
+		{
+			"id": "288b8419-628e-4893-9d71-c8f9037d5693",
+			"name": "Users Controller reject",
+			"url": "http://localhost:4000/api/users/reject/string",
+			"time": 210,
+			"responseCode": {
+				"code": 500,
+				"name": "Internal Server Error"
+			},
+			"tests": {
+				"[DELETE]::/users/reject/:id - Status code is 2xx": false
+			},
+			"testPassFailCounts": {
+				"[DELETE]::/users/reject/:id - Status code is 2xx": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				210
+			],
+			"allTests": [
+				{
+					"[DELETE]::/users/reject/:id - Status code is 2xx": false
+				}
+			]
+		},
+		{
+			"id": "b743b78c-4bd0-4123-8fbe-4bd50aa9434b",
+			"name": "Users Controller get Pending Requests",
+			"url": "http://localhost:4000/api/users/requests",
+			"time": 424,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"[GET]::/users/requests - Status code is 2xx": true
+			},
+			"testPassFailCounts": {
+				"[GET]::/users/requests - Status code is 2xx": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				424
+			],
+			"allTests": [
+				{
+					"[GET]::/users/requests - Status code is 2xx": true
+				}
+			]
+		},
+		{
+			"id": "c7802afe-8668-4785-9df9-4272f56f276a",
+			"name": "Users Controller create Request",
+			"url": "http://localhost:4000/api/users/requests",
+			"time": 4,
+			"responseCode": {
+				"code": 500,
+				"name": "Internal Server Error"
+			},
+			"tests": {
+				"[POST]::/users/requests - Status code is 2xx": false
+			},
+			"testPassFailCounts": {
+				"[POST]::/users/requests - Status code is 2xx": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				4
+			],
+			"allTests": [
+				{
+					"[POST]::/users/requests - Status code is 2xx": false
+				}
+			]
+		},
+		{
+			"id": "efc82822-7df5-4075-b809-af69f3486f76",
+			"name": "Users Controller process Request",
+			"url": "http://localhost:4000/api/users/requests/string/process",
+			"time": 7,
+			"responseCode": {
+				"code": 500,
+				"name": "Internal Server Error"
+			},
+			"tests": {
+				"[PATCH]::/users/requests/:id/process - Status code is 2xx": false,
+				"[PATCH]::/users/requests/:id/process - Content-Type is application/json": true,
+				"[PATCH]::/users/requests/:id/process - Response has JSON Body": true,
+				"[PATCH]::/users/requests/:id/process - Schema is valid": true
+			},
+			"testPassFailCounts": {
+				"[PATCH]::/users/requests/:id/process - Status code is 2xx": {
+					"pass": 0,
+					"fail": 1
+				},
+				"[PATCH]::/users/requests/:id/process - Content-Type is application/json": {
+					"pass": 1,
+					"fail": 0
+				},
+				"[PATCH]::/users/requests/:id/process - Response has JSON Body": {
+					"pass": 1,
+					"fail": 0
+				},
+				"[PATCH]::/users/requests/:id/process - Schema is valid": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				7
+			],
+			"allTests": [
+				{
+					"[PATCH]::/users/requests/:id/process - Status code is 2xx": false,
+					"[PATCH]::/users/requests/:id/process - Content-Type is application/json": true,
+					"[PATCH]::/users/requests/:id/process - Response has JSON Body": true,
+					"[PATCH]::/users/requests/:id/process - Schema is valid": true
+				}
+			]
+		},
+		{
+			"id": "b931a2bb-89a4-4abf-b958-ee6c6fd92943",
+			"name": "Users Controller change Password",
+			"url": "http://localhost:4000/api/users/change-password",
+			"time": 4,
+			"responseCode": {
+				"code": 500,
+				"name": "Internal Server Error"
+			},
+			"tests": {
+				"[PATCH]::/users/change-password - Status code is 2xx": false
+			},
+			"testPassFailCounts": {
+				"[PATCH]::/users/change-password - Status code is 2xx": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				4
+			],
+			"allTests": [
+				{
+					"[PATCH]::/users/change-password - Status code is 2xx": false
+				}
+			]
+		},
+		{
+			"id": "67a58dd0-2cec-4908-bb7b-5ba71f6e50f3",
+			"name": "Users Controller force Reset Password",
+			"url": "http://localhost:4000/api/users/force-reset/string",
+			"time": 221,
+			"responseCode": {
+				"code": 400,
+				"name": "Bad Request"
+			},
+			"tests": {
+				"[PATCH]::/users/force-reset/:id - Status code is 2xx": false
+			},
+			"testPassFailCounts": {
+				"[PATCH]::/users/force-reset/:id - Status code is 2xx": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				221
+			],
+			"allTests": [
+				{
+					"[PATCH]::/users/force-reset/:id - Status code is 2xx": false
+				}
+			]
+		},
+		{
+			"id": "4c908a3e-6e82-4c8f-b975-4c1ab29d3f3e",
+			"name": "Reports Controller download Report",
+			"url": "http://localhost:4000/api/reports/download?jenis=string&start=string&end=string&format=string",
+			"time": 5,
+			"responseCode": {
+				"code": 400,
+				"name": "Bad Request"
+			},
+			"tests": {
+				"[GET]::/reports/download - Status code is 2xx": false
+			},
+			"testPassFailCounts": {
+				"[GET]::/reports/download - Status code is 2xx": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				5
+			],
+			"allTests": [
+				{
+					"[GET]::/reports/download - Status code is 2xx": false
+				}
+			]
+		},
+		{
+			"id": "1a80611b-3ce6-4c27-aeca-18636f45214c",
+			"name": "Environment Controller receive Data",
+			"url": "http://localhost:4000/api/environment/sensor",
+			"time": 3,
+			"responseCode": {
+				"code": 500,
+				"name": "Internal Server Error"
+			},
+			"tests": {
+				"[POST]::/environment/sensor - Status code is 2xx": false
+			},
+			"testPassFailCounts": {
+				"[POST]::/environment/sensor - Status code is 2xx": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				3
+			],
+			"allTests": [
+				{
+					"[POST]::/environment/sensor - Status code is 2xx": false
+				}
+			]
+		},
+		{
+			"id": "6b9701a9-50ee-4270-adda-c23d704ba5f5",
+			"name": "Environment Controller get Live",
+			"url": "http://localhost:4000/api/environment/live/string",
+			"time": 3,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"[GET]::/environment/live/:zoneId - Status code is 2xx": true,
+				"[GET]::/environment/live/:zoneId - Content-Type is application/json": false,
+				"[GET]::/environment/live/:zoneId - Response has JSON Body": false,
+				"[GET]::/environment/live/:zoneId - Schema is valid": false
+			},
+			"testPassFailCounts": {
+				"[GET]::/environment/live/:zoneId - Status code is 2xx": {
+					"pass": 1,
+					"fail": 0
+				},
+				"[GET]::/environment/live/:zoneId - Content-Type is application/json": {
+					"pass": 0,
+					"fail": 1
+				},
+				"[GET]::/environment/live/:zoneId - Response has JSON Body": {
+					"pass": 0,
+					"fail": 1
+				},
+				"[GET]::/environment/live/:zoneId - Schema is valid": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				3
+			],
+			"allTests": [
+				{
+					"[GET]::/environment/live/:zoneId - Status code is 2xx": true,
+					"[GET]::/environment/live/:zoneId - Content-Type is application/json": false,
+					"[GET]::/environment/live/:zoneId - Response has JSON Body": false,
+					"[GET]::/environment/live/:zoneId - Schema is valid": false
+				}
+			]
+		},
+		{
+			"id": "6780beec-2d9f-4ded-92d1-02293795d131",
+			"name": "Environment Controller get Live Wind",
+			"url": "http://localhost:4000/api/environment/live-wind/string",
+			"time": 5,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"[GET]::/environment/live-wind/:zoneId - Status code is 2xx": true,
+				"[GET]::/environment/live-wind/:zoneId - Content-Type is application/json": false,
+				"[GET]::/environment/live-wind/:zoneId - Response has JSON Body": false,
+				"[GET]::/environment/live-wind/:zoneId - Schema is valid": false
+			},
+			"testPassFailCounts": {
+				"[GET]::/environment/live-wind/:zoneId - Status code is 2xx": {
+					"pass": 1,
+					"fail": 0
+				},
+				"[GET]::/environment/live-wind/:zoneId - Content-Type is application/json": {
+					"pass": 0,
+					"fail": 1
+				},
+				"[GET]::/environment/live-wind/:zoneId - Response has JSON Body": {
+					"pass": 0,
+					"fail": 1
+				},
+				"[GET]::/environment/live-wind/:zoneId - Schema is valid": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				5
+			],
+			"allTests": [
+				{
+					"[GET]::/environment/live-wind/:zoneId - Status code is 2xx": true,
+					"[GET]::/environment/live-wind/:zoneId - Content-Type is application/json": false,
+					"[GET]::/environment/live-wind/:zoneId - Response has JSON Body": false,
+					"[GET]::/environment/live-wind/:zoneId - Schema is valid": false
+				}
+			]
+		},
+		{
+			"id": "8337eba7-aa27-4d85-b1ea-6d9899d26793",
+			"name": "Environment Controller get Wind Trend",
+			"url": "http://localhost:4000/api/environment/wind/trend/string?range=string",
+			"time": 4,
+			"responseCode": {
+				"code": 500,
+				"name": "Internal Server Error"
+			},
+			"tests": {
+				"[GET]::/environment/wind/trend/:zoneId - Status code is 2xx": false
+			},
+			"testPassFailCounts": {
+				"[GET]::/environment/wind/trend/:zoneId - Status code is 2xx": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				4
+			],
+			"allTests": [
+				{
+					"[GET]::/environment/wind/trend/:zoneId - Status code is 2xx": false
+				}
+			]
+		},
+		{
+			"id": "b0489f9f-8c62-45db-a05e-672dbd111edf",
+			"name": "Environment Controller get Trend",
+			"url": "http://localhost:4000/api/environment/trend/string?range=string",
+			"time": 512,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"[GET]::/environment/trend/:zoneId - Status code is 2xx": true
+			},
+			"testPassFailCounts": {
+				"[GET]::/environment/trend/:zoneId - Status code is 2xx": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				512
+			],
+			"allTests": [
+				{
+					"[GET]::/environment/trend/:zoneId - Status code is 2xx": true
+				}
+			]
+		},
+		{
+			"id": "314f8b76-925f-467c-a9ed-f02b4337ae2f",
+			"name": "Environment Controller get Circulation",
+			"url": "http://localhost:4000/api/environment/circulation",
+			"time": 420,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"[GET]::/environment/circulation - Status code is 2xx": true,
+				"[GET]::/environment/circulation - Content-Type is application/json": true,
+				"[GET]::/environment/circulation - Response has JSON Body": true,
+				"[GET]::/environment/circulation - Schema is valid": true
+			},
+			"testPassFailCounts": {
+				"[GET]::/environment/circulation - Status code is 2xx": {
+					"pass": 1,
+					"fail": 0
+				},
+				"[GET]::/environment/circulation - Content-Type is application/json": {
+					"pass": 1,
+					"fail": 0
+				},
+				"[GET]::/environment/circulation - Response has JSON Body": {
+					"pass": 1,
+					"fail": 0
+				},
+				"[GET]::/environment/circulation - Schema is valid": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				420
+			],
+			"allTests": [
+				{
+					"[GET]::/environment/circulation - Status code is 2xx": true,
+					"[GET]::/environment/circulation - Content-Type is application/json": true,
+					"[GET]::/environment/circulation - Response has JSON Body": true,
+					"[GET]::/environment/circulation - Schema is valid": true
+				}
+			]
+		},
+		{
+			"id": "e93a1f5c-85b5-486d-9ef8-575b04b59abc",
+			"name": "Environment Controller get Actuator State",
+			"url": "http://localhost:4000/api/environment/actuator/string",
+			"time": 4,
+			"responseCode": {
+				"code": 500,
+				"name": "Internal Server Error"
+			},
+			"tests": {
+				"[GET]::/environment/actuator/:sectionId - Status code is 2xx": false
+			},
+			"testPassFailCounts": {
+				"[GET]::/environment/actuator/:sectionId - Status code is 2xx": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				4
+			],
+			"allTests": [
+				{
+					"[GET]::/environment/actuator/:sectionId - Status code is 2xx": false
+				}
+			]
+		},
+		{
+			"id": "e9c80d6b-7806-4a56-8e03-74459b7a488d",
+			"name": "Environment Controller toggle Actuator",
+			"url": "http://localhost:4000/api/environment/actuator/string",
+			"time": 2,
+			"responseCode": {
+				"code": 500,
+				"name": "Internal Server Error"
+			},
+			"tests": {
+				"[PATCH]::/environment/actuator/:sectionId - Status code is 2xx": false
+			},
+			"testPassFailCounts": {
+				"[PATCH]::/environment/actuator/:sectionId - Status code is 2xx": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				2
+			],
+			"allTests": [
+				{
+					"[PATCH]::/environment/actuator/:sectionId - Status code is 2xx": false
+				}
+			]
+		},
+		{
+			"id": "ae05a525-6cc0-48eb-9fe5-e638bc527439",
+			"name": "Zone Controller find All",
+			"url": "http://localhost:4000/api/zones",
+			"time": 945,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"[GET]::/zones - Status code is 2xx": true,
+				"[GET]::/zones - Content-Type is application/json": true,
+				"[GET]::/zones - Response has JSON Body": true,
+				"[GET]::/zones - Schema is valid": true
+			},
+			"testPassFailCounts": {
+				"[GET]::/zones - Status code is 2xx": {
+					"pass": 1,
+					"fail": 0
+				},
+				"[GET]::/zones - Content-Type is application/json": {
+					"pass": 1,
+					"fail": 0
+				},
+				"[GET]::/zones - Response has JSON Body": {
+					"pass": 1,
+					"fail": 0
+				},
+				"[GET]::/zones - Schema is valid": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				945
+			],
+			"allTests": [
+				{
+					"[GET]::/zones - Status code is 2xx": true,
+					"[GET]::/zones - Content-Type is application/json": true,
+					"[GET]::/zones - Response has JSON Body": true,
+					"[GET]::/zones - Schema is valid": true
+				}
+			]
+		},
+		{
+			"id": "747795c1-f35e-47be-b86d-973bb8bdcaf0",
+			"name": "Zone Controller create",
+			"url": "http://localhost:4000/api/zones",
+			"time": 4,
+			"responseCode": {
+				"code": 500,
+				"name": "Internal Server Error"
+			},
+			"tests": {
+				"[POST] /zones - Akses untuk SUPER_ADMIN": false
+			},
+			"testPassFailCounts": {
+				"[POST] /zones - Akses untuk SUPER_ADMIN": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				4
+			],
+			"allTests": [
+				{
+					"[POST] /zones - Akses untuk SUPER_ADMIN": false
+				}
+			]
+		},
+		{
+			"id": "569bc497-dcb9-4040-97ae-e1fee6aa1033",
+			"name": "Zone Controller add Section",
+			"url": "http://localhost:4000/api/zones/string/sections",
+			"time": 2,
+			"responseCode": {
+				"code": 500,
+				"name": "Internal Server Error"
+			},
+			"tests": {
+				"[POST] /zones/:id/sections - Akses untuk SUPER_ADMIN": false
+			},
+			"testPassFailCounts": {
+				"[POST] /zones/:id/sections - Akses untuk SUPER_ADMIN": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				2
+			],
+			"allTests": [
+				{
+					"[POST] /zones/:id/sections - Akses untuk SUPER_ADMIN": false
+				}
+			]
+		},
+		{
+			"id": "46c881e1-c133-41b8-969c-5b0d5c1db766",
+			"name": "Zone Controller remove Section",
+			"url": "http://localhost:4000/api/zones/sections/string",
+			"time": 4,
+			"responseCode": {
+				"code": 500,
+				"name": "Internal Server Error"
+			},
+			"tests": {
+				"[DELETE] /zones/sections/:id - Akses untuk SUPER_ADMIN": false
+			},
+			"testPassFailCounts": {
+				"[DELETE] /zones/sections/:id - Akses untuk SUPER_ADMIN": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				4
+			],
+			"allTests": [
+				{
+					"[DELETE] /zones/sections/:id - Akses untuk SUPER_ADMIN": false
+				}
+			]
+		},
+		{
+			"id": "24cb8e4a-6c72-4cb0-83cd-efa2418e41b7",
+			"name": "Zone Controller update",
+			"url": "http://localhost:4000/api/zones/string",
+			"time": 5,
+			"responseCode": {
+				"code": 500,
+				"name": "Internal Server Error"
+			},
+			"tests": {
+				"[PATCH] /zones/:id - Akses untuk SUPER_ADMIN": false
+			},
+			"testPassFailCounts": {
+				"[PATCH] /zones/:id - Akses untuk SUPER_ADMIN": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				5
+			],
+			"allTests": [
+				{
+					"[PATCH] /zones/:id - Akses untuk SUPER_ADMIN": false
+				}
+			]
+		},
+		{
+			"id": "84a697d9-9a5d-499d-9f70-6a36de965c4b",
+			"name": "Zone Controller remove",
+			"url": "http://localhost:4000/api/zones/string",
+			"time": 5,
+			"responseCode": {
+				"code": 500,
+				"name": "Internal Server Error"
+			},
+			"tests": {
+				"[DELETE] /zones/:id - Akses untuk SUPER_ADMIN": false
+			},
+			"testPassFailCounts": {
+				"[DELETE] /zones/:id - Akses untuk SUPER_ADMIN": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				5
+			],
+			"allTests": [
+				{
+					"[DELETE] /zones/:id - Akses untuk SUPER_ADMIN": false
+				}
+			]
+		}
+	],
+	"count": 1,
+	"totalTime": 39537,
+	"collection": {
+		"requests": [
+			{
+				"id": "f31ba2d7-15b9-4519-be95-773c310a3771",
+				"method": "GET"
+			},
+			{
+				"id": "03fa898d-cc3c-4c02-880a-70eaf267356b",
+				"method": "POST"
+			},
+			{
+				"id": "5e8ca487-1b41-4ba5-940d-4233e4bd2629",
+				"method": "POST"
+			},
+			{
+				"id": "a8a7541e-6d14-444e-9591-36d5c6652808",
+				"method": "GET"
+			},
+			{
+				"id": "f55ff7c8-0ca0-48e6-b0aa-d579e4ee8cb7",
+				"method": "GET"
+			},
+			{
+				"id": "c367b6b7-c148-4af9-b1ca-782b8d0945f8",
+				"method": "GET"
+			},
+			{
+				"id": "28c18288-ee09-4965-80e4-978aa22d4a79",
+				"method": "POST"
+			},
+			{
+				"id": "dbff841f-544e-4227-95a4-4030ce7b2736",
+				"method": "POST"
+			},
+			{
+				"id": "e6e3f8db-a9d9-433a-b949-2f5d4b8c4dcf",
+				"method": "GET"
+			},
+			{
+				"id": "e45d8523-5c18-4442-a7ce-503406f55860",
+				"method": "GET"
+			},
+			{
+				"id": "f3077f3e-c106-443b-b21a-b3110d57e012",
+				"method": "POST"
+			},
+			{
+				"id": "968bef93-41ee-499b-8ff0-d48d91e987ac",
+				"method": "GET"
+			},
+			{
+				"id": "123e7750-4bad-4aa4-bbb7-8c2a3236aa7e",
+				"method": "GET"
+			},
+			{
+				"id": "46da8674-af2e-40c2-93ef-b4b7262e3b6f",
+				"method": "POST"
+			},
+			{
+				"id": "23d41bc2-61bd-46d2-8e36-534692480e95",
+				"method": "GET"
+			},
+			{
+				"id": "20892393-60a5-41ce-80ed-72e9ca394d8c",
+				"method": "POST"
+			},
+			{
+				"id": "43f1f735-e21d-4c35-9b9c-4d04a3e0728c",
+				"method": "POST"
+			},
+			{
+				"id": "741ed7d2-36f7-4988-adac-18d8971eabc3",
+				"method": "POST"
+			},
+			{
+				"id": "7903f6f6-2097-4e65-834f-d860cc3959a2",
+				"method": "GET"
+			},
+			{
+				"id": "f946df64-8bb1-4550-b887-17ad69ef71ec",
+				"method": "POST"
+			},
+			{
+				"id": "7bed743d-4fba-499b-9c15-c989258676dc",
+				"method": "POST"
+			},
+			{
+				"id": "f4473b64-2850-475f-870e-9dd3bc16305a",
+				"method": "GET"
+			},
+			{
+				"id": "cc35610e-45f8-4089-babf-947816ca5e3f",
+				"method": "GET"
+			},
+			{
+				"id": "ce330fc9-fe8a-4128-a3bb-7ad91a908c79",
+				"method": "PATCH"
+			},
+			{
+				"id": "95feaebc-547e-4de9-9581-21f0081fae8e",
+				"method": "DELETE"
+			},
+			{
+				"id": "a7e64401-8411-41b6-b7e4-8c8d93fa93f6",
+				"method": "PATCH"
+			},
+			{
+				"id": "c61acf08-bbc4-4656-80cc-41921512a3c3",
+				"method": "DELETE"
+			},
+			{
+				"id": "01f4d800-2532-406e-9577-3ccec41b89e8",
+				"method": "PATCH"
+			},
+			{
+				"id": "e7b755dc-d0d8-40db-b3c9-959a808b1a43",
+				"method": "DELETE"
+			},
+			{
+				"id": "d75c059a-21d8-4ce5-a864-d70e6d57e378",
+				"method": "PATCH"
+			},
+			{
+				"id": "176e1e55-f6f5-45a6-ac1d-bc5103d6e6d0",
+				"method": "DELETE"
+			},
+			{
+				"id": "f18d4929-6c8d-4f86-bf74-546ecac1880c",
+				"method": "GET"
+			},
+			{
+				"id": "769fa2b7-c724-448c-a4ae-cfca07539f11",
+				"method": "PATCH"
+			},
+			{
+				"id": "bc751fd2-d5f8-434a-a3ab-f512d4cf5c2c",
+				"method": "DELETE"
+			},
+			{
+				"id": "aae8ee72-3c02-4f9a-a58d-eb6d1bdc30d3",
+				"method": "GET"
+			},
+			{
+				"id": "b204c6ce-19df-453b-857d-1119ae848569",
+				"method": "GET"
+			},
+			{
+				"id": "2af3d318-7095-4a1e-8fa2-8ad5127011db",
+				"method": "GET"
+			},
+			{
+				"id": "c3fdc470-bb9d-414d-a398-68755f253c58",
+				"method": "POST"
+			},
+			{
+				"id": "26afdd80-f64b-45ea-85f9-98a9f9c95aa6",
+				"method": "POST"
+			},
+			{
+				"id": "31a3f080-38ad-4acf-8ec9-cd376cd9ca96",
+				"method": "PATCH"
+			},
+			{
+				"id": "13e10a14-afd6-4122-8752-f5474d7e4186",
+				"method": "DELETE"
+			},
+			{
+				"id": "ef08dcbf-f704-419a-98c8-d6b61eb21564",
+				"method": "GET"
+			},
+			{
+				"id": "85a2d10a-a8aa-4a45-81da-5056e63186a6",
+				"method": "POST"
+			},
+			{
+				"id": "85f44ef7-34a3-461f-a0ce-6dfedc47806a",
+				"method": "PATCH"
+			},
+			{
+				"id": "9ac55407-87ab-4578-b1a1-50e2046943c3",
+				"method": "DELETE"
+			},
+			{
+				"id": "a24f1ce5-de15-4f25-b580-f38443ea0c66",
+				"method": "PATCH"
+			},
+			{
+				"id": "8df4dded-3b7e-4b03-a194-dc0cafeadbd4",
+				"method": "GET"
+			},
+			{
+				"id": "0412829e-0671-463b-a551-c98fde846f8f",
+				"method": "POST"
+			},
+			{
+				"id": "a8ac62de-f6fb-4d43-8062-51e90e962cf0",
+				"method": "PATCH"
+			},
+			{
+				"id": "e79668f0-daba-4891-bf6f-0a90fb67f5ff",
+				"method": "DELETE"
+			},
+			{
+				"id": "6f6a9060-46f3-494e-b7d9-b3e635df9e42",
+				"method": "GET"
+			},
+			{
+				"id": "031d0fce-9cc7-4335-ad43-7afc10c19cef",
+				"method": "GET"
+			},
+			{
+				"id": "685b57b1-7d61-45d7-9c42-e88e00620b16",
+				"method": "POST"
+			},
+			{
+				"id": "26733f44-12bd-40e0-bfe2-d08bd039033d",
+				"method": "GET"
+			},
+			{
+				"id": "0f239fab-db5d-41ad-8e85-6bc38a3537f0",
+				"method": "POST"
+			},
+			{
+				"id": "1c080fd1-59d5-4b31-9373-9c7a7f18d1c2",
+				"method": "GET"
+			},
+			{
+				"id": "45b05791-4a13-40d0-a178-9f14b5bfdda6",
+				"method": "PATCH"
+			},
+			{
+				"id": "abcb4070-a8e8-40fe-91c8-8efcea25ee25",
+				"method": "DELETE"
+			},
+			{
+				"id": "67974894-c66b-46e7-8e51-539fb366445f",
+				"method": "GET"
+			},
+			{
+				"id": "f4e17ea2-1ff6-4701-887f-fd4054752964",
+				"method": "PATCH"
+			},
+			{
+				"id": "288b8419-628e-4893-9d71-c8f9037d5693",
+				"method": "DELETE"
+			},
+			{
+				"id": "b743b78c-4bd0-4123-8fbe-4bd50aa9434b",
+				"method": "GET"
+			},
+			{
+				"id": "c7802afe-8668-4785-9df9-4272f56f276a",
+				"method": "POST"
+			},
+			{
+				"id": "efc82822-7df5-4075-b809-af69f3486f76",
+				"method": "PATCH"
+			},
+			{
+				"id": "b931a2bb-89a4-4abf-b958-ee6c6fd92943",
+				"method": "PATCH"
+			},
+			{
+				"id": "67a58dd0-2cec-4908-bb7b-5ba71f6e50f3",
+				"method": "PATCH"
+			},
+			{
+				"id": "4c908a3e-6e82-4c8f-b975-4c1ab29d3f3e",
+				"method": "GET"
+			},
+			{
+				"id": "1a80611b-3ce6-4c27-aeca-18636f45214c",
+				"method": "POST"
+			},
+			{
+				"id": "6b9701a9-50ee-4270-adda-c23d704ba5f5",
+				"method": "GET"
+			},
+			{
+				"id": "6780beec-2d9f-4ded-92d1-02293795d131",
+				"method": "GET"
+			},
+			{
+				"id": "8337eba7-aa27-4d85-b1ea-6d9899d26793",
+				"method": "GET"
+			},
+			{
+				"id": "b0489f9f-8c62-45db-a05e-672dbd111edf",
+				"method": "GET"
+			},
+			{
+				"id": "314f8b76-925f-467c-a9ed-f02b4337ae2f",
+				"method": "GET"
+			},
+			{
+				"id": "e93a1f5c-85b5-486d-9ef8-575b04b59abc",
+				"method": "GET"
+			},
+			{
+				"id": "e9c80d6b-7806-4a56-8e03-74459b7a488d",
+				"method": "PATCH"
+			},
+			{
+				"id": "ae05a525-6cc0-48eb-9fe5-e638bc527439",
+				"method": "GET"
+			},
+			{
+				"id": "747795c1-f35e-47be-b86d-973bb8bdcaf0",
+				"method": "POST"
+			},
+			{
+				"id": "569bc497-dcb9-4040-97ae-e1fee6aa1033",
+				"method": "POST"
+			},
+			{
+				"id": "46c881e1-c133-41b8-969c-5b0d5c1db766",
+				"method": "DELETE"
+			},
+			{
+				"id": "24cb8e4a-6c72-4cb0-83cd-efa2418e41b7",
+				"method": "PATCH"
+			},
+			{
+				"id": "84a697d9-9a5d-499d-9f70-6a36de965c4b",
+				"method": "DELETE"
+			}
+		]
+	}
+}

@@ -1,0 +1,19 @@
+{
+  "id": "e4b6c310-410a-4a1e-8e79-3c72b8d4ab2c",
+  "name": "Smart Cattle Barn - Local Environment",
+  "values": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:4000/api",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "secret",
+      "enabled": true
+    }
+  ],
+  "_postman_variable_scope": "environment"
+}

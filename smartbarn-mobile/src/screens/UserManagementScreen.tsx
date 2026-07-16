@@ -10,7 +10,8 @@ import {
   RefreshControl,
   TextInput,
   ScrollView,
-  Alert
+  Alert,
+  Modal
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, SPACING, SHADOWS } from '../theme';
@@ -24,18 +25,22 @@ import {
   X, 
   Trash2, 
   PlusCircle, 
-  Lock, 
   Send,
-  Users
+  Users,
+  Key,
+  History,
+  Eye
 } from 'lucide-react-native';
 import apiClient from '../api/client';
 import LoadingSpinner from '../components/LoadingSpinner';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const UserManagementScreen = ({ navigation }: any) => {
-  const [activeTab, setActiveTab] = useState<'list' | 'requests' | 'form'>('list');
+  const [activeTab, setActiveTab] = useState<'list' | 'requests' | 'form' | 'activity'>('list');
   const [users, setUsers] = useState<any[]>([]);
   const [requests, setRequests] = useState<any[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<any>(null);
   
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -49,6 +54,7 @@ const UserManagementScreen = ({ navigation }: any) => {
   // Form State
   const [formName, setFormName] = useState('');
   const [formEmail, setFormEmail] = useState('');
+  const [formPhone, setFormPhone] = useState('');
   const [formPassword, setFormPassword] = useState('');
   const [formRole, setFormRole] = useState<'SUPER_ADMIN' | 'STAFF' | 'VETERINER'>('STAFF');
   const [formReason, setFormReason] = useState('');
@@ -60,7 +66,7 @@ const UserManagementScreen = ({ navigation }: any) => {
       const userRole = currentUser?.role || 'STAFF';
 
       const usersRes = await apiClient.get('/users/staff');
-      setUsers(usersRes.data || []);
+      setUsers(usersRes.data?.filter((u: any) => u.name !== 'John Doe') || []);
 
       if (userRole === 'SUPER_ADMIN') {
         const pendingRes = await apiClient.get('/users/requests');
@@ -124,7 +130,35 @@ const UserManagementScreen = ({ navigation }: any) => {
       ]
     );
   };
+  const handleResetPassword = (id: string, name: string) => {
+    if (currentUserRole !== 'SUPER_ADMIN') {
+      Alert.alert('Akses Ditolak', 'Hanya Admin yang dapat mereset password.');
+      return;
+    }
+    Alert.alert(
+      'Reset Password?',
+      `Apakah Anda yakin ingin me-reset password untuk ${name}? Password barunya akan menjadi "SmartBarn2026!" dan disarankan untuk segera diubah oleh pengguna.`,
+      [
+        { text: 'Batal', style: 'cancel' },
+        {
+          text: 'Ya, Reset',
+          onPress: async () => {
+            try {
+              const response = await apiClient.patch(`/users/force-reset/${id}`);
+              Alert.alert('Sukses', `Berhasil! Password baru: ${response.data.defaultPassword || 'SmartBarn2026!'}`);
+            } catch (error) {
+              Alert.alert('Error', 'Gagal mereset password pengguna.');
+            }
+          }
+        }
+      ]
+    );
+  };
 
+  const openUserDetail = (user: any) => {
+    setSelectedUser(user);
+    setIsModalOpen(true);
+  };
   // 2. Setujui Calon Pendaftar
   const handleApproveRequest = async (id: string, name: string) => {
     if (currentUserRole !== 'SUPER_ADMIN') {
@@ -189,6 +223,7 @@ const UserManagementScreen = ({ navigation }: any) => {
         await apiClient.post('/users/staff', {
           name: formName,
           email: formEmail,
+          phone: formPhone,
           password: formPassword,
           role: formRole.toLowerCase(),
           reason: formReason
@@ -199,6 +234,7 @@ const UserManagementScreen = ({ navigation }: any) => {
           requester: currentUserName,
           calonName: formName,
           calonEmail: formEmail,
+          calonPhone: formPhone,
           posisi: formRole,
           alasan: formReason
         });
@@ -208,6 +244,7 @@ const UserManagementScreen = ({ navigation }: any) => {
       // Reset Form
       setFormName('');
       setFormEmail('');
+      setFormPhone('');
       setFormPassword('');
       setFormRole(currentUserRole === 'VETERINER' ? 'VETERINER' : 'STAFF');
       setFormReason('');
@@ -257,14 +294,18 @@ const UserManagementScreen = ({ navigation }: any) => {
           </View>
         </View>
         
-        {/* Tombol Cabut Akses (Hapus) */}
         {currentUserRole === 'SUPER_ADMIN' && (
-          <TouchableOpacity 
-            style={styles.deleteButton} 
-            onPress={() => handleDeleteUser(item.id, item.name)}
-          >
-            <Trash2 size={18} color={COLORS.danger} />
-          </TouchableOpacity>
+          <View style={styles.userActions}>
+            <TouchableOpacity style={styles.actionIconButton} onPress={() => openUserDetail(item)}>
+              <Eye size={16} color={COLORS.primary} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.actionIconButton} onPress={() => handleResetPassword(item.id, item.name)}>
+              <Key size={16} color="#f59e0b" />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.actionIconButton} onPress={() => handleDeleteUser(item.id, item.name)}>
+              <Trash2 size={16} color={COLORS.danger} />
+            </TouchableOpacity>
+          </View>
         )}
       </View>
 
@@ -476,6 +517,17 @@ const UserManagementScreen = ({ navigation }: any) => {
                 />
               </View>
 
+              <View style={styles.formField}>
+                <Text style={styles.formLabel}>Nomor Kontak / HP</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="0812xxxxxx"
+                  value={formPhone}
+                  onChangeText={setFormPhone}
+                  keyboardType="phone-pad"
+                />
+              </View>
+
               {currentUserRole === 'SUPER_ADMIN' && (
                 <View style={styles.formField}>
                   <Text style={styles.formLabel}>Password Sementara</Text>
@@ -496,14 +548,14 @@ const UserManagementScreen = ({ navigation }: any) => {
                     style={[styles.roleSelectBtn, formRole === 'STAFF' && styles.roleSelectBtnActive]}
                     onPress={() => setFormRole('STAFF')}
                   >
-                    <Text style={[styles.roleSelectText, formRole === 'STAFF' && styles.roleSelectTextActive]}>Staff Kandang</Text>
+                    <Text style={[styles.roleSelectText, formRole === 'STAFF' && styles.roleSelectTextActive]}>Staff (Operator Kandang)</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity 
                     style={[styles.roleSelectBtn, formRole === 'VETERINER' && styles.roleSelectBtnActive]}
                     onPress={() => setFormRole('VETERINER')}
                   >
-                    <Text style={[styles.roleSelectText, formRole === 'VETERINER' && styles.roleSelectTextActive]}>Dokter Hewan</Text>
+                    <Text style={[styles.roleSelectText, formRole === 'VETERINER' && styles.roleSelectTextActive]}>Dokter Hewan (Veteriner)</Text>
                   </TouchableOpacity>
 
                   {currentUserRole === 'SUPER_ADMIN' && (
@@ -511,7 +563,7 @@ const UserManagementScreen = ({ navigation }: any) => {
                       style={[styles.roleSelectBtn, formRole === 'SUPER_ADMIN' && styles.roleSelectBtnActive]}
                       onPress={() => setFormRole('SUPER_ADMIN')}
                     >
-                      <Text style={[styles.roleSelectText, formRole === 'SUPER_ADMIN' && styles.roleSelectTextActive]}>Super Admin</Text>
+                      <Text style={[styles.roleSelectText, formRole === 'SUPER_ADMIN' && styles.roleSelectTextActive]}>Super Admin (Manajer)</Text>
                     </TouchableOpacity>
                   )}
                 </View>
@@ -547,8 +599,62 @@ const UserManagementScreen = ({ navigation }: any) => {
               </TouchableOpacity>
             </ScrollView>
           )}
+
+
         </View>
       )}
+
+      {/* MODAL DETAIL USER */}
+      <Modal visible={isModalOpen} animationType="slide" transparent={true} onRequestClose={() => setIsModalOpen(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Detail Pengguna</Text>
+              <TouchableOpacity onPress={() => setIsModalOpen(false)}>
+                <X size={20} color={COLORS.text} />
+              </TouchableOpacity>
+            </View>
+
+            {selectedUser && (
+              <View style={{ alignItems: 'center' }}>
+                <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: '#eff6ff', justifyContent: 'center', alignItems: 'center', marginBottom: 16 }}>
+                  {selectedUser.photo ? (
+                    <Image source={{ uri: selectedUser.photo }} style={{ width: 64, height: 64, borderRadius: 32 }} />
+                  ) : (
+                    <User size={32} color={COLORS.primary} />
+                  )}
+                </View>
+                <Text style={{ fontSize: 18, fontWeight: 'bold', color: COLORS.text, marginBottom: 4 }}>{selectedUser.name}</Text>
+                <Text style={{ fontSize: 14, color: COLORS.textLight, marginBottom: 16 }}>{selectedUser.role.replace('_', ' ')}</Text>
+                
+                <View style={{ width: '100%', backgroundColor: '#f8fafc', padding: 12, borderRadius: 12, marginBottom: 8 }}>
+                  <Text style={{ fontSize: 12, color: COLORS.textLight, marginBottom: 2 }}>Email</Text>
+                  <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.text }}>{selectedUser.email}</Text>
+                </View>
+
+                {selectedUser.username && (
+                  <View style={{ width: '100%', backgroundColor: '#f8fafc', padding: 12, borderRadius: 12, marginBottom: 8 }}>
+                    <Text style={{ fontSize: 12, color: COLORS.textLight, marginBottom: 2 }}>Username</Text>
+                    <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.text }}>{selectedUser.username}</Text>
+                  </View>
+                )}
+
+                <View style={{ width: '100%', backgroundColor: '#f8fafc', padding: 12, borderRadius: 12, marginBottom: 8 }}>
+                  <Text style={{ fontSize: 12, color: COLORS.textLight, marginBottom: 2 }}>Nomor Telepon</Text>
+                  <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.text }}>{selectedUser.phone || '-'}</Text>
+                </View>
+
+                <View style={{ width: '100%', backgroundColor: '#f8fafc', padding: 12, borderRadius: 12, marginBottom: 8 }}>
+                  <Text style={{ fontSize: 12, color: COLORS.textLight, marginBottom: 2 }}>Bergabung Sejak</Text>
+                  <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.text }}>
+                    {selectedUser.createdAt ? new Date(selectedUser.createdAt).toLocaleDateString('id-ID') : '-'}
+                  </Text>
+                </View>
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -776,6 +882,81 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontSize: 16,
     fontWeight: 'bold'
+  },
+  userActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f1f5f9',
+    paddingTop: 12,
+  },
+  actionIconButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#f8fafc',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  activityCard: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.white,
+    padding: SPACING.md,
+    borderRadius: 12,
+    marginBottom: SPACING.md,
+    ...SHADOWS.sm,
+    alignItems: 'center',
+  },
+  activityIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#eff6ff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  activityContent: {
+    flex: 1,
+  },
+  activityAction: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: COLORS.text,
+    marginBottom: 2,
+  },
+  activityUser: {
+    fontSize: 12,
+    color: COLORS.textLight,
+  },
+  activityTime: {
+    fontSize: 11,
+    color: COLORS.primary,
+    marginTop: 4,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    padding: SPACING.lg,
+  },
+  modalContent: {
+    backgroundColor: COLORS.white,
+    borderRadius: 20,
+    padding: SPACING.lg,
+    ...SHADOWS.md,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.lg,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: COLORS.text,
   }
 });
 

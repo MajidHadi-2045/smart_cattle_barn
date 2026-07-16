@@ -123,6 +123,54 @@ export class IotService implements OnModuleInit, OnModuleDestroy {
       const RH = parseFloat(data.humidity) / 100;
       const thi = (0.8 * T) + (RH * (T - 14.4)) + 46.4;
 
+      // ==============================================================
+      // IMPLEMENTASI UNTUK SKRIPSI: SMART PUSH NOTIFICATION (DEBOUNCING)
+      // ==============================================================
+      if (thi > 75) { // 75 = Sapi mulai stres panas
+        const alertKey = `alert:thi:zone:${zoneId}`;
+        const hasAlerted = await this.redisPub.get(alertKey);
+        
+        // JIKA BELUM ADA PERINGATAN DALAM 30 MENIT TERAKHIR
+        if (!hasAlerted) {
+           // 1. Kunci selama 30 Menit (1800 detik) agar HP pegawai tidak meledak dibanjiri notifikasi
+           await this.redisPub.set(alertKey, '1', 'EX', 1800);
+           
+           // 2. Ambil token HP khusus untuk peran MANAGER dan STAFF (Dokter Hewan diabaikan)
+           const targets = await this.prisma.user.findMany({
+             where: { 
+               role: { in: ['MANAGER', 'STAFF'] }, 
+               pushToken: { not: null } 
+             }
+           });
+           
+           // 3. Tembak Notifikasi ke masing-masing HP
+           const { sendPushNotification } = require('../utils/expoPush');
+           const title = "⚠️ BAHAYA STRES PANAS SAPI!";
+           const body = `Kandang ${zoneId} sangat panas (THI: ${thi.toFixed(1)}). Segera nyalakan Blower/Kipas!`;
+
+           targets.forEach(user => {
+              sendPushNotification(user.pushToken, title, body);
+           });
+
+           // 4. SIARKAN JUGA KE WEBSITE (DASHBOARD) AGAR MUNCUL POP-UP
+           const notifPayload = {
+             id: Date.now(),
+             title,
+             body,
+             timestamp: new Date().toISOString()
+           };
+
+           this.redisPub.publish('websocket:alert', JSON.stringify(notifPayload));
+           
+           // Simpan ke history notifikasi agar tidak hilang
+           await this.redisPub.lpush('system:notifications', JSON.stringify(notifPayload));
+           await this.redisPub.ltrim('system:notifications', 0, 49);
+
+           this.logger.warn(`Push Notification dikirim ke ${targets.length} pegawai untuk bahaya THI Kandang ${zoneId}.`);
+        }
+      }
+      // ==============================================================
+
       // Update the "live" key for dashboard
       try {
         await this.redisPub.set(`live:zone:${zoneId}:environment`, JSON.stringify({ 

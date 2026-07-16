@@ -18,6 +18,7 @@ interface LivestockFormModalProps {
   onSubmit: (data: any) => void;
   initialData?: any;
   loading?: boolean;
+  zones?: any[];
 }
 
 const LivestockFormModal = ({ 
@@ -25,15 +26,17 @@ const LivestockFormModal = ({
   onClose, 
   onSubmit, 
   initialData,
-  loading 
+  loading,
+  zones = []
 }: LivestockFormModalProps) => {
   const [formData, setFormData] = useState({
     cattleId: '',
     breed: '',
     gender: 'BETINA',
-    zone: 'ZONA_1',
     status: 'SEHAT',
-    weight: ''
+    weight: '',
+    zoneId: '',
+    sectionId: ''
   });
 
   useEffect(() => {
@@ -42,21 +45,26 @@ const LivestockFormModal = ({
         cattleId: initialData.cattleId || '',
         breed: initialData.breed || '',
         gender: initialData.gender || 'BETINA',
-        zone: initialData.zone || 'ZONA_1',
         status: initialData.status || 'SEHAT',
-        weight: initialData.weight?.toString() || ''
+        weight: initialData.weight?.toString() || '',
+        zoneId: initialData.zoneId?.toString() || '',
+        sectionId: initialData.sectionId?.toString() || ''
       });
     } else {
       setFormData({
         cattleId: '',
         breed: '',
         gender: 'BETINA',
-        zone: 'ZONA_1',
         status: 'SEHAT',
-        weight: ''
+        weight: '',
+        zoneId: '',
+        sectionId: ''
       });
     }
   }, [initialData, visible]);
+
+  const selectedZone = zones.find(z => z.id.toString() === formData.zoneId);
+  const sections = selectedZone?.sections || [];
 
   const handleSubmit = () => {
     onSubmit(formData);
@@ -134,15 +142,20 @@ const LivestockFormModal = ({
             />
 
             <OptionSelector 
-              label="Lokasi Kandang"
-              value={formData.zone}
-              onSelect={(val: any) => setFormData({...formData, zone: val})}
-              options={[
-                { label: 'Kandang 1', value: 'ZONA_1' },
-                { label: 'Kandang 2', value: 'ZONA_2' },
-                { label: 'Kandang 3', value: 'ZONA_3' }
-              ]}
+              label="Lokasi Kandang (Zone)"
+              value={formData.zoneId}
+              onSelect={(val: any) => setFormData({...formData, zoneId: val, sectionId: ''})}
+              options={zones.map(z => ({ label: z.name, value: z.id.toString() }))}
             />
+
+            {sections.length > 0 && (
+              <OptionSelector 
+                label="Section Kandang"
+                value={formData.sectionId}
+                onSelect={(val: any) => setFormData({...formData, sectionId: val})}
+                options={sections.map((s: any) => ({ label: s.name, value: s.id.toString() }))}
+              />
+            )}
 
             <OptionSelector 
               label="Status Kesehatan"

@@ -18,6 +18,9 @@ export const useSocket = (eventNames: string[]) => {
         transports: ['websocket'],
       });
 
+      // Pengecekan status saat ini (untuk jaga-jaga jika terhubung instan)
+      setIsConnected(socketRef.current.connected);
+
       socketRef.current.on('connect', () => {
         setIsConnected(true);
         console.log('Socket Connected to:', BASE_URL);
@@ -44,7 +47,7 @@ export const useSocket = (eventNames: string[]) => {
     return () => {
       socketRef.current?.disconnect();
     };
-  }, []);
+  }, [eventNames.join(',')]);
 
   const emit = (event: string, payload: any) => {
     socketRef.current?.emit(event, payload);

@@ -183,39 +183,41 @@ export class FeedService {
       const todayStart = new Date();
       todayStart.setHours(0, 0, 0, 0);
 
-      const allCows = await this.prisma.livestock.findMany({
-        where: { status: { not: 'MATI' } },
-        select: {
-          id: true,
-          section: { select: { zoneId: true } },
-          feedRecords: {
-            where: { feedDate: { gte: todayStart } },
-            select: { id: true }
+      schedules = rawSchedules.map(schedule => {
+        // @ts-ignore
+        const isUpdatedToday = schedule.updatedAt && new Date(schedule.updatedAt) >= todayStart;
+        
+        let status: string = isUpdatedToday ? schedule.status : 'BELUM';
+        // @ts-ignore
+        let isLate = schedule.isLate || false;
+
+        // Evaluasi TELAT hanya saat status masih BELUM
+        if (status === 'BELUM' && schedule.time) {
+          const now = new Date();
+          const currentHour = now.getHours();
+          const currentMinute = now.getMinutes();
+          const currentTimeInMinutes = currentHour * 60 + currentMinute;
+          
+          const timeParts = schedule.time.split('-');
+          const endTimeStr = timeParts.length > 1 ? timeParts[1].trim() : timeParts[0].trim();
+          const [endHour, endMinute] = endTimeStr.split(':').map(Number);
+          
+          if (!isNaN(endHour) && !isNaN(endMinute)) {
+             const endTimeInMinutes = endHour * 60 + endMinute;
+             if (currentTimeInMinutes > endTimeInMinutes) {
+                 status = 'TELAT'; // Akan dirender frontend menjadi tulisan "TELAT"
+             }
           }
         }
-      });
-
-      const cowsByZone: Record<number, any[]> = {};
-      allCows.forEach(cow => {
-        const zId = cow.section?.zoneId;
-        if (zId !== undefined) {
-          if (!cowsByZone[zId]) cowsByZone[zId] = [];
-          cowsByZone[zId].push(cow);
-        }
-      });
-
-      schedules = rawSchedules.map(schedule => {
-        const zId = schedule.zoneId;
-        const cowsInZone = cowsByZone[zId] || [];
         
-        let isDone = false;
-        if (cowsInZone.length > 0) {
-          isDone = cowsInZone.every(cow => cow.feedRecords && cow.feedRecords.length > 0);
+        // Jika sudah manual selesai (SUDAH) tapi telat
+        if (status === 'SUDAH' && isLate) {
+            status = 'SUDAH_TELAT';
         }
         
         return {
           ...schedule,
-          status: isDone ? 'SUDAH' : 'BELUM'
+          status: status
         };
       });
 
@@ -270,6 +272,28 @@ export class FeedService {
       }
       updateData.zoneId = zoneId;
       delete updateData.location; // Hapus field lama jika ada
+    }
+    
+    // Logika perhitungan telat saat di-toggle manual ke SUDAH
+    if (data.status === 'SUDAH') {
+       const schedule = await this.prisma.feedingSchedule.findUnique({ where: { id: parseInt(id as any) } });
+       if (schedule && schedule.time) {
+          const now = new Date();
+          const currentHour = now.getHours();
+          const currentMinute = now.getMinutes();
+          const currentTimeInMinutes = currentHour * 60 + currentMinute;
+          
+          const timeParts = schedule.time.split('-');
+          const endTimeStr = timeParts.length > 1 ? timeParts[1].trim() : timeParts[0].trim();
+          const [endHour, endMinute] = endTimeStr.split(':').map(Number);
+          
+          if (!isNaN(endHour) && !isNaN(endMinute)) {
+             const endTimeInMinutes = endHour * 60 + endMinute;
+             updateData.isLate = currentTimeInMinutes > endTimeInMinutes;
+          }
+       }
+    } else if (data.status === 'BELUM') {
+       updateData.isLate = false;
     }
 
     const updated = await this.prisma.feedingSchedule.update({
@@ -411,4 +435,4 @@ export class FeedService {
       };
     }
   }
-}
+}// trigger restart 

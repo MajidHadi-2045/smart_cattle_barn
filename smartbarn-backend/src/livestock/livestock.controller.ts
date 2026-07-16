@@ -8,6 +8,8 @@ import { LivestockGateway } from './livestock.gateway';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { Redis } from 'ioredis';
+import { CreateLivestockDto } from './dto/create-livestock.dto';
+
 
 @Controller('livestock')
 export class LivestockController {
@@ -26,23 +28,23 @@ export class LivestockController {
     this.redis.on('error', () => {});
   }
 
-  // ==========================================
-  // 1. ENDPOINT IOT SENSOR KALUNG SAPI (HIGH VELOCITY)
-  // Payload ESP32: { "cattleId": "C-302", "heartRate": 65, "bodyTemperature": 39.5 }
-  // ==========================================
+  // =========================================================
+  // BAGIAN 1: API PENERIMAAN DATA TELEMETRI SENSOR (REAL-TIME)
+  // Contoh format JSON: { "cattleId": "C-302", "heartRate": 65, "bodyTemperature": 39.5 }
+  // =========================================================
   @Post('vital')
   async receiveVitalData(@Body() data: any) {
-    // A. HOT PATH: Simpan status vital TERAKHIR di RAM (Redis)
+    // TAHAP 1 (IN-MEMORY): Tulis data sensor paling baru ke Redis cache
     try {
       await this.redis.set(`vital:${data.cattleId}`, JSON.stringify(data));
     } catch (err) {
       // Abaikan kegagalan set jika Redis mati
     }
     
-    // B. HOT PATH: Pancarkan langsung ke Frontend untuk grafik EKG bergerak
+    // TAHAP 2 (WEB-SOCKET): Kirim sinyal broadcast seketika ke aplikasi klien (UI/Dashboard)
     this.gateway.server.emit(`vital-update-${data.cattleId}`, data);
 
-    // C. COLD PATH: Masukkan ke antrean untuk disimpan pelan-pelan ke PostgreSQL
+    // TAHAP 3 (BACKGROUND-JOB): Antrekan pemrosesan insert database agar tidak memblokir respon HTTP
     try {
       await this.vitalQueue.add('save-vital', data, { removeOnComplete: true });
     } catch (err) {
@@ -56,6 +58,11 @@ export class LivestockController {
   // 2. ENDPOINT DASHBOARD & FILTER (STATIS)
   // Harus diletakkan di atas endpoint dinamis /:id
   // ==========================================
+  @Get('vital/history/:cattleId')
+  getHistoricalVitals(@Param('cattleId') cattleId: string) {
+    return this.livestockService.getHistoricalVitals(cattleId);
+  }
+
   @Get('stats/:sectionId')
   getStats(@Param('sectionId') sectionId: string) {
     return this.livestockService.getDashboardStats(+sectionId);
@@ -72,7 +79,7 @@ export class LivestockController {
   @Post()
   @UseGuards(AuthGuard, RolesGuard)
   @Roles('STAFF')
-  create(@Body() data: any, @Req() req: any) {
+  create(@Body() data: CreateLivestockDto, @Req() req: any) {
     if (data.birthDate) {
       data.birthDate = new Date(data.birthDate);
     }
@@ -150,9 +157,17 @@ export class LivestockController {
   @Post('feed')
   @UseGuards(AuthGuard, RolesGuard)
   @Roles('STAFF')
-  recordFeed(@Body() data: { cattleId: string, feedType: string, weightKg: number, bkPercent: number }, @Req() req: any) {
+  recordFeed(@Body() data: { cattleId: string, feedType: string, weightKg: number, bkPercent: number, siloId?: number }, @Req() req: any) {
     const author = req.user?.name ? `${req.user.name} (${req.user.role})` : req.user?.email || 'Admin';
-    return this.livestockService.recordFeed(data.cattleId, data.feedType, data.weightKg, data.bkPercent, author);
+    return this.livestockService.recordFeed(data.cattleId, data.feedType, data.weightKg, data.bkPercent, author, data.siloId);
+  }
+
+  @Post('feed-bulk')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('STAFF')
+  recordFeedBulk(@Body() data: { cattleIds: string[], feedType: string, weightKgPerCow: number, bkPercent: number, siloForageId?: number, siloConcentrateId?: number }, @Req() req: any) {
+    const author = req.user?.name ? `${req.user.name} (${req.user.role})` : req.user?.email || 'Admin';
+    return this.livestockService.recordFeedBulk(data.cattleIds, data.feedType, data.weightKgPerCow, data.bkPercent, author, data.siloForageId, data.siloConcentrateId);
   }
 
   @Get('feed-needs/:cattleId')
@@ -166,6 +181,14 @@ export class LivestockController {
   @Get('recent-inputs')
   getRecentInputs() {
     return this.livestockService.getRecentInputs();
+  }
+
+  @Delete('history/batch/:batchId')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('STAFF')
+  deleteBatch(@Param('batchId') batchId: string, @Req() req: any) {
+    const author = req.user?.name ? `${req.user.name} (${req.user.role})` : req.user?.email || 'Admin';
+    return this.livestockService.deleteBatch(batchId, author);
   }
 
   @Patch('feed/:id')
@@ -238,6 +261,14 @@ export class LivestockController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.livestockService.findOne(+id);
+  }
+
+  @Patch('bulk/nutrition')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('STAFF')
+  updateBulkNutrition(@Body() data: { cattleIds: string[], targetBkPercent?: number, forageRatio?: number, concentrateRatio?: number, forageDM?: number, concentrateDM?: number, feedingFrequency?: number }, @Req() req: any) {
+    const author = req.user?.name ? `${req.user.name} (${req.user.role})` : req.user?.email || 'Admin';
+    return this.livestockService.updateBulkNutrition(data.cattleIds, data, author);
   }
 
   @Patch(':id')

@@ -66,6 +66,7 @@ enum LivestockStatus {
 }
 
 enum HealthStatus {
+  SAKIT
   DALAM_PERAWATAN
   SEMBUH
   KRITIS
@@ -95,8 +96,9 @@ model User {
   role      Role     @default(STAFF) // Menggunakan Enum
   status    String   @default("AKTIF") // AKTIF, CUTI, NONAKTIF
   task      String?  
-  photo     String?  // Untuk menyimpan Base64 foto
-  createdAt DateTime @default(now())
+  photo       String?  // Untuk menyimpan Base64 foto
+  pushToken   String?  // Token khusus untuk Push Notification Firebase/Expo
+  createdAt   DateTime @default(now())
 
   @@index([role, status])
 }
@@ -106,6 +108,7 @@ model UserRequest {
   requester   String   
   calonName   String
   calonEmail  String
+  calonPhone  String?       // Nomor HP untuk pendaftaran
   posisi      String   
   alasan      String
   status      RequestStatus @default(PENDING) // Menggunakan Enum
@@ -143,6 +146,8 @@ model Livestock {
   wastes        LivestockWaste[]
   weightRecords LivestockWeightRecord[]
   feedRecords   LivestockFeedRecord[]
+
+  @@index([sectionId])
 }
 
 model Health {
@@ -251,9 +256,12 @@ model FeedingSchedule {
   status      ScheduleStatus @default(BELUM) 
   
   siloId      Int?
+
   silo        Silo?          @relation(fields: [siloId], references: [id])
   
   createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt @default(now())
+  isLate      Boolean        @default(false)
 }
 
 // ==========================================
@@ -279,6 +287,7 @@ model LivestockWaste {
   urineL    Float
   isAuto    Boolean  @default(false)
   createdAt DateTime @default(now())
+  batchId   String?
   
   livestock Livestock @relation(fields: [cattleId], references: [cattleId], onDelete: Cascade)
   
@@ -295,6 +304,7 @@ model ZoneWaste {
   fecesKg   Float
   urineL    Float
   createdAt DateTime @default(now())
+  batchId   String?
 
   @@unique([zoneId, date])
   @@index([date])
@@ -325,6 +335,7 @@ model LivestockWeightRecord {
   cattleId    String
   weight      Float
   weighDate   DateTime  @default(now())
+  batchId     String?
   
   livestock   Livestock @relation(fields: [cattleId], references: [cattleId], onDelete: Cascade)
   
@@ -339,6 +350,7 @@ model LivestockFeedRecord {
   bkPercent   Float?    // Persentase BK (opsional, misal 20% untuk hijauan, 86% konsentrat)
   asFedWeight Float?    // Berat As-fed
   feedDate    DateTime  @default(now())
+  batchId     String?
   
   livestock   Livestock @relation(fields: [cattleId], references: [cattleId], onDelete: Cascade)
   

@@ -1,6 +1,8 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import * as fs from 'fs';
 
 import { json, urlencoded } from 'express';
 
@@ -24,7 +26,18 @@ async function bootstrap() {
   // 3. AKTIFKAN GLOBAL PIPES: Agar input data otomatis divalidasi
   app.useGlobalPipes(new ValidationPipe());
 
-  // 3. BACA PORT DARI .env
+  // 4. KONFIGURASI SWAGGER
+  const config = new DocumentBuilder()
+    .setTitle('Smart Cattle Barn API')
+    .setDescription('The Smart Cattle Barn API description')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build();
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('docs', app, document);
+  fs.writeFileSync('./swagger.json', JSON.stringify(document, null, 2));
+
+  // 5. BACA PORT DARI .env
   const port = process.env.PORT || 3000;
 
   await app.listen(port);

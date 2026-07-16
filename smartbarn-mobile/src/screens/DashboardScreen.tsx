@@ -9,16 +9,20 @@ import {
   Modal,
   Alert,
   TextInput,
-  ActivityIndicator
+  ActivityIndicator,
+  FlatList
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, SPACING, SHADOWS } from '../theme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import apiClient from '../api/client';
 import { useSocket } from '../hooks/useSocket';
+import { useReadingMode } from '../context/ReadingModeContext';
 import { 
   LayoutDashboard, 
   LogOut, 
+  Bell, 
+  Clock,
   Thermometer, 
   Droplets, 
   Wind, 
@@ -28,6 +32,7 @@ import {
   FileBarChart,
   Users,
   CheckCircle,
+  Leaf,
   Circle,
   Calendar,
   Edit,
@@ -36,33 +41,53 @@ import {
   Scale,
   ListTodo,
   History,
-  Activity
+  Activity,
+  User,
+  AlertTriangle,
+  ClipboardList,
+  Moon,
+  Sun,
+  Download
 } from 'lucide-react-native';
 import { Dimensions } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 
 const DashboardScreen = ({ navigation }: any) => {
   const [refreshing, setRefreshing] = useState(false);
-  const { data: socketData, isConnected } = useSocket(['websocket:environment', 'websocket:windspeed']);
+  const { isReadingMode, toggleReadingMode } = useReadingMode();
+  const { data: socketData, isConnected } = useSocket(['websocket:environment', 'websocket:windspeed', 'websocket:alert']);
   const [stats, setStats] = useState<{
     totalCattle: number;
     avgTemp: number | null;
     avgHumidity: number | null;
     windSpeed: number | null;
+    ammonia: number | null;
+    thi: number | null;
     activeAlerts: number;
   }>({
     totalCattle: 0,
     avgTemp: null,
     avgHumidity: null,
     windSpeed: null,
+    ammonia: null,
+    thi: null,
     activeAlerts: 0
   });
   const [user, setUser] = useState<any>(null);
   
   // Performance Chart State
   const [performanceData, setPerformanceData] = useState<any[]>([]);
+  const [performanceSummaries, setPerformanceSummaries] = useState<any[]>([]);
   const [performanceRange, setPerformanceRange] = useState('minggu');
   const [isDummyChart, setIsDummyChart] = useState(false);
+  const [livestock, setLivestock] = useState<any[]>([]);
+  const [selectedChartCows, setSelectedChartCows] = useState<string[]>([]);
+  const [selectedTableCows, setSelectedTableCows] = useState<string[]>([]);
+  const [selectedCowsForChart, setSelectedCowsForChart] = useState<string[]>(['ALL']);
+  const [isCowSelectModalVisible, setIsCowSelectModalVisible] = useState(false);
+  const [isTableSelectModalVisible, setIsTableSelectModalVisible] = useState(false);
+  const [searchChartText, setSearchChartText] = useState('');
+  const [searchTableText, setSearchTableText] = useState('');
 
   // Daily Checklist & Input History States
   const [checklist, setChecklist] = useState<any>({
@@ -71,6 +96,42 @@ const DashboardScreen = ({ navigation }: any) => {
     weightTask: { done: false, pendingCows: 0, title: 'Penimbangan Sapi', subtitle: 'Memuat...' }
   });
   const [recentInputs, setRecentInputs] = useState<any[]>([]);
+  
+  const [activityModalVisible, setActivityModalVisible] = useState(false);
+  const [activities, setActivities] = useState<any[]>([]);
+  const [loadingActivities, setLoadingActivities] = useState(false);
+  
+  // Notification States
+  const [notificationModalVisible, setNotificationModalVisible] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [unreadNotifCount, setUnreadNotifCount] = useState(0);
+  
+  // Environment & Waste States
+  const [wasteStats, setWasteStats] = useState({ fecesKg: 0, urineL: 0 });
+  const [wasteFilter, setWasteFilter] = useState('daily');
+  const [sensorTrendData, setSensorTrendData] = useState<any[]>([]);
+  const [windTrendData, setWindTrendData] = useState<any[]>([]);
+  const [sensorTrendRange, setSensorTrendRange] = useState('24h');
+
+
+  useEffect(() => {
+    if (socketData['websocket:alert']) {
+      const payload = socketData['websocket:alert'];
+      const newNotif = {
+        id: Date.now(),
+        title: payload.title,
+        body: payload.body,
+        time: new Date(payload.timestamp || Date.now()).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'})
+      };
+      setNotifications(prev => [newNotif, ...prev].slice(0, 10));
+      setUnreadNotifCount(prev => prev + 1);
+      
+      Alert.alert(payload.title, payload.body);
+      
+      // Reset socket data to prevent infinite loop
+      socketData['websocket:alert'] = null;
+    }
+  }, [socketData]);
   const [isHistoryModalVisible, setIsHistoryModalVisible] = useState(false);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [selectedItemForEdit, setSelectedItemForEdit] = useState<any>(null);
@@ -84,12 +145,14 @@ const DashboardScreen = ({ navigation }: any) => {
   // Update stats saat ada data baru dari socket
   useEffect(() => {
     if (socketData['websocket:environment']) {
-      const { temperature, humidity } = socketData['websocket:environment'];
+      const { temperature, humidity, ammonia, thi } = socketData['websocket:environment'];
       setLastEnvTimestamp(Date.now());
       setStats(prev => ({
         ...prev,
         avgTemp: temperature !== undefined ? temperature : prev.avgTemp,
-        avgHumidity: humidity !== undefined ? humidity : prev.avgHumidity
+        avgHumidity: humidity !== undefined ? humidity : prev.avgHumidity,
+        ammonia: ammonia !== undefined ? ammonia : prev.ammonia,
+        thi: thi !== undefined ? thi : prev.thi
       }));
     }
     if (socketData['websocket:windspeed']) {
@@ -110,16 +173,18 @@ const DashboardScreen = ({ navigation }: any) => {
         let nextAvgTemp = prev.avgTemp;
         let nextAvgHumidity = prev.avgHumidity;
         let nextWindSpeed = prev.windSpeed;
+        let nextThi = prev.thi;
 
         if (now - lastEnvTimestamp > 70000) {
           nextAvgTemp = null;
           nextAvgHumidity = null;
+          nextThi = null;
         }
         if (now - lastWindTimestamp > 70000) {
           nextWindSpeed = null;
         }
 
-        if (nextAvgTemp === prev.avgTemp && nextAvgHumidity === prev.avgHumidity && nextWindSpeed === prev.windSpeed) {
+        if (nextAvgTemp === prev.avgTemp && nextAvgHumidity === prev.avgHumidity && nextWindSpeed === prev.windSpeed && nextThi === prev.thi) {
           return prev;
         }
 
@@ -127,7 +192,8 @@ const DashboardScreen = ({ navigation }: any) => {
           ...prev,
           avgTemp: nextAvgTemp,
           avgHumidity: nextAvgHumidity,
-          windSpeed: nextWindSpeed
+          windSpeed: nextWindSpeed,
+          thi: nextThi
         };
       });
     }, 5000);
@@ -148,15 +214,60 @@ const DashboardScreen = ({ navigation }: any) => {
       const userStr = await AsyncStorage.getItem('user');
       if (userStr) setUser(JSON.parse(userStr));
       
-      // Fetch Performance Chart
-      const perfRes = await apiClient.get(`/livestock/performance-chart?period=${performanceRange}`);
-      if (perfRes.data?.data) {
-        setPerformanceData(perfRes.data.data);
-        setIsDummyChart(perfRes.data.isDummy);
-      } else {
-        setPerformanceData(perfRes.data || []);
-        setIsDummyChart(false);
+      const cowsRes = await apiClient.get('/livestock');
+      if (cowsRes.data) setLivestock(cowsRes.data);
+
+      try {
+        const liveEnvRes = await apiClient.get('/environment/live/1');
+        if (liveEnvRes.data) {
+          setStats(prev => ({
+            ...prev,
+            avgTemp: liveEnvRes.data.temperature !== undefined ? liveEnvRes.data.temperature : prev.avgTemp,
+            avgHumidity: liveEnvRes.data.humidity !== undefined ? liveEnvRes.data.humidity : prev.avgHumidity,
+            ammonia: liveEnvRes.data.ammonia !== undefined ? liveEnvRes.data.ammonia : prev.ammonia,
+            thi: liveEnvRes.data.thi !== undefined ? liveEnvRes.data.thi : prev.thi
+          }));
+          setLastEnvTimestamp(Date.now());
+        }
+      } catch (err) {
+        // Abaikan error jika data tidak tersedia (misal 404 saat awal mula)
       }
+
+      // Fetch Waste
+      try {
+        const wasteRes = await apiClient.get(`/dashboard/waste?filter=${wasteFilter}`);
+        if (wasteRes.data) {
+          setWasteStats({ fecesKg: wasteRes.data.fecesKg || 0, urineL: wasteRes.data.urineL || 0 });
+        }
+      } catch (e) {}
+
+      // Fetch Trend Environment
+      try {
+        const trendRes = await apiClient.get(`/environment/trend/1?range=${sensorTrendRange}`);
+        if (trendRes.data && Array.isArray(trendRes.data)) {
+          // API returns desc, we reverse to asc, take 15 points
+          const chronological = [...trendRes.data].reverse();
+          setSensorTrendData(chronological.slice(-15));
+        }
+      } catch (e) {}
+
+      // Fetch Trend Wind
+      try {
+        const windRes = await apiClient.get(`/wind/trend/1?range=${sensorTrendRange}`);
+        if (windRes.data && Array.isArray(windRes.data)) {
+          const chronologicalWind = [...windRes.data].reverse();
+          setWindTrendData(chronologicalWind.slice(-15));
+        } else {
+            // fallback if wind trend fails or uses different path
+            const windResFallback = await apiClient.get(`/environment/wind/trend/1?range=${sensorTrendRange}`);
+            if (windResFallback.data && Array.isArray(windResFallback.data)) {
+                const chronologicalWind = [...windResFallback.data].reverse();
+                setWindTrendData(chronologicalWind.slice(-15));
+            }
+        }
+      } catch (e) {}
+
+
 
       // Fetch Daily Checklist
       try {
@@ -256,10 +367,97 @@ const DashboardScreen = ({ navigation }: any) => {
 
   useEffect(() => {
     fetchData();
-  }, [performanceRange]);
+  }, [sensorTrendRange]);
+
+  useEffect(() => {
+    const fetchPerformance = async () => {
+      try {
+        if (selectedChartCows.length === 0) {
+          setPerformanceData([]);
+          setIsDummyChart(false);
+        } else {
+          const chartCowIdParam = `&cowId=${selectedChartCows.join(',')}`;
+          const chartRes = await apiClient.get(`/livestock/performance-chart?period=${performanceRange}${chartCowIdParam}`);
+          if (chartRes.data?.data) {
+            setPerformanceData(chartRes.data.data);
+            setIsDummyChart(chartRes.data.isDummy);
+            setSelectedCowsForChart(selectedChartCows);
+          } else {
+            setPerformanceData(chartRes.data || []);
+            setIsDummyChart(false);
+            setSelectedCowsForChart(selectedChartCows);
+          }
+        }
+
+        if (selectedTableCows.length === 0) {
+          setPerformanceSummaries([]);
+        } else {
+          const tableCowIdParam = `&cowId=${selectedTableCows.join(',')}`;
+          const tableRes = await apiClient.get(`/livestock/performance-chart?period=${performanceRange}${tableCowIdParam}`);
+          if (tableRes.data?.multiSummaries) {
+            setPerformanceSummaries(tableRes.data.multiSummaries);
+          } else if (tableRes.data?.summaries) {
+            setPerformanceSummaries(tableRes.data.summaries);
+          } else {
+            setPerformanceSummaries([]);
+          }
+        }
+      } catch (e) {
+        console.error("Fetch Performance Error", e);
+      }
+    };
+    fetchPerformance();
+  }, [performanceRange, selectedChartCows, selectedTableCows]);
+
+  useEffect(() => {
+    const fetchWaste = async () => {
+      try {
+        const wasteRes = await apiClient.get(`/dashboard/waste?filter=${wasteFilter}`);
+        if (wasteRes.data) {
+          setWasteStats({ fecesKg: wasteRes.data.fecesKg || 0, urineL: wasteRes.data.urineL || 0 });
+        }
+      } catch (e) {}
+    };
+    fetchWaste();
+  }, [wasteFilter]);
+
+
+  const fetchActivities = async () => {
+    setLoadingActivities(true);
+    try {
+      const res = await apiClient.get('/activities/recent');
+      setActivities(res.data || []);
+    } catch (err) {
+      console.log('Error fetching activities');
+    } finally {
+      setLoadingActivities(false);
+    }
+  };
+
+  const fetchNotifications = async () => {
+    try {
+      const res = await apiClient.get('/dashboard/notifications');
+      if (res.data && Array.isArray(res.data)) {
+        const formatted = res.data.map((item: any, idx: number) => ({
+          id: item.id || Date.now() + idx,
+          title: item.title,
+          body: item.body,
+          time: item.time || new Date(item.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+        }));
+        setNotifications(formatted);
+      }
+    } catch (err) {
+      console.log('Error fetching notifications');
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
 
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
+    fetchNotifications();
     fetchData().then(() => setRefreshing(false));
   }, []);
 
@@ -269,11 +467,12 @@ const DashboardScreen = ({ navigation }: any) => {
     navigation.replace('Login');
   };
 
-  const StatCard = ({ title, value, icon: Icon, color }: any) => (
+  const StatCard = ({ title, value, icon: Icon, color, target }: any) => (
     <View style={[styles.statCard, { borderLeftColor: color }]}>
       <View style={styles.statInfo}>
         <Text style={styles.statLabel}>{title}</Text>
         <Text style={styles.statValue}>{value}</Text>
+        {target && <Text style={{ fontSize: 10, color: COLORS.textLight, marginTop: 4 }}>{target}</Text>}
       </View>
       <View style={[styles.statIconContainer, { backgroundColor: color + '20' }]}>
         <Icon size={24} color={color} />
@@ -291,94 +490,33 @@ const DashboardScreen = ({ navigation }: any) => {
           </View>
           <Text style={styles.date}>{new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })}</Text>
         </View>
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <LogOut size={20} color={COLORS.danger} />
-        </TouchableOpacity>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+            <TouchableOpacity onPress={() => { setNotificationModalVisible(true); setUnreadNotifCount(0); }}>
+              <View>
+                <Bell size={20} color={COLORS.textLight} />
+                {unreadNotifCount > 0 && (
+                  <View style={{ position: 'absolute', top: -5, right: -5, backgroundColor: COLORS.danger, borderRadius: 10, width: 14, height: 14, justifyContent: 'center', alignItems: 'center' }}>
+                    <Text style={{ color: 'white', fontSize: 8, fontWeight: 'bold' }}>{unreadNotifCount}</Text>
+                  </View>
+                )}
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => { setActivityModalVisible(true); fetchActivities(); }}>
+              <Clock size={20} color={COLORS.textLight} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={toggleReadingMode}>
+              {isReadingMode ? <Sun size={20} color={COLORS.primary} /> : <Moon size={20} color={COLORS.textLight} />}
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+              <LogOut size={20} color={COLORS.danger} />
+            </TouchableOpacity>
+          </View>
       </View>
 
       <ScrollView 
         contentContainerStyle={styles.scrollContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        {/* CHECKLIST HARIAN & RIWAYAT INPUT */}
-        <View style={styles.checklistCard}>
-          <View style={styles.checklistHeader}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <ListTodo size={20} color={COLORS.primary} />
-              <Text style={styles.checklistTitle}>Tugas Harian Operator</Text>
-            </View>
-            <View style={styles.checklistDateBadge}>
-              <Calendar size={12} color={COLORS.textLight} />
-              <Text style={styles.checklistDateText}>Hari Ini</Text>
-            </View>
-          </View>
-
-          <View style={styles.checklistItems}>
-            {/* 1. PAKAN */}
-            <View style={styles.checkItem}>
-              <View style={styles.checkIconWrapper}>
-                {checklist.feedTask?.done ? (
-                  <CheckCircle size={22} color={COLORS.success} />
-                ) : (
-                  <Circle size={22} color="#94a3b8" />
-                )}
-              </View>
-              <View style={styles.checkTextWrapper}>
-                <Text style={[styles.checkTextTitle, checklist.feedTask?.done && styles.checkTextDone]}>
-                  {checklist.feedTask?.title || 'Pencatatan Pakan'}
-                </Text>
-                <Text style={styles.checkTextSubtitle}>{checklist.feedTask?.subtitle}</Text>
-              </View>
-            </View>
-
-            {/* 2. LIMBAH */}
-            <View style={styles.checkItem}>
-              <View style={styles.checkIconWrapper}>
-                {checklist.wasteTask?.done ? (
-                  <CheckCircle size={22} color={COLORS.success} />
-                ) : (
-                  <Circle size={22} color="#94a3b8" />
-                )}
-              </View>
-              <View style={styles.checkTextWrapper}>
-                <Text style={[styles.checkTextTitle, checklist.wasteTask?.done && styles.checkTextDone]}>
-                  {checklist.wasteTask?.title || 'Pencatatan Limbah'}
-                </Text>
-                <Text style={styles.checkTextSubtitle}>{checklist.wasteTask?.subtitle}</Text>
-              </View>
-            </View>
-
-            {/* 3. TIMBANGAN */}
-            <View style={styles.checkItem}>
-              <View style={styles.checkIconWrapper}>
-                {checklist.weightTask?.done ? (
-                  <CheckCircle size={22} color={COLORS.success} />
-                ) : (
-                  <Circle size={22} color="#94a3b8" />
-                )}
-              </View>
-              <View style={styles.checkTextWrapper}>
-                <Text style={[styles.checkTextTitle, checklist.weightTask?.done && styles.checkTextDone]}>
-                  {checklist.weightTask?.title || 'Penimbangan Sapi'}
-                </Text>
-                <Text style={styles.checkTextSubtitle}>{checklist.weightTask?.subtitle}</Text>
-              </View>
-            </View>
-          </View>
-
-          {/* TOMBOL PENGELOLAAN INPUT */}
-          <TouchableOpacity 
-            style={styles.historyBtn} 
-            onPress={() => {
-              fetchRecentInputs();
-              setIsHistoryModalVisible(true);
-            }}
-          >
-            <History size={16} color={COLORS.primary} />
-            <Text style={styles.historyBtnText}>Lihat & Koreksi Salah Input Data</Text>
-          </TouchableOpacity>
-        </View>
-
         <Text style={styles.sectionTitle}>Ringkasan Kandang</Text>
         
         <View style={styles.statsGrid}>
@@ -389,63 +527,251 @@ const DashboardScreen = ({ navigation }: any) => {
             color="#3b82f6" 
           />
           <StatCard 
-            title="Suhu Rata-rata" 
-            value={stats.avgTemp !== null ? `${stats.avgTemp}°C` : '--'} 
-            icon={Thermometer} 
-            color="#ef4444" 
-          />
-          <StatCard 
-            title="Kelembaban" 
-            value={stats.avgHumidity !== null ? `${stats.avgHumidity}%` : '--'} 
-            icon={Droplets} 
+            title="Kondisi Sehat" 
+            value={stats.totalCattle - stats.activeAlerts} 
+            icon={HeartPulse} 
             color="#10b981" 
           />
           <StatCard 
-            title="Kecepatan Angin" 
-            value={stats.windSpeed !== null ? `${stats.windSpeed} m/s` : '--'} 
-            icon={Wind} 
-            color="#f59e0b" 
+            title="Kondisi Sakit" 
+            value={stats.activeAlerts} 
+            icon={Activity} 
+            color="#ef4444" 
           />
+        </View>
+
+        <Text style={[styles.sectionTitle, { marginTop: SPACING.md }]}>Monitoring Lingkungan</Text>
+        <View style={styles.statsGrid}>
+          <StatCard 
+            title="Suhu Ruangan" 
+            value={stats.avgTemp !== null ? `${stats.avgTemp}°C` : '--'} 
+            target="Target: 25-28°C"
+            icon={Thermometer} 
+            color="#f97316" 
+          />
+          <StatCard 
+            title="Kelembapan" 
+            value={stats.avgHumidity !== null ? `${stats.avgHumidity}%` : '--'} 
+            target="Target: 60-80%"
+            icon={Droplets} 
+            color="#3b82f6" 
+          />
+          <StatCard 
+            title="Sirkulasi Angin" 
+            value={stats.windSpeed !== null ? `${stats.windSpeed} m/s` : '--'} 
+            target="Target: > 1 m/s"
+            icon={Wind} 
+            color="#0d9488" 
+          />
+          <StatCard 
+            title="Amonia (NH3)" 
+            value={stats.ammonia !== null ? `${stats.ammonia} ppm` : '--'} 
+            target="Batas: < 20 ppm"
+            icon={Leaf} 
+            color="#ef4444" 
+          />
+          <StatCard 
+            title="Heat Stress (THI)" 
+            value={stats.thi !== null ? stats.thi : '--'} 
+            target="Target: < 72"
+            icon={CheckCircle} 
+            color="#ec4899" 
+          />
+        </View>
+
+        {/* MANAJEMEN LIMBAH */}
+        <View style={styles.chartContainer}>
+          <View style={[styles.chartHeader, { marginBottom: 16 }]}>
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Trash2 size={18} color={COLORS.primary} />
+                <Text style={styles.sectionTitle}>Manajemen Limbah</Text>
+              </View>
+              <Text style={styles.chartSubtitle}>Akumulasi produksi Feses dan Urine</Text>
+            </View>
+            <View style={styles.rangeSelector}>
+              <TouchableOpacity onPress={() => setWasteFilter('daily')} style={[styles.rangeBtn, wasteFilter === 'daily' && styles.rangeBtnActive]}><Text style={[styles.rangeBtnText, wasteFilter === 'daily' && styles.rangeBtnTextActive]}>Hr</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => setWasteFilter('weekly')} style={[styles.rangeBtn, wasteFilter === 'weekly' && styles.rangeBtnActive]}><Text style={[styles.rangeBtnText, wasteFilter === 'weekly' && styles.rangeBtnTextActive]}>Mg</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => setWasteFilter('monthly')} style={[styles.rangeBtn, wasteFilter === 'monthly' && styles.rangeBtnActive]}><Text style={[styles.rangeBtnText, wasteFilter === 'monthly' && styles.rangeBtnTextActive]}>Bl</Text></TouchableOpacity>
+            </View>
+          </View>
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            <View style={{ flex: 1, backgroundColor: '#fef3c7', padding: 16, borderRadius: 12, alignItems: 'center' }}>
+              <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#b45309' }}>{wasteStats.fecesKg}</Text>
+              <Text style={{ fontSize: 12, color: '#b45309', marginTop: 4, fontWeight: '500' }}>Feses (Kg)</Text>
+            </View>
+            <View style={{ flex: 1, backgroundColor: '#e0f2fe', padding: 16, borderRadius: 12, alignItems: 'center' }}>
+              <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#0369a1' }}>{wasteStats.urineL}</Text>
+              <Text style={{ fontSize: 12, color: '#0369a1', marginTop: 4, fontWeight: '500' }}>Urine (Liter)</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* GRAFIK TREN SENSOR */}
+        <View style={styles.chartContainer}>
+          <View style={styles.chartHeader}>
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Thermometer size={18} color="#f97316" />
+                <Text style={styles.sectionTitle}>GRAFIK TREN SENSOR</Text>
+              </View>
+              <Text style={styles.chartSubtitle}>
+                {sensorTrendRange === '1h' ? '1 JAM TERAKHIR' : sensorTrendRange === '24h' ? '24 JAM TERAKHIR' : sensorTrendRange === '7d' ? '7 HARI TERAKHIR' : '1 BULAN TERAKHIR'}
+              </Text>
+            </View>
+            <View style={styles.rangeSelector}>
+              <TouchableOpacity onPress={() => setSensorTrendRange('1h')} style={[styles.rangeBtn, sensorTrendRange === '1h' && styles.rangeBtnActive]}><Text style={[styles.rangeBtnText, sensorTrendRange === '1h' && styles.rangeBtnTextActive]}>1J</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => setSensorTrendRange('24h')} style={[styles.rangeBtn, sensorTrendRange === '24h' && styles.rangeBtnActive]}><Text style={[styles.rangeBtnText, sensorTrendRange === '24h' && styles.rangeBtnTextActive]}>24J</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => setSensorTrendRange('7d')} style={[styles.rangeBtn, sensorTrendRange === '7d' && styles.rangeBtnActive]}><Text style={[styles.rangeBtnText, sensorTrendRange === '7d' && styles.rangeBtnTextActive]}>7H</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => setSensorTrendRange('30d')} style={[styles.rangeBtn, sensorTrendRange === '30d' && styles.rangeBtnActive]}><Text style={[styles.rangeBtnText, sensorTrendRange === '30d' && styles.rangeBtnTextActive]}>1B</Text></TouchableOpacity>
+            </View>
+          </View>
+          {sensorTrendData.length > 0 ? (
+            <View>
+              {/* Legend Gabungan */}
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 12, marginTop: 8, marginBottom: 8 }}>
+                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                   <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#f97316' }} />
+                   <Text style={{ fontSize: 10, color: COLORS.textLight }}>Suhu (°C)</Text>
+                 </View>
+                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                   <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#3b82f6' }} />
+                   <Text style={{ fontSize: 10, color: COLORS.textLight }}>Kelembapan (%)</Text>
+                 </View>
+                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                   <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#ef4444' }} />
+                   <Text style={{ fontSize: 10, color: COLORS.textLight }}>Amonia (ppm)</Text>
+                 </View>
+                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                   <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#06b6d4' }} />
+                   <Text style={{ fontSize: 10, color: COLORS.textLight }}>Kecepatan Angin (m/s)</Text>
+                 </View>
+              </View>
+
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <LineChart
+                  data={{
+                    labels: sensorTrendData.map(d => {
+                      const date = new Date(d.timestamp || d.time);
+                      if (sensorTrendRange === '1h' || sensorTrendRange === '24h') {
+                        return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+                      }
+                      return `${date.getDate()}/${date.getMonth()+1}`;
+                    }),
+                    datasets: [
+                      {
+                        data: sensorTrendData.map(d => d.temperature || d.temp || 0),
+                        color: (opacity = 1) => `rgba(249, 115, 22, ${opacity})`, // Orange
+                        strokeWidth: 2
+                      },
+                      {
+                        data: sensorTrendData.map(d => d.humidity || 0),
+                        color: (opacity = 1) => `rgba(59, 130, 246, ${opacity})`, // Blue
+                        strokeWidth: 2
+                      },
+                      {
+                        data: sensorTrendData.map(d => d.ammonia || 0),
+                        color: (opacity = 1) => `rgba(239, 68, 68, ${opacity})`, // Red
+                        strokeWidth: 2
+                      },
+                      {
+                        data: sensorTrendData.map((d, i) => windTrendData[i]?.windspeed || 0),
+                        color: (opacity = 1) => `rgba(6, 182, 212, ${opacity})`, // Cyan
+                        strokeWidth: 2
+                      }
+                    ]
+                  }}
+                  width={Math.max(Dimensions.get("window").width - SPACING.lg * 2, sensorTrendData.length * 40)}
+                  height={220}
+                  yAxisLabel=""
+                  yAxisSuffix=""
+                  yAxisInterval={1}
+                  chartConfig={{
+                    backgroundColor: COLORS.white,
+                    backgroundGradientFrom: COLORS.white,
+                    backgroundGradientTo: COLORS.white,
+                    decimalPlaces: 1,
+                    color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                    labelColor: (opacity = 1) => `rgba(100, 116, 139, ${opacity})`,
+                    style: { borderRadius: 16 },
+                    propsForDots: { r: "3", strokeWidth: "2" }
+                  }}
+                  bezier
+                  style={{ marginVertical: 8, borderRadius: 16 }}
+                />
+              </ScrollView>
+            </View>
+          ) : (
+            <View style={{ height: 150, justifyContent: 'center', alignItems: 'center' }}>
+              <Text style={{ color: COLORS.textLight }}>Belum ada data tren sensor.</Text>
+            </View>
+          )}
         </View>
 
         {/* GRAFIK PERFORMA */}
         <View style={styles.chartContainer}>
           <View style={styles.chartHeader}>
-            <View>
+            <View style={{ flex: 1, paddingRight: 8 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Text style={styles.sectionTitle}>Korelasi Performa</Text>
+                <Text style={styles.sectionTitle}>DMI/BK VS ADG</Text>
                 {isDummyChart && (
                   <View style={styles.dummyBadge}>
                     <Text style={styles.dummyText}>DUMMY</Text>
                   </View>
                 )}
               </View>
-              <Text style={styles.chartSubtitle}>BK vs Bobot vs Limbah vs THI</Text>
+              <Text style={styles.chartSubtitle}>Bahan Kering (BK) Konsumsi vs Pertambahan Bobot</Text>
             </View>
-            <View style={styles.rangeSelector}>
-              <TouchableOpacity onPress={() => setPerformanceRange('hari')} style={[styles.rangeBtn, performanceRange === 'hari' && styles.rangeBtnActive]}>
-                <Text style={[styles.rangeBtnText, performanceRange === 'hari' && styles.rangeBtnTextActive]}>Hari</Text>
+            <View style={{ flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+              <TouchableOpacity 
+                style={styles.cowSelectFilterBtn} 
+                onPress={() => setIsCowSelectModalVisible(true)}
+              >
+                <Text style={styles.cowSelectFilterBtnText}>
+                  {selectedChartCows.length > 0 ? `${selectedChartCows.length} Sapi` : 'Pilih Sapi'}
+                </Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => setPerformanceRange('minggu')} style={[styles.rangeBtn, performanceRange === 'minggu' && styles.rangeBtnActive]}>
-                <Text style={[styles.rangeBtnText, performanceRange === 'minggu' && styles.rangeBtnTextActive]}>Mgg</Text>
-              </TouchableOpacity>
+              <View style={styles.rangeSelector}>
+                <TouchableOpacity onPress={() => setPerformanceRange('hari')} style={[styles.rangeBtn, performanceRange === 'hari' && styles.rangeBtnActive]}>
+                  <Text style={[styles.rangeBtnText, performanceRange === 'hari' && styles.rangeBtnTextActive]}>Hari</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setPerformanceRange('minggu')} style={[styles.rangeBtn, performanceRange === 'minggu' && styles.rangeBtnActive]}>
+                  <Text style={[styles.rangeBtnText, performanceRange === 'minggu' && styles.rangeBtnTextActive]}>Mgg</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setPerformanceRange('bulan')} style={[styles.rangeBtn, performanceRange === 'bulan' && styles.rangeBtnActive]}>
+                  <Text style={[styles.rangeBtnText, performanceRange === 'bulan' && styles.rangeBtnTextActive]}>Bln</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
 
           {performanceData.length > 0 ? (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              maximumZoomScale={5}
+              minimumZoomScale={1}
+            >
               <LineChart
                 data={{
                   labels: performanceData.map(d => {
                     const date = new Date(d.date);
                     return `${date.getDate()}/${date.getMonth()+1}`;
                   }),
-                  datasets: [
-                    { data: performanceData.map(d => d.bk), color: (opacity = 1) => `rgba(139, 92, 246, ${opacity})`, strokeWidth: 2 },
-                    { data: performanceData.map(d => d.weightGain), color: (opacity = 1) => `rgba(16, 185, 129, ${opacity})`, strokeWidth: 2 },
-                    { data: performanceData.map(d => d.waste), color: (opacity = 1) => `rgba(245, 158, 11, ${opacity})`, strokeWidth: 2 }
-                  ],
-                  legend: ["BK (kg)", "ADG (kg)", "Limbah"]
+                  datasets: selectedCowsForChart.flatMap((cowId, index) => {
+                    const colors = ['rgba(139, 92, 246, opacity)', 'rgba(16, 185, 129, opacity)', 'rgba(245, 158, 11, opacity)', 'rgba(239, 68, 68, opacity)', 'rgba(59, 130, 246, opacity)', 'rgba(236, 72, 153, opacity)', 'rgba(99, 102, 241, opacity)', 'rgba(20, 184, 166, opacity)'];
+                    const isAll = cowId === 'ALL';
+                    const bkKey = isAll ? 'bk' : `${cowId}_bk`;
+                    const adgKey = isAll ? 'adg' : `${cowId}_adg`;
+                    return [
+                      { data: performanceData.map(d => Number(d[bkKey] || 0)), color: (opacity = 1) => colors[(index * 2) % colors.length].replace('opacity', String(opacity)), strokeWidth: 2 },
+                      { data: performanceData.map(d => Number(d[adgKey] || 0)), color: (opacity = 1) => colors[(index * 2 + 1) % colors.length].replace('opacity', String(opacity)), strokeWidth: 2 }
+                    ];
+                  }),
+                  legend: selectedCowsForChart.flatMap(cowId => {
+                    const isAll = cowId === 'ALL';
+                    return [`BK (${isAll ? 'Avg' : cowId})`, `ADG (${isAll ? 'Avg' : cowId})`];
+                  })
                 }}
                 width={Math.max(Dimensions.get("window").width - SPACING.lg * 2, performanceData.length * 50)}
                 height={220}
@@ -466,55 +792,104 @@ const DashboardScreen = ({ navigation }: any) => {
                 style={{ marginVertical: 8, borderRadius: 16 }}
               />
             </ScrollView>
+          ) : selectedChartCows.length === 0 ? (
+            <View style={[styles.emptyChart, { padding: 30 }]}>
+              <AlertTriangle size={32} color={COLORS.warning} style={{ marginBottom: 10 }} />
+              <Text style={[styles.chartSubtitle, { textAlign: 'center', fontWeight: 'bold', color: COLORS.text }]}>Silakan Pilih Sapi</Text>
+              <Text style={[styles.chartSubtitle, { textAlign: 'center', marginTop: 4 }]}>Pilih minimal 1 ID sapi pada menu filter di atas untuk melihat grafik performa DMI VS ADG.</Text>
+            </View>
           ) : (
             <View style={styles.emptyChart}>
               <Text style={styles.chartSubtitle}>Belum ada data performa</Text>
             </View>
           )}
+
+          {/* TABLE KOMPARASI PERFORMA */}
+          <View style={styles.tableContainer}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.sm }}>
+              <Text style={styles.tableTitle}>Ringkasan Performa (Avg)</Text>
+              <TouchableOpacity 
+                style={styles.cowSelectFilterBtn} 
+                onPress={() => setIsTableSelectModalVisible(true)}
+              >
+                <Text style={styles.cowSelectFilterBtnText}>
+                  {selectedTableCows.length > 0 ? `${selectedTableCows.length} Sapi` : 'Pilih Sapi'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView horizontal maximumZoomScale={5} minimumZoomScale={1}>
+              <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled>
+                <View>
+                  <View style={styles.tableHeader}>
+                    <Text style={[styles.tableHeaderText, { width: 90 }]}>ID Sapi</Text>
+                    <Text style={[styles.tableHeaderText, { width: 75, textAlign: 'center' }]}>DMI (Kg BK)</Text>
+                    <Text style={[styles.tableHeaderText, { width: 60, textAlign: 'center' }]}>B.Awal</Text>
+                    <Text style={[styles.tableHeaderText, { width: 60, textAlign: 'center' }]}>B.Akhir</Text>
+                    <Text style={[styles.tableHeaderText, { width: 60, textAlign: 'center' }]}>ADG</Text>
+                    <Text style={[styles.tableHeaderText, { width: 50, textAlign: 'center' }]}>FCR</Text>
+                  </View>
+                  {performanceSummaries.map((sum, index) => (
+                    <View key={index} style={styles.tableRow}>
+                      <View style={{ width: 90 }}>
+                        <Text style={[styles.tableRowText, { fontWeight: 'bold' }]}>{sum.cowId}</Text>
+                        {sum.isEstimated && <Text style={{ fontSize: 9, color: '#f59e0b', marginTop: -2 }}>(Estimasi)</Text>}
+                      </View>
+                      <Text style={[styles.tableRowText, { width: 75, textAlign: 'center' }]}>{sum.totalBk}</Text>
+                      <Text style={[styles.tableRowText, { width: 60, textAlign: 'center' }]}>{sum.startWeight}</Text>
+                      <View style={{ width: 60, alignItems: 'center' }}>
+                        <Text style={[styles.tableRowText, { textAlign: 'center' }]}>{sum.endWeight}</Text>
+                        {sum.isEstimated && <Text style={{ fontSize: 9, color: '#f59e0b', marginTop: -2 }}>~estimasi</Text>}
+                      </View>
+                      <Text style={[styles.tableRowText, { width: 60, textAlign: 'center', color: COLORS.success, fontWeight: 'bold' }]}>{sum.adg}</Text>
+                      <Text style={[styles.tableRowText, { width: 50, textAlign: 'center', color: COLORS.primary, fontWeight: 'bold' }]}>{sum.fcr}</Text>
+                    </View>
+                  ))}
+                  {performanceSummaries.length === 0 && (
+                    <View style={{ padding: 20, alignItems: 'center' }}>
+                      {selectedTableCows.length === 0 ? (
+                        <>
+                          <Text style={[styles.chartSubtitle, { fontWeight: 'bold', color: COLORS.text, marginBottom: 4 }]}>Pilih sapi terlebih dahulu</Text>
+                          <Text style={styles.chartSubtitle}>Gunakan filter sapi untuk memilih data</Text>
+                        </>
+                      ) : (
+                        <Text style={styles.chartSubtitle}>Data ringkasan tidak tersedia</Text>
+                      )}
+                    </View>
+                  )}
+                </View>
+              </ScrollView>
+            </ScrollView>
+          </View>
         </View>
 
         <View style={styles.menuContainer}>
-          <Text style={styles.sectionTitle}>Menu Utama</Text>
+          <Text style={styles.sectionTitle}>Menu Lanjutan</Text>
           <View style={styles.menuGrid}>
-            <TouchableOpacity 
-              style={styles.menuItem}
-              onPress={() => navigation.navigate('Livestock')}
-            >
-              <View style={[styles.menuIcon, { backgroundColor: '#dcfce7' }]}>
-                <Beef color="#166534" size={28} />
-              </View>
-              <Text style={styles.menuText}>Data Ternak</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.menuItem}
-              onPress={() => navigation.navigate('Environment')}
-            >
-              <View style={[styles.menuIcon, { backgroundColor: '#dbeafe' }]}>
-                <LayoutDashboard color="#1e40af" size={28} />
-              </View>
-              <Text style={styles.menuText}>Monitoring</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.menuItem}
-              onPress={() => navigation.navigate('Health')}
-            >
-              <View style={[styles.menuIcon, { backgroundColor: '#fef3c7' }]}>
-                <HeartPulse color="#92400e" size={28} />
-              </View>
-              <Text style={styles.menuText}>Rekam Medis</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.menuItem}
-              onPress={() => navigation.navigate('Feed')}
-            >
-              <View style={[styles.menuIcon, { backgroundColor: '#f3e8ff' }]}>
-                <Utensils color="#6b21a8" size={28} />
-              </View>
-              <Text style={styles.menuText}>Silo Pakan</Text>
-            </TouchableOpacity>
+            {user?.role !== 'VETERINER' && (
+              <TouchableOpacity 
+                style={styles.menuItem}
+                onPress={() => navigation.navigate('Health')}
+              >
+                <View style={[styles.menuIcon, { backgroundColor: '#fef3c7' }]}>
+                  <HeartPulse color="#92400e" size={28} />
+                </View>
+                <Text style={styles.menuText}>Rekam Medis</Text>
+              </TouchableOpacity>
+            )}
+            {user?.role === 'STAFF' && (
+              <TouchableOpacity 
+                style={styles.menuItem}
+                onPress={() => {
+                  fetchRecentInputs();
+                  setIsHistoryModalVisible(true);
+                }}
+              >
+                <View style={[styles.menuIcon, { backgroundColor: '#e0e7ff' }]}>
+                  <History color="#4338ca" size={28} />
+                </View>
+                <Text style={styles.menuText}>Histori Input</Text>
+              </TouchableOpacity>
+            )}
 
             <TouchableOpacity 
               style={styles.menuItem}
@@ -553,7 +928,7 @@ const DashboardScreen = ({ navigation }: any) => {
             <View style={styles.modalHeader}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <History size={22} color={COLORS.primary} />
-                <Text style={styles.modalTitle}>Koreksi Input Data</Text>
+                <Text style={styles.modalTitle}>Histori & Koreksi Input 24 Jam</Text>
               </View>
               <TouchableOpacity onPress={() => setIsHistoryModalVisible(false)} style={styles.closeBtn}>
                 <X size={20} color={COLORS.text} />
@@ -612,12 +987,15 @@ const DashboardScreen = ({ navigation }: any) => {
                         <Edit size={14} color="#0369a1" />
                         <Text style={[styles.actionBtnText, { color: '#0369a1' }]}>Koreksi</Text>
                       </TouchableOpacity>
+                      
                       <TouchableOpacity 
                         style={[styles.actionBtn, styles.deleteActionBtn]} 
                         onPress={() => handleDeleteItem(item)}
                       >
                         <Trash2 size={14} color={COLORS.danger} />
-                        <Text style={[styles.actionBtnText, { color: COLORS.danger }]}>Hapus</Text>
+                        <Text style={[styles.actionBtnText, { color: COLORS.danger }]}>
+                          Hapus
+                        </Text>
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -720,6 +1098,277 @@ const DashboardScreen = ({ navigation }: any) => {
           </View>
         </View>
       </Modal>
+
+      {/* ========================================== */}
+      {/* 3. MODAL FILTER SAPI (MULTI-SELECT) */}
+      {/* ========================================== */}
+      <Modal
+        visible={isCowSelectModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setIsCowSelectModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.editModalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Pilih Sapi (Maksimal 5)</Text>
+              <TouchableOpacity onPress={() => setIsCowSelectModalVisible(false)}>
+                <X size={20} color={COLORS.text} />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.modalSubtitle}>Pilih sapi yang ingin dibandingkan performanya di grafik.</Text>
+            
+            <TextInput
+              style={[styles.input, { marginBottom: 12, backgroundColor: '#f1f5f9', borderWidth: 0 }]}
+              placeholder="Cari ID Sapi..."
+              value={searchChartText}
+              onChangeText={setSearchChartText}
+              placeholderTextColor={COLORS.textLight}
+            />
+
+            <ScrollView style={{ maxHeight: 300, marginBottom: SPACING.md }}>
+              <View style={styles.cowSelectGrid}>
+                {livestock.filter(cow => cow.cattleId.toLowerCase().includes(searchChartText.toLowerCase())).slice(0, 15).map(cow => {
+                  const isSelected = selectedChartCows.includes(cow.cattleId);
+                  return (
+                    <TouchableOpacity
+                      key={cow.id}
+                      style={[styles.cowSelectCard, isSelected && styles.cowSelectCardActive]}
+                      onPress={() => {
+                        if (isSelected) {
+                          setSelectedChartCows(prev => prev.filter(id => id !== cow.cattleId));
+                        } else {
+                          if (selectedChartCows.length >= 5) {
+                            Alert.alert('Batas Maksimal', 'Anda hanya dapat memilih maksimal 5 sapi.');
+                            return;
+                          }
+                          setSelectedChartCows(prev => [...prev, cow.cattleId]);
+                        }
+                      }}
+                    >
+                      <Text style={[styles.cowSelectId, isSelected && styles.cowSelectIdActive]}>
+                        {cow.cattleId}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+                {livestock.length === 0 && (
+                  <Text style={{ color: COLORS.textLight, fontStyle: 'italic' }}>Tidak ada data sapi.</Text>
+                )}
+              </View>
+            </ScrollView>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity 
+                style={[styles.modalBtn, styles.modalCancelBtn]} 
+                onPress={() => {
+                  setSelectedChartCows([]);
+                  setIsCowSelectModalVisible(false);
+                }}
+              >
+                <Text style={styles.modalCancelBtnText}>Reset Semua</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.modalBtn, styles.modalSaveBtn]} 
+                onPress={() => setIsCowSelectModalVisible(false)}
+              >
+                <Text style={styles.modalSaveBtnText}>Terapkan Filter</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ========================================== */}
+      {/* 4. MODAL FILTER SAPI UNTUK TABEL (Maks 10) */}
+      {/* ========================================== */}
+      <Modal
+        visible={isTableSelectModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setIsTableSelectModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.editModalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Pilih Sapi untuk Tabel (Maksimal 10)</Text>
+              <TouchableOpacity onPress={() => setIsTableSelectModalVisible(false)}>
+                <X size={20} color={COLORS.text} />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.modalSubtitle}>Pilih sapi yang ingin dibandingkan ringkasan performanya di tabel.</Text>
+            
+            <TextInput
+              style={[styles.input, { marginBottom: 12, backgroundColor: '#f1f5f9', borderWidth: 0 }]}
+              placeholder="Cari ID Sapi..."
+              value={searchTableText}
+              onChangeText={setSearchTableText}
+              placeholderTextColor={COLORS.textLight}
+            />
+
+            <ScrollView style={{ maxHeight: 300, marginBottom: SPACING.md }}>
+              <View style={styles.cowSelectGrid}>
+                {livestock.filter(cow => cow.cattleId.toLowerCase().includes(searchTableText.toLowerCase())).slice(0, 15).map(cow => {
+                  const isSelected = selectedTableCows.includes(cow.cattleId);
+                  return (
+                    <TouchableOpacity
+                      key={cow.id}
+                      style={[styles.cowSelectCard, isSelected && styles.cowSelectCardActive]}
+                      onPress={() => {
+                        if (isSelected) {
+                          setSelectedTableCows(prev => prev.filter(id => id !== cow.cattleId));
+                        } else {
+                          if (selectedTableCows.length >= 10) {
+                            Alert.alert('Batas Maksimal', 'Anda hanya dapat memilih maksimal 10 sapi untuk tabel.');
+                            return;
+                          }
+                          setSelectedTableCows(prev => [...prev, cow.cattleId]);
+                        }
+                      }}
+                    >
+                      <Text style={[styles.cowSelectId, isSelected && styles.cowSelectIdActive]}>
+                        {cow.cattleId}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+                {livestock.length === 0 && (
+                  <Text style={{ color: COLORS.textLight, fontStyle: 'italic' }}>Tidak ada data sapi.</Text>
+                )}
+              </View>
+            </ScrollView>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity 
+                style={[styles.modalBtn, styles.modalCancelBtn]} 
+                onPress={() => {
+                  setSelectedTableCows([]);
+                  setIsTableSelectModalVisible(false);
+                }}
+              >
+                <Text style={styles.modalCancelBtnText}>Reset Semua</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.modalBtn, styles.modalSaveBtn]} 
+                onPress={() => setIsTableSelectModalVisible(false)}
+              >
+                <Text style={styles.modalSaveBtnText}>Terapkan Filter</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ========================================== */}
+      {/* MODAL AKTIVITAS 24 JAM */}
+      {/* ========================================== */}
+      <Modal
+        visible={activityModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setActivityModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.historyModalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Aktivitas 24 Jam Terakhir</Text>
+              <TouchableOpacity onPress={() => setActivityModalVisible(false)}>
+                <X size={20} color={COLORS.text} />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.modalSubtitle}>Riwayat log sistem dan peringatan dalam 24 jam terakhir.</Text>
+
+            {loadingActivities ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={COLORS.primary} />
+              </View>
+            ) : activities.length > 0 ? (
+              <FlatList
+                data={activities}
+                keyExtractor={(item: any) => item.id.toString()}
+                renderItem={({ item }: { item: any }) => (
+                  <View style={styles.historyCard}>
+                    <View style={styles.historyCardBody}>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                        <Text style={styles.historyCattleId}>{item.userName || 'Sistem'} - {item.action || 'Info'}</Text>
+                        <Text style={styles.historyDate}>{new Date(item.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</Text>
+                      </View>
+                      <Text style={styles.historyDetails}>{item.details || item.body || ''}</Text>
+                    </View>
+                  </View>
+                )}
+                style={styles.historyList}
+              />
+            ) : (
+              <View style={styles.emptyContainer}>
+                <Text style={{ color: COLORS.textLight }}>Belum ada aktivitas tercatat hari ini.</Text>
+              </View>
+            )}
+            
+            {user?.role === 'STAFF' && (
+              <TouchableOpacity
+                style={[styles.modalBtn, styles.modalSaveBtn, { marginTop: 16 }]}
+                onPress={() => {
+                  setActivityModalVisible(false);
+                  fetchRecentInputs();
+                  setIsHistoryModalVisible(true);
+                }}
+              >
+                <Text style={styles.modalSaveBtnText}>Koreksi Input Data</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* ========================================== */}
+      {/* MODAL NOTIFIKASI */}
+      {/* ========================================== */}
+      <Modal 
+        visible={notificationModalVisible} 
+        animationType="slide" 
+        transparent={true} 
+        onRequestClose={() => setNotificationModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.historyModalContent, { maxHeight: '80%' }]}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Peringatan Sistem</Text>
+              <TouchableOpacity onPress={() => setNotificationModalVisible(false)}>
+                <X size={20} color={COLORS.text} />
+              </TouchableOpacity>
+            </View>
+            
+            {notifications.length > 0 ? (
+              <FlatList
+                data={notifications}
+                keyExtractor={(item: any) => item.id.toString()}
+                renderItem={({ item }: { item: any }) => (
+                  <View style={{ paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f1f5f9', flexDirection: 'row', alignItems: 'flex-start' }}>
+                    <View style={{ marginTop: 2, marginRight: 12, backgroundColor: '#fee2e2', padding: 6, borderRadius: 8 }}>
+                      <AlertTriangle size={16} color="#ef4444" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                        <Text style={{ fontSize: 13, fontWeight: 'bold', color: COLORS.danger }}>{item.title}</Text>
+                        <Text style={{ fontSize: 11, color: COLORS.textLight }}>{item.time}</Text>
+                      </View>
+                      <Text style={{ fontSize: 12, color: COLORS.text }}>{item.body}</Text>
+                    </View>
+                  </View>
+                )}
+                style={styles.historyList}
+              />
+            ) : (
+              <View style={{ padding: 40, alignItems: 'center' }}>
+                <Bell size={40} color={COLORS.textLight} />
+                <Text style={{ marginTop: 12, color: COLORS.textLight, textAlign: 'center' }}>Tidak ada peringatan. Kondisi aman terkendali.</Text>
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
+
       </ScrollView>
     </SafeAreaView>
   );
@@ -1144,6 +1793,81 @@ const styles = StyleSheet.create({
   modalSaveBtnText: {
     fontWeight: 'bold',
     color: COLORS.white,
+  },
+  cowSelectFilterBtn: {
+    backgroundColor: '#eff6ff',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+  },
+  cowSelectFilterBtnText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: COLORS.primary,
+  },
+  cowSelectGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: SPACING.md,
+  },
+  cowSelectCard: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: '#f1f5f9',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  cowSelectCardActive: {
+    backgroundColor: '#eff6ff',
+    borderColor: COLORS.primary,
+  },
+  cowSelectId: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: COLORS.textLight,
+  },
+  cowSelectIdActive: {
+    color: COLORS.primary,
+  },
+  tableContainer: {
+    marginTop: SPACING.md,
+    borderTopWidth: 1,
+    borderTopColor: '#f1f5f9',
+    paddingTop: SPACING.md,
+  },
+  tableTitle: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: COLORS.text,
+    marginBottom: SPACING.sm,
+  },
+  tableHeader: {
+    flexDirection: 'row',
+    backgroundColor: '#f8fafc',
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    marginBottom: 4,
+  },
+  tableHeaderText: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: COLORS.textLight,
+  },
+  tableRow: {
+    flexDirection: 'row',
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+  },
+  tableRowText: {
+    fontSize: 12,
+    color: COLORS.text,
   }
 });
 
