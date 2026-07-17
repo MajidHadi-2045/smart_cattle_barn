@@ -80,6 +80,8 @@ $ npm install
 $ npm run build
 #Menerapkan Pembaruan ke Internet (Memindahkan ke Nginx)
 $ sudo cp -r dist/* /var/www/smartcattlebarn.site/html/
+# Restrat ngnix
+$ sudo systemctl restart nginx
 # 1. Tarik informasi terbaru dari GitHub tanpa mengubah file
 git fetch origin
 # 2. Paksa kode di VPS agar 100% sama dengan branch 'main' di GitHub
