@@ -20,7 +20,14 @@ Pastikan semua library terpasang: npm install (atau npx expo install --fix).
 
 Scan QR Code dengan Expo Go.
 Coba masuk ke menu Monitoring untuk melihat kondisi kandang real-time, atau menu Livestock untuk melihat detail sapi.
-Aplikasi mobile Anda sekarang sudah fungsional dan memiliki kemampuan real-time yang sama kuatnya dengan versi web. Apakah ada fitur lain yang ingin Anda tambahkan, atau ada bagian UI yang ingin dipoles lagi?
+
+1. Masuk ke folder Mobile & Install EAS CLI
+# cd smartbarn-mobile
+# npm install -g eas-cli
+2. Login ke Akun Expo
+# eas login
+3. Mulai Proses Build APK
+# eas build -p android --profile preview
 
 //Download aplikasi expo Go
 Untuk Pengalaman Mobile Native: Download Expo Go untuk "menjalankan" aplikasi tersebut di HP Anda.

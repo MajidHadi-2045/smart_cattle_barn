@@ -412,11 +412,18 @@ const DashboardHome = ({ isPublicRoute = false }) => {
             });
         };
 
+        const onVitalsData = () => {
+            // Walaupun data sapi tidak ditampilkan di halaman ini, kita gunakan detak jantungnya
+            // (yang masuk setiap 1 detik) sebagai bukti bahwa sistem IoT sedang "Live"
+            setLastSensorUpdate(Date.now());
+        };
+
         // Subscribe to events
         socket.on('connect', onConnect);
         socket.on('disconnect', onDisconnect);
         socket.on('websocket:environment', onEnvironmentData);
         socket.on('websocket:windspeed', onWindspeedData);
+        socket.on('websocket:vitals', onVitalsData);
 
         const pollInterval = setInterval(() => {
             fetchInitialData();
@@ -429,6 +436,7 @@ const DashboardHome = ({ isPublicRoute = false }) => {
             socket.off('disconnect', onDisconnect);
             socket.off('websocket:environment', onEnvironmentData);
             socket.off('websocket:windspeed', onWindspeedData);
+            socket.off('websocket:vitals', onVitalsData);
         };
     }, [selectedZoneId, selectedSectionId, timeRange, wasteFilter]);
 
