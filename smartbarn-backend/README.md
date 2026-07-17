@@ -77,6 +77,7 @@ $ git pull
 #jika ada permbaruan yang mengaharuskan npm install
 $ npm install
 #Build/Compile Ulang Desain Web
+$ rm -rf dist
 $ npm run build
 #Menerapkan Pembaruan ke Internet (Memindahkan ke Nginx)
 $ sudo cp -r dist/* /var/www/smartcattlebarn.site/html/
