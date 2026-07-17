@@ -423,7 +423,7 @@ const DashboardHome = ({ isPublicRoute = false }) => {
         socket.on('disconnect', onDisconnect);
         socket.on('websocket:environment', onEnvironmentData);
         socket.on('websocket:windspeed', onWindspeedData);
-        socket.on('websocket:vitals', onVitalsData);
+        socket.on('vital-update', onVitalsData);
 
         const pollInterval = setInterval(() => {
             fetchInitialData();
@@ -436,7 +436,7 @@ const DashboardHome = ({ isPublicRoute = false }) => {
             socket.off('disconnect', onDisconnect);
             socket.off('websocket:environment', onEnvironmentData);
             socket.off('websocket:windspeed', onWindspeedData);
-            socket.off('websocket:vitals', onVitalsData);
+            socket.off('vital-update', onVitalsData);
         };
     }, [selectedZoneId, selectedSectionId, timeRange, wasteFilter]);
 
