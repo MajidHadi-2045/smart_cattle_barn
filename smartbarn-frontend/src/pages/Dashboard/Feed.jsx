@@ -428,8 +428,8 @@ const Feed = () => {
                                             dailyConsumption += (bkRequirement * (concentrateRatio / 100)) / (concentrateDM / 100);
                                         } else if (isTmr) {
                                             calcCategory = 'TMR';
-                                            const forageDM = cow.forageDM ?? 50; // Assume average DM for TMR
-                                            dailyConsumption += bkRequirement / (forageDM / 100);
+                                            const tmrDM = cow.forageDM ?? 50; 
+                                            dailyConsumption += bkRequirement / (tmrDM / 100);
                                         }
                                     });
                                 } else if (isVitamin) {

@@ -895,6 +895,8 @@ const LivestockDetailScreen = ({ route, navigation }: any) => {
                           computedBkPercent = item.forageDM || 20;
                         } else if (feedForm.feedType === 'Konsentrat') {
                           computedBkPercent = item.concentrateDM || 86;
+                        } else if (feedForm.feedType === 'TMR') {
+                          computedBkPercent = item.forageDM || 50;
                         }
                         
                         await apiClient.post('/livestock/feed', {

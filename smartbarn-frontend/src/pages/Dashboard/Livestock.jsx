@@ -445,11 +445,29 @@ const Livestock = () => {
     };
 
     const getBulkFeedBkPercent = (feedType) => {
+        let totalVal = 0;
+        let count = 0;
+        
+        selectedFeedWeightCows.forEach(cowId => {
+            const cow = cows.find(c => c.id === cowId);
+            if (!cow) return;
+            count++;
+            
+            if (feedType === 'Hijauan') totalVal += (cow.forageDM ?? 20);
+            else if (feedType === 'Konsentrat') totalVal += (cow.concentrateDM ?? 86);
+            else if (feedType === 'Tmr') {
+                 totalVal += (cow.forageDM ?? 50);
+            }
+        });
+        
+        if (count === 0) return 50; // Fallback
+        const avg = totalVal / count;
+        
         switch(feedType) {
-            case 'Hijauan': return 20;
-            case 'Konsentrat': return 86;
-            case 'Konsentrat+hijauan': return 53;
-            case 'Tmr': return 50;
+            case 'Hijauan': return avg;
+            case 'Konsentrat': return avg;
+            case 'Konsentrat+hijauan': return 53; // Hard to average a mix, use fallback
+            case 'Tmr': return avg;
             default: return 50;
         }
     };
@@ -479,7 +497,7 @@ const Livestock = () => {
             totalFeedingFreq += cow.feedingFrequency ?? 2;
 
             // Selalu hitung semua kemungkinan agar UI dinamis jika pengguna mengubah tipe pakan
-            const tmrDM = 50; // Asumsi DM TMR = 50%
+            const tmrDM = cow.forageDM ?? 50; 
             totalTmrAsFed += bkReq / (tmrDM / 100);
 
             if (concentrateRatio !== 999) {
