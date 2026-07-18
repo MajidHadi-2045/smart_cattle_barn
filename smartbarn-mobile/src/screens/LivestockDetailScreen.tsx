@@ -515,31 +515,64 @@ const LivestockDetailScreen = ({ route, navigation }: any) => {
           {/* Rincian As-Fed */}
           <View style={styles.asFedBox}>
             <Text style={styles.asFedHeader}>Rekomendasi Pakan As-Fed:</Text>
+            
             {item.concentrateRatio === 999 ? (
               <View style={styles.asFedItem}>
-                <Text style={styles.asFedItemLabel}>🌾 TMR (@{item.forageDM || 50}% BK)</Text>
-                <Text style={styles.asFedItemValue}>{feedNeeds ? feedNeeds.suggestedForageAsFed.toFixed(2) : '0.00'} kg</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.asFedItemLabel}>🌾 TMR (@{item.forageDM || 50}% BK)</Text>
+                  <Text style={{ fontSize: 10, color: '#6b7280', marginTop: 2 }}>Total Harian: {feedNeeds ? feedNeeds.suggestedForageAsFed.toFixed(2) : '0.00'} kg</Text>
+                </View>
+                <View style={{ alignItems: 'flex-end' }}>
+                  <Text style={styles.asFedItemValue}>{feedNeeds ? (feedNeeds.suggestedForageAsFed / (item.feedingFrequency || 1)).toFixed(2) : '0.00'} kg</Text>
+                  <Text style={{ fontSize: 10, color: '#059669', fontWeight: 'bold' }}>Porsi 1x ({item.feedingFrequency || 1}x/hari)</Text>
+                </View>
               </View>
             ) : item.concentrateRatio === 0 ? (
               <View style={styles.asFedItem}>
-                <Text style={styles.asFedItemLabel}>🌿 Hijauan (@{item.forageDM || 20}% BK)</Text>
-                <Text style={styles.asFedItemValue}>{feedNeeds ? feedNeeds.suggestedForageAsFed.toFixed(2) : '0.00'} kg</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.asFedItemLabel}>🌿 Hijauan (@{item.forageDM || 20}% BK)</Text>
+                  <Text style={{ fontSize: 10, color: '#6b7280', marginTop: 2 }}>Total Harian: {feedNeeds ? feedNeeds.suggestedForageAsFed.toFixed(2) : '0.00'} kg</Text>
+                </View>
+                <View style={{ alignItems: 'flex-end' }}>
+                  <Text style={styles.asFedItemValue}>{feedNeeds ? (feedNeeds.suggestedForageAsFed / (item.feedingFrequency || 1)).toFixed(2) : '0.00'} kg</Text>
+                  <Text style={{ fontSize: 10, color: '#059669', fontWeight: 'bold' }}>Porsi 1x ({item.feedingFrequency || 1}x/hari)</Text>
+                </View>
               </View>
             ) : item.forageRatio === 0 ? (
               <View style={styles.asFedItem}>
-                <Text style={styles.asFedItemLabel}>🌾 Konsentrat (@{item.concentrateDM || 86}% BK)</Text>
-                <Text style={styles.asFedItemValue}>{feedNeeds ? feedNeeds.suggestedConcentrateAsFed.toFixed(2) : '0.00'} kg</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.asFedItemLabel}>🌾 Konsentrat (@{item.concentrateDM || 86}% BK)</Text>
+                  <Text style={{ fontSize: 10, color: '#6b7280', marginTop: 2 }}>Total Harian: {feedNeeds ? feedNeeds.suggestedConcentrateAsFed.toFixed(2) : '0.00'} kg</Text>
+                </View>
+                <View style={{ alignItems: 'flex-end' }}>
+                  <Text style={styles.asFedItemValue}>{feedNeeds ? (feedNeeds.suggestedConcentrateAsFed / (item.feedingFrequency || 1)).toFixed(2) : '0.00'} kg</Text>
+                  <Text style={{ fontSize: 10, color: '#059669', fontWeight: 'bold' }}>Porsi 1x ({item.feedingFrequency || 1}x/hari)</Text>
+                </View>
               </View>
             ) : (
               <>
                 <View style={styles.asFedItem}>
-                  <Text style={styles.asFedItemLabel}>🌿 Hijauan ({item.forageRatio || 60}% Rasio @{item.forageDM || 20}% BK)</Text>
-                  <Text style={styles.asFedItemValue}>{feedNeeds ? feedNeeds.suggestedForageAsFed.toFixed(2) : '0.00'} kg</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.asFedItemLabel}>🌿 Hijauan ({item.forageRatio || 60}% Rasio @{item.forageDM || 20}% BK)</Text>
+                    <Text style={{ fontSize: 10, color: '#6b7280', marginTop: 2 }}>Total Harian: {feedNeeds ? feedNeeds.suggestedForageAsFed.toFixed(2) : '0.00'} kg</Text>
+                  </View>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <Text style={styles.asFedItemValue}>{feedNeeds ? (feedNeeds.suggestedForageAsFed / (item.feedingFrequency || 1)).toFixed(2) : '0.00'} kg</Text>
+                    <Text style={{ fontSize: 10, color: '#059669', fontWeight: 'bold' }}>Porsi 1x</Text>
+                  </View>
                 </View>
+                
                 <View style={styles.asFedItem}>
-                  <Text style={styles.asFedItemLabel}>🌾 Konsentrat ({item.concentrateRatio || 40}% Rasio @{item.concentrateDM || 86}% BK)</Text>
-                  <Text style={styles.asFedItemValue}>{feedNeeds ? feedNeeds.suggestedConcentrateAsFed.toFixed(2) : '0.00'} kg</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.asFedItemLabel}>🌾 Konsentrat ({item.concentrateRatio || 40}% Rasio @{item.concentrateDM || 86}% BK)</Text>
+                    <Text style={{ fontSize: 10, color: '#6b7280', marginTop: 2 }}>Total Harian: {feedNeeds ? feedNeeds.suggestedConcentrateAsFed.toFixed(2) : '0.00'} kg</Text>
+                  </View>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <Text style={styles.asFedItemValue}>{feedNeeds ? (feedNeeds.suggestedConcentrateAsFed / (item.feedingFrequency || 1)).toFixed(2) : '0.00'} kg</Text>
+                    <Text style={{ fontSize: 10, color: '#059669', fontWeight: 'bold' }}>Porsi 1x</Text>
+                  </View>
                 </View>
+
                 <View style={[styles.asFedItem, { borderTopWidth: 1, borderTopColor: '#fef3c7', paddingTop: 6, marginTop: 6 }]}>
                   <Text style={[styles.asFedItemLabel, { fontWeight: 'bold' }]}>Total Campuran Harian</Text>
                   <Text style={[styles.asFedItemValue, { fontWeight: 'bold', color: '#b45309' }]}>
@@ -553,8 +586,8 @@ const LivestockDetailScreen = ({ route, navigation }: any) => {
             {item.feedingFrequency > 1 && (
               <View style={[styles.asFedItem, { borderTopWidth: 1, borderTopColor: '#d1fae5', paddingTop: 8, marginTop: 8, alignItems: 'center' }]}>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.asFedItemLabel, { fontWeight: 'bold', color: '#047857' }]}>🎯 Porsi 1x Pemberian</Text>
-                  <Text style={{ fontSize: 10, color: '#6b7280', marginTop: 2 }}>Kebutuhan dibagi {item.feedingFrequency}x pakan per hari</Text>
+                  <Text style={[styles.asFedItemLabel, { fontWeight: 'bold', color: '#047857' }]}>🎯 Total Porsi 1x Pemberian</Text>
+                  <Text style={{ fontSize: 10, color: '#6b7280', marginTop: 2 }}>Campuran Harian dibagi {item.feedingFrequency}x pakan</Text>
                 </View>
                 <Text style={[styles.asFedItemValue, { fontWeight: 'bold', color: '#047857', fontSize: 16 }]}>
                   {((feedNeeds ? (feedNeeds.suggestedForageAsFed + feedNeeds.suggestedConcentrateAsFed) : 0) / item.feedingFrequency).toFixed(2)} kg
