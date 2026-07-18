@@ -853,7 +853,7 @@ const LivestockDetailScreen = ({ route, navigation }: any) => {
                       const fType = feedForm.feedType.toLowerCase();
                       const sType = (s.feedType || '').toLowerCase();
                       const sName = (s.name || '').toLowerCase();
-                      if (fType.includes('konsentrat+hijauan') || fType === 'tmr') {
+                      if (fType.includes('konsentrat+hijauan')) {
                         return sType.includes('hijauan') || sType.includes('konsentrat') || sName.includes('hijauan') || sName.includes('konsentrat');
                       }
                       return sType.includes(fType) || sName.includes(fType);

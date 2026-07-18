@@ -1939,7 +1939,7 @@ const Livestock = () => {
                                                     const fType = feedInput.feedType.toLowerCase();
                                                     const sType = (s.feedType || '').toLowerCase();
                                                     const sName = (s.name || '').toLowerCase();
-                                                    if (fType.includes('konsentrat+hijauan') || fType === 'tmr') {
+                                                    if (fType.includes('konsentrat+hijauan')) {
                                                         return sType.includes('hijauan') || sType.includes('konsentrat') || sName.includes('hijauan') || sName.includes('konsentrat');
                                                     }
                                                     return sType.includes(fType) || sName.includes(fType);
@@ -2165,7 +2165,7 @@ const Livestock = () => {
                                                         const fType = bulkFeed.feedType.toLowerCase();
                                                         const sType = (s.feedType || '').toLowerCase();
                                                         const sName = (s.name || '').toLowerCase();
-                                                        if (fType.includes('konsentrat+hijauan') || fType === 'tmr') {
+                                                        if (fType.includes('konsentrat+hijauan')) {
                                                             return sType.includes('hijauan') || sType.includes('rumput') || sName.includes('hijauan') || sName.includes('rumput');
                                                         }
                                                         return sType.includes(fType) || sName.includes(fType);
@@ -2176,7 +2176,7 @@ const Livestock = () => {
                                             </select>
                                         </div>
 
-                                        {(bulkFeed.feedType.toLowerCase().includes('konsentrat+hijauan') || bulkFeed.feedType.toLowerCase() === 'tmr') && (
+                                        {(bulkFeed.feedType.toLowerCase().includes('konsentrat+hijauan')) && (
                                             <div>
                                                 <label className="block text-xs font-semibold text-emerald-800 mb-1">Pilih Silo Konsentrat</label>
                                                 <select 

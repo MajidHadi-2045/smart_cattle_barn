@@ -162,10 +162,11 @@ const FeedScreen = () => {
     const isHijauan = typeStr.includes('hijauan') || typeStr.includes('silase') || nameStr.includes('silase') || nameStr.includes('rumput') || nameStr.includes('tebon');
     const isKonsentrat = typeStr.includes('konsentrat') || nameStr.includes('konsentrat') || nameStr.includes('dedak') || nameStr.includes('ampas');
     const isVitamin = typeStr.includes('vitamin') || typeStr.includes('suplemen') || nameStr.includes('vitamin');
+    const isTmr = typeStr.includes('tmr') || nameStr.includes('tmr');
     
     let calcCategory = 'Umum';
 
-    if (isHijauan || isKonsentrat) {
+    if (isHijauan || isKonsentrat || isTmr) {
       cows.forEach(cow => {
         const weight = cow.weight || 0;
         if (weight === 0) return;
@@ -184,6 +185,10 @@ const FeedScreen = () => {
           const concentrateRatio = cow.concentrateRatio ?? 40;
           const concentrateDM = cow.concentrateDM ?? 86;
           dailyConsumption += (bkRequirement * (concentrateRatio / 100)) / (concentrateDM / 100);
+        } else if (isTmr) {
+          calcCategory = 'TMR';
+          const forageDM = cow.forageDM ?? 50; // Assume average DM for TMR
+          dailyConsumption += bkRequirement / (forageDM / 100);
         }
       });
     } else if (isVitamin) {
