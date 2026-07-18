@@ -83,7 +83,7 @@ const DashboardScreen = ({ navigation }: any) => {
   const [livestock, setLivestock] = useState<any[]>([]);
   const [selectedChartCows, setSelectedChartCows] = useState<string[]>([]);
   const [selectedTableCows, setSelectedTableCows] = useState<string[]>([]);
-  const [selectedCowsForChart, setSelectedCowsForChart] = useState<string[]>(['ALL']);
+  const [selectedCowsForChart, setSelectedCowsForChart] = useState<string[]>([]);
   const [isCowSelectModalVisible, setIsCowSelectModalVisible] = useState(false);
   const [isTableSelectModalVisible, setIsTableSelectModalVisible] = useState(false);
   const [searchChartText, setSearchChartText] = useState('');

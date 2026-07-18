@@ -100,7 +100,7 @@ const DashboardHome = ({ isPublicRoute = false }) => {
     const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, item: null, label: '' });
     const [performanceSummary, setPerformanceSummary] = useState({ totalBk: 0, startWeight: 0, endWeight: 0, adg: 0, fcr: 0 });
     const [performanceMultiSummaries, setPerformanceMultiSummaries] = useState([]);
-    const [selectedCowsForChart, setSelectedCowsForChart] = useState(['ALL']);
+    const [selectedCowsForChart, setSelectedCowsForChart] = useState([]);
     const [isDummyChart, setIsDummyChart] = useState(false);
     const [lastSensorUpdate, setLastSensorUpdate] = useState(0); // Set to 0 initially so it shows offline until data arrives
     const [currentTime, setCurrentTime] = useState(Date.now());
@@ -448,6 +448,7 @@ const DashboardHome = ({ isPublicRoute = false }) => {
 
                 if (cleanChartCowIds === '') {
                     setPerformanceData([]);
+                    setSelectedCowsForChart([]);
                 }
                 if (cleanTableCowIds === '') {
                     setPerformanceMultiSummaries([]);
@@ -1234,7 +1235,7 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                             <p className="text-sm text-slate-500">Bahan Kering (BK) Konsumsi vs Pertambahan Bobot</p>
                         </div>
                         <div className="flex flex-col sm:flex-row gap-3">
-                            <div className="relative">
+                            <div className="relative z-20">
                                 <MultiSelectDropdown 
                                     options={cows} 
                                     selectedIds={performanceChartCowIds} 
@@ -1294,7 +1295,7 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                     <div className="mt-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-visible bg-white dark:bg-slate-900/50">
                         <div className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 p-3 flex justify-between items-center rounded-t-xl">
                             <h5 className="text-sm font-bold text-slate-700 dark:text-slate-200">Ringkasan Performa (Avg)</h5>
-                            <div className="relative sm:min-w-[250px] z-50">
+                            <div className="relative sm:min-w-[250px] z-20">
                                 <MultiSelectDropdown 
                                     options={cows} 
                                     selectedIds={performanceTableCowIds} 

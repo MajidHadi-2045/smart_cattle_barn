@@ -24,7 +24,8 @@ import {
   X,
   Trash2,
   Leaf,
-  CheckCircle
+  CheckCircle,
+  AlertTriangle
 } from 'lucide-react-native';
 import { LineChart } from 'react-native-chart-kit';
 
@@ -56,7 +57,7 @@ const PublicDashboardScreen = ({ navigation }: any) => {
   const [livestock, setLivestock] = useState<any[]>([]);
   const [selectedChartCows, setSelectedChartCows] = useState<string[]>([]);
   const [selectedTableCows, setSelectedTableCows] = useState<string[]>([]);
-  const [selectedCowsForChart, setSelectedCowsForChart] = useState<string[]>(['ALL']);
+  const [selectedCowsForChart, setSelectedCowsForChart] = useState<string[]>([]);
   const [isCowSelectModalVisible, setIsCowSelectModalVisible] = useState(false);
   const [isTableSelectModalVisible, setIsTableSelectModalVisible] = useState(false);
 
@@ -119,24 +120,32 @@ const PublicDashboardScreen = ({ navigation }: any) => {
       } catch (err) {
       }
 
-      const chartCowIdParam = selectedChartCows.length > 0 ? `&cowId=${selectedChartCows.join(',')}` : '';
-      const chartRes = await apiClient.get(`/livestock/performance-chart?period=${performanceRange}${chartCowIdParam}`);
-      if (chartRes.data?.data) {
-        setPerformanceData(chartRes.data.data);
-        setSelectedCowsForChart(chartRes.data.selectedCows || ['ALL']);
+      if (selectedChartCows.length === 0) {
+        setPerformanceData([]);
       } else {
-        setPerformanceData(chartRes.data || []);
-        setSelectedCowsForChart(['ALL']);
+        const chartCowIdParam = `&cowId=${selectedChartCows.join(',')}`;
+        const chartRes = await apiClient.get(`/livestock/performance-chart?period=${performanceRange}${chartCowIdParam}`);
+        if (chartRes.data?.data) {
+          setPerformanceData(chartRes.data.data);
+          setSelectedCowsForChart(chartRes.data.selectedCows || []);
+        } else {
+          setPerformanceData(chartRes.data || []);
+          setSelectedCowsForChart(selectedChartCows);
+        }
       }
 
-      const tableCowIdParam = selectedTableCows.length > 0 ? `&cowId=${selectedTableCows.join(',')}` : '';
-      const tableRes = await apiClient.get(`/livestock/performance-chart?period=${performanceRange}${tableCowIdParam}`);
-      if (tableRes.data?.multiSummaries) {
-        setPerformanceSummaries(tableRes.data.multiSummaries);
-      } else if (tableRes.data?.summaries) {
-        setPerformanceSummaries(tableRes.data.summaries);
-      } else {
+      if (selectedTableCows.length === 0) {
         setPerformanceSummaries([]);
+      } else {
+        const tableCowIdParam = `&cowId=${selectedTableCows.join(',')}`;
+        const tableRes = await apiClient.get(`/livestock/performance-chart?period=${performanceRange}${tableCowIdParam}`);
+        if (tableRes.data?.multiSummaries) {
+          setPerformanceSummaries(tableRes.data.multiSummaries);
+        } else if (tableRes.data?.summaries) {
+          setPerformanceSummaries(tableRes.data.summaries);
+        } else {
+          setPerformanceSummaries([]);
+        }
       }
 
       // Fetch Trend Environment
@@ -429,18 +438,24 @@ const PublicDashboardScreen = ({ navigation }: any) => {
                 style={{ marginVertical: 8, borderRadius: 16 }}
               />
             </ScrollView>
+          ) : selectedChartCows.length === 0 ? (
+            <View style={[styles.emptyChart, { padding: 30 }]}>
+              <AlertTriangle size={32} color={COLORS.warning} style={{ marginBottom: 10 }} />
+              <Text style={[styles.chartSubtitle, { textAlign: 'center', fontWeight: 'bold', color: COLORS.text }]}>Silakan Pilih Sapi</Text>
+              <Text style={[styles.chartSubtitle, { textAlign: 'center', marginTop: 4 }]}>Pilih minimal 1 ID sapi pada menu filter di atas untuk melihat grafik performa DMI VS ADG.</Text>
+            </View>
           ) : (
             <View style={styles.emptyChart}>
               <Text style={styles.chartSubtitle}>Belum ada data performa</Text>
             </View>
           )}
-
+ 
           {/* TABLE KOMPARASI PERFORMA */}
           <View style={styles.tableContainer}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.sm }}>
               <Text style={styles.tableTitle}>Ringkasan Performa (Avg)</Text>
               <TouchableOpacity style={styles.cowSelectFilterBtn} onPress={() => setIsTableSelectModalVisible(true)}>
-                <Text style={styles.cowSelectFilterBtnText}>{selectedTableCows.length > 0 ? `${selectedTableCows.length} Sapi` : 'Semua Sapi'}</Text>
+                <Text style={styles.cowSelectFilterBtnText}>{selectedTableCows.length > 0 ? `${selectedTableCows.length} Sapi` : 'Pilih Sapi'}</Text>
               </TouchableOpacity>
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} maximumZoomScale={5} minimumZoomScale={1}>
@@ -471,8 +486,15 @@ const PublicDashboardScreen = ({ navigation }: any) => {
                     </View>
                   ))}
                   {performanceSummaries.length === 0 && (
-                    <View style={{ padding: 12, alignItems: 'center' }}>
-                      <Text style={styles.chartSubtitle}>Data ringkasan tidak tersedia</Text>
+                    <View style={{ padding: 20, alignItems: 'center' }}>
+                      {selectedTableCows.length === 0 ? (
+                        <>
+                          <Text style={[styles.chartSubtitle, { fontWeight: 'bold', color: COLORS.text, marginBottom: 4 }]}>Pilih sapi terlebih dahulu</Text>
+                          <Text style={styles.chartSubtitle}>Gunakan filter sapi untuk memilih data</Text>
+                        </>
+                      ) : (
+                        <Text style={styles.chartSubtitle}>Data ringkasan tidak tersedia</Text>
+                      )}
                     </View>
                   )}
                 </View>

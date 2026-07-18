@@ -940,9 +940,18 @@ export class LivestockService {
     const startDate = new Date();
     startDate.setDate(endDate.getDate() - days + 1);
 
-    const isAllCows = !cowIdsParam || cowIdsParam === 'ALL' || cowIdsParam.trim() === '';
-    // Batasi maksimal 10 sapi untuk query agar tidak berat
-    const cowIds = isAllCows ? [] : cowIdsParam.split(',').map(id => id.trim()).filter(id => id).slice(0, 10);
+    if (!cowIdsParam || cowIdsParam.trim() === '' || cowIdsParam === 'ALL') {
+      return {
+        data: [],
+        isDummy: false,
+        summary: null,
+        multiSummaries: [],
+        selectedCows: []
+      };
+    }
+
+    const isAllCows = false;
+    const cowIds = cowIdsParam.split(',').map(id => id.trim()).filter(id => id).slice(0, 10);
 
     let feeds: any[] = [];
     let weightRecords: any[] = [];
