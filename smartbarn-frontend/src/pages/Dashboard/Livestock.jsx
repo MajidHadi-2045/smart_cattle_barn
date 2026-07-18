@@ -478,15 +478,20 @@ const Livestock = () => {
             
             totalFeedingFreq += cow.feedingFrequency ?? 2;
 
-            if (concentrateRatio === 999) {
-                totalTmrAsFed += bkReq / (forageDM / 100);
-            } else {
+            // Selalu hitung semua kemungkinan agar UI dinamis jika pengguna mengubah tipe pakan
+            const tmrDM = 50; // Asumsi DM TMR = 50%
+            totalTmrAsFed += bkReq / (tmrDM / 100);
+
+            if (concentrateRatio !== 999) {
                 if (forageRatio > 0) {
                     totalForageAsFed += (bkReq * (forageRatio / 100)) / (forageDM / 100);
                 }
                 if (concentrateRatio > 0) {
                     totalConcentrateAsFed += (bkReq * (concentrateRatio / 100)) / (concentrateDM / 100);
                 }
+            } else {
+                 // Jika sapi dikonfigurasi sebagai TMR (999), kita bisa set totalForageAsFed = TMR AsFed juga (sebagai fallback jika user milih hijauan)
+                 totalForageAsFed += bkReq / (tmrDM / 100);
             }
         });
         
@@ -2153,7 +2158,7 @@ const Livestock = () => {
                                             </select>
                                         </div>
                                         <div>
-                                            <label className="block text-xs font-semibold text-emerald-800 mb-1">Pilih Silo {(bulkFeed.feedType.toLowerCase().includes('konsentrat+hijauan') || bulkFeed.feedType.toLowerCase() === 'tmr') ? 'Hijauan' : '(Gudang)'}</label>
+                                            <label className="block text-xs font-semibold text-emerald-800 mb-1">Pilih Silo {(bulkFeed.feedType.toLowerCase().includes('konsentrat+hijauan')) ? 'Hijauan' : '(Gudang)'}</label>
                                             <select 
                                                 value={bulkFeed.siloId} 
                                                 onChange={e => setBulkFeed({...bulkFeed, siloId: e.target.value})} 
