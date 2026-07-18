@@ -459,6 +459,7 @@ const Livestock = () => {
         let totalForageAsFed = 0;
         let totalConcentrateAsFed = 0;
         let totalTmrAsFed = 0;
+        let totalFeedingFreq = 0;
 
         selectedFeedWeightCows.forEach(cowId => {
             const cow = cows.find(c => c.id === cowId);
@@ -474,6 +475,8 @@ const Livestock = () => {
             const concentrateRatio = cow.concentrateRatio ?? 40;
             const forageDM = cow.forageDM ?? 20;
             const concentrateDM = cow.concentrateDM ?? 86;
+            
+            totalFeedingFreq += cow.feedingFrequency ?? 2;
 
             if (concentrateRatio === 999) {
                 totalTmrAsFed += bkReq / (forageDM / 100);
@@ -486,12 +489,15 @@ const Livestock = () => {
                 }
             }
         });
+        
+        const avgFeedingFreq = selectedFeedWeightCows.length > 0 ? Math.round(totalFeedingFreq / selectedFeedWeightCows.length) : 2;
 
         return {
             totalBk,
             totalForageAsFed,
             totalConcentrateAsFed,
-            totalTmrAsFed
+            totalTmrAsFed,
+            avgFeedingFreq
         };
     };
 
@@ -1866,7 +1872,7 @@ const Livestock = () => {
                                         }
                                     }
                                     
-                                    const feedGoal = feedNeeds.feedGoal || 1;
+                                    const feedGoal = selectedCow?.feedingFrequency || feedNeeds.feedGoal || 1;
                                     const singleAsFed = targetAsFed / feedGoal;
                                     
                                     return (
@@ -2233,7 +2239,8 @@ const Livestock = () => {
                                         }
 
                                         const recPerCow = selectedRecTotal / selectedFeedWeightCows.length;
-                                        const recPerCowSession = recPerCow / feedGoal;
+                                        const dynamicFeedGoal = recs.avgFeedingFreq;
+                                        const recPerCowSession = recPerCow / dynamicFeedGoal;
 
                                         return (
                                             <div className="space-y-3 mt-3">
@@ -2255,7 +2262,7 @@ const Livestock = () => {
                                                         </div>
                                                         <div>
                                                             <span className="text-slate-500 block">Goal Makan Harian:</span>
-                                                            <span className="font-bold text-indigo-600 dark:text-indigo-400">{feedGoal}x sehari</span>
+                                                            <span className="font-bold text-indigo-600 dark:text-indigo-400">{dynamicFeedGoal}x sehari</span>
                                                         </div>
                                                     </div>
 
@@ -2273,9 +2280,9 @@ const Livestock = () => {
                                                                     <span className="font-bold text-slate-800 dark:text-slate-200">{recs.totalConcentrateAsFed.toFixed(2)} kg</span>
                                                                 </div>
                                                                 <div className="pt-1.5 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center text-[10px]">
-                                                                    <span className="text-slate-400">Distribusi Porsi ({feedGoal}x Makan):</span>
+                                                                    <span className="text-slate-400">Distribusi Porsi ({dynamicFeedGoal}x Makan):</span>
                                                                     <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                                                                        {selectedFeedWeightCows.length > 1 ? 'Proporsional (Sesuai Kebutuhan BK)' : `Hijauan: ${(recs.totalForageAsFed / feedGoal).toFixed(2)} kg | Kons: ${(recs.totalConcentrateAsFed / feedGoal).toFixed(2)} kg`}
+                                                                        {selectedFeedWeightCows.length > 1 ? 'Proporsional (Sesuai Kebutuhan BK)' : `Hijauan: ${(recs.totalForageAsFed / dynamicFeedGoal).toFixed(2)} kg | Kons: ${(recs.totalConcentrateAsFed / dynamicFeedGoal).toFixed(2)} kg`}
                                                                     </span>
                                                                 </div>
                                                             </div>
@@ -2289,7 +2296,7 @@ const Livestock = () => {
                                                                     <span className="text-slate-500">{selectedFeedWeightCows.length > 1 ? 'Rata-rata Harian (Acuan Dasar):' : 'Total Harian (Per Sapi):'}</span>
                                                                     <span className="font-bold text-slate-800 dark:text-slate-200">{recPerCow.toFixed(2)} kg</span>
                                                                 </div>
-                                                                {feedGoal > 1 && (
+                                                                {dynamicFeedGoal > 1 && (
                                                                     <div className="flex justify-between text-emerald-600 dark:text-emerald-400 font-semibold">
                                                                         <span>{selectedFeedWeightCows.length > 1 ? 'Rata-rata 1x Makan:' : 'Porsi 1x Makan (Per Sapi):'}</span>
                                                                         <span>{recPerCowSession.toFixed(2)} kg</span>
@@ -2306,7 +2313,7 @@ const Livestock = () => {
                                                             >
                                                                 🎯 Gunakan Harian ({selectedFeedWeightCows.length > 1 ? `Acuan ${recPerCow.toFixed(2)} kg` : `${recPerCow.toFixed(2)} kg`})
                                                             </button>
-                                                            {feedGoal > 1 && (
+                                                            {dynamicFeedGoal > 1 && (
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => setBulkFeed({ ...bulkFeed, weightKg: recPerCowSession.toFixed(2) })}
