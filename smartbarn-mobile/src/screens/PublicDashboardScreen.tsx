@@ -397,47 +397,68 @@ const PublicDashboardScreen = ({ navigation }: any) => {
           </View>
 
           {performanceData.length > 0 ? (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} maximumZoomScale={5} minimumZoomScale={1}>
-              <LineChart
-                data={{
-                  labels: performanceData.map(d => {
-                    const date = new Date(d.date);
-                    return `${date.getDate()}/${date.getMonth()+1}`;
-                  }),
-                  datasets: selectedCowsForChart.flatMap((cowId, index) => {
-                    const colors = ['rgba(139, 92, 246, opacity)', 'rgba(16, 185, 129, opacity)', 'rgba(245, 158, 11, opacity)', 'rgba(239, 68, 68, opacity)', 'rgba(59, 130, 246, opacity)', 'rgba(236, 72, 153, opacity)', 'rgba(99, 102, 241, opacity)', 'rgba(20, 184, 166, opacity)'];
-                    const isAll = cowId === 'ALL';
-                    const bkKey = isAll ? 'bk' : `${cowId}_bk`;
-                    const adgKey = isAll ? 'adg' : `${cowId}_adg`;
-                    return [
-                      { data: performanceData.map(d => Number(d[bkKey] || 0)), color: (opacity = 1) => colors[(index * 2) % colors.length].replace('opacity', String(opacity)), strokeWidth: 2 },
-                      { data: performanceData.map(d => Number(d[adgKey] || 0)), color: (opacity = 1) => colors[(index * 2 + 1) % colors.length].replace('opacity', String(opacity)), strokeWidth: 2 }
-                    ];
-                  }),
-                  legend: selectedCowsForChart.flatMap(cowId => {
-                    const isAll = cowId === 'ALL';
-                    return [`BK (${isAll ? 'Avg' : cowId})`, `ADG (${isAll ? 'Avg' : cowId})`];
-                  })
-                }}
-                width={Math.max(Dimensions.get("window").width - SPACING.lg * 2, performanceData.length * 50)}
-                height={220}
-                yAxisLabel=""
-                yAxisSuffix=""
-                yAxisInterval={1}
-                chartConfig={{
-                  backgroundColor: COLORS.white,
-                  backgroundGradientFrom: COLORS.white,
-                  backgroundGradientTo: COLORS.white,
-                  decimalPlaces: 1,
-                  color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                  labelColor: (opacity = 1) => `rgba(100, 116, 139, ${opacity})`,
-                  style: { borderRadius: 16 },
-                  propsForDots: { r: "3", strokeWidth: "1", stroke: "#fff" }
-                }}
-                bezier
-                style={{ marginVertical: 8, borderRadius: 16 }}
-              />
-            </ScrollView>
+            <View>
+              {/* Custom Legend Dinamis untuk Grafik Performa */}
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 12, marginTop: 8, marginBottom: 12 }}>
+                {selectedCowsForChart.map((cowId, index) => {
+                  const colors = ['rgba(139, 92, 246, 1)', 'rgba(16, 185, 129, 1)', 'rgba(245, 158, 11, 1)', 'rgba(239, 68, 68, 1)', 'rgba(59, 130, 246, 1)', 'rgba(236, 72, 153, 1)', 'rgba(99, 102, 241, 1)', 'rgba(20, 184, 166, 1)'];
+                  const isAll = cowId === 'ALL';
+                  const bkColor = colors[(index * 2) % colors.length];
+                  const adgColor = colors[(index * 2 + 1) % colors.length];
+                  
+                  return (
+                    <React.Fragment key={cowId}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: bkColor }} />
+                        <Text style={{ fontSize: 10, color: COLORS.textLight }}>BK ({isAll ? 'Avg' : cowId})</Text>
+                      </View>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: adgColor }} />
+                        <Text style={{ fontSize: 10, color: COLORS.textLight }}>ADG ({isAll ? 'Avg' : cowId})</Text>
+                      </View>
+                    </React.Fragment>
+                  );
+                })}
+              </View>
+
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} maximumZoomScale={5} minimumZoomScale={1}>
+                <LineChart
+                  data={{
+                    labels: performanceData.map(d => {
+                      const date = new Date(d.date);
+                      return `${date.getDate()}/${date.getMonth()+1}`;
+                    }),
+                    datasets: selectedCowsForChart.flatMap((cowId, index) => {
+                      const colors = ['rgba(139, 92, 246, opacity)', 'rgba(16, 185, 129, opacity)', 'rgba(245, 158, 11, opacity)', 'rgba(239, 68, 68, opacity)', 'rgba(59, 130, 246, opacity)', 'rgba(236, 72, 153, opacity)', 'rgba(99, 102, 241, opacity)', 'rgba(20, 184, 166, opacity)'];
+                      const isAll = cowId === 'ALL';
+                      const bkKey = isAll ? 'bk' : `${cowId}_bk`;
+                      const adgKey = isAll ? 'adg' : `${cowId}_adg`;
+                      return [
+                        { data: performanceData.map(d => Number(d[bkKey] || 0)), color: (opacity = 1) => colors[(index * 2) % colors.length].replace('opacity', String(opacity)), strokeWidth: 2 },
+                        { data: performanceData.map(d => Number(d[adgKey] || 0)), color: (opacity = 1) => colors[(index * 2 + 1) % colors.length].replace('opacity', String(opacity)), strokeWidth: 2 }
+                      ];
+                    })
+                  }}
+                  width={Math.max(Dimensions.get("window").width - SPACING.lg * 2, performanceData.length * 50)}
+                  height={220}
+                  yAxisLabel=""
+                  yAxisSuffix=""
+                  yAxisInterval={1}
+                  chartConfig={{
+                    backgroundColor: COLORS.white,
+                    backgroundGradientFrom: COLORS.white,
+                    backgroundGradientTo: COLORS.white,
+                    decimalPlaces: 1,
+                    color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                    labelColor: (opacity = 1) => `rgba(100, 116, 139, ${opacity})`,
+                    style: { borderRadius: 16 },
+                    propsForDots: { r: "3", strokeWidth: "1", stroke: "#fff" }
+                  }}
+                  bezier
+                  style={{ marginVertical: 8, borderRadius: 16 }}
+                />
+              </ScrollView>
+            </View>
           ) : selectedChartCows.length === 0 ? (
             <View style={[styles.emptyChart, { padding: 30 }]}>
               <AlertTriangle size={32} color={COLORS.warning} style={{ marginBottom: 10 }} />

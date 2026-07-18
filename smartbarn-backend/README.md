@@ -117,6 +117,10 @@ $used_memory_peak → penggunaan RAM tertinggi yang pernah dicapai.
 
 $mem_fragmentation_ratio → rasio fragmentasi memori.
 
+pm2 status
+pm2 monit
+redis-cli info memory | grep used_memory_human
+
 ##Notes redis:
 #(Sebagai info tambahan: Redis biasanya sangat ringan dan pintar mengelola memori. Ia jarang menjadi penyebab memori penuh kecuali dikonfigurasi untuk menyimpan data yang berukuran gigabyte. Tersangka utamanya biasanya tetap jatuh pada aplikasi Node.js/PM2 yang menyala berhari-hari tadi)
 
@@ -134,6 +138,9 @@ $ node test-notifikasi.js emailanda@gmail.com ExponentPushToken[xxxxxxxxx]
 
 #Tesing notif Web
 $ node test-notifikasi.js web
+
+#riset db sensor
+$ node reset-sensor.js
 
 
 
