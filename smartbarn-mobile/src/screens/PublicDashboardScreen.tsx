@@ -21,7 +21,10 @@ import {
   Beef, 
   HeartPulse, 
   Activity,
-  X
+  X,
+  Trash2,
+  Leaf,
+  CheckCircle
 } from 'lucide-react-native';
 import { LineChart } from 'react-native-chart-kit';
 
@@ -59,6 +62,12 @@ const PublicDashboardScreen = ({ navigation }: any) => {
 
   const [lastEnvTimestamp, setLastEnvTimestamp] = useState<number>(0);
   const [lastWindTimestamp, setLastWindTimestamp] = useState<number>(0);
+
+  const [wasteStats, setWasteStats] = useState({ fecesKg: 0, urineL: 0 });
+  const [wasteFilter, setWasteFilter] = useState('daily');
+  const [sensorTrendData, setSensorTrendData] = useState<any[]>([]);
+  const [windTrendData, setWindTrendData] = useState<any[]>([]);
+  const [sensorTrendRange, setSensorTrendRange] = useState('24h');
 
   useEffect(() => {
     if (socketData['websocket:environment']) {
@@ -129,6 +138,30 @@ const PublicDashboardScreen = ({ navigation }: any) => {
       } else {
         setPerformanceSummaries([]);
       }
+
+      // Fetch Trend Environment
+      try {
+        const trendRes = await apiClient.get(`/environment/trend/1?range=${sensorTrendRange}`);
+        if (trendRes.data && Array.isArray(trendRes.data)) {
+          const chronological = [...trendRes.data].reverse();
+          setSensorTrendData(chronological.slice(-15));
+        }
+      } catch (e) {}
+
+      // Fetch Trend Wind
+      try {
+        const windRes = await apiClient.get(`/wind/trend/1?range=${sensorTrendRange}`);
+        if (windRes.data && Array.isArray(windRes.data)) {
+          const chronologicalWind = [...windRes.data].reverse();
+          setWindTrendData(chronologicalWind.slice(-15));
+        } else {
+          const windResFallback = await apiClient.get(`/environment/wind/trend/1?range=${sensorTrendRange}`);
+          if (windResFallback.data && Array.isArray(windResFallback.data)) {
+            const chronologicalWind = [...windResFallback.data].reverse();
+            setWindTrendData(chronologicalWind.slice(-15));
+          }
+        }
+      } catch (e) {}
     } catch (error) {
       console.warn('Error fetching public dashboard data:', error);
     }
@@ -136,7 +169,19 @@ const PublicDashboardScreen = ({ navigation }: any) => {
 
   useEffect(() => {
     fetchData();
-  }, [performanceRange, selectedChartCows, selectedTableCows]);
+  }, [performanceRange, selectedChartCows, selectedTableCows, sensorTrendRange]);
+
+  useEffect(() => {
+    const fetchWaste = async () => {
+      try {
+        const wasteRes = await apiClient.get(`/dashboard/waste?filter=${wasteFilter}`);
+        if (wasteRes.data) {
+          setWasteStats({ fecesKg: wasteRes.data.fecesKg || 0, urineL: wasteRes.data.urineL || 0 });
+        }
+      } catch (e) {}
+    };
+    fetchWaste();
+  }, [wasteFilter]);
 
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
@@ -190,8 +235,137 @@ const PublicDashboardScreen = ({ navigation }: any) => {
           <StatCard title="Suhu Ruangan" value={stats.avgTemp !== null ? `${stats.avgTemp}°C` : '--'} target="Target: 25-28°C" icon={Thermometer} color="#f97316" />
           <StatCard title="Kelembapan" value={stats.avgHumidity !== null ? `${stats.avgHumidity}%` : '--'} target="Target: 60-80%" icon={Droplets} color="#3b82f6" />
           <StatCard title="Sirkulasi Angin" value={stats.windSpeed !== null ? `${stats.windSpeed} m/s` : '--'} target="Target: > 1 m/s" icon={Wind} color="#0d9488" />
-          <StatCard title="Amonia (NH3)" value={stats.ammonia !== null ? `${stats.ammonia} ppm` : '--'} target="Batas: < 20 ppm" icon={Activity} color="#ef4444" />
-          <StatCard title="Heat Stress (THI)" value={stats.thi !== null ? stats.thi : '--'} target="Target: < 72" icon={Activity} color="#ec4899" />
+          <StatCard title="Amonia (NH3)" value={stats.ammonia !== null ? `${stats.ammonia} ppm` : '--'} target="Batas: < 20 ppm" icon={Leaf} color="#ef4444" />
+          <StatCard title="Heat Stress (THI)" value={stats.thi !== null ? stats.thi : '--'} target="Target: < 72" icon={CheckCircle} color="#ec4899" />
+        </View>
+
+        {/* MANAJEMEN LIMBAH */}
+        <View style={styles.chartContainer}>
+          <View style={styles.chartHeaderResponsive}>
+            <View style={{ flex: 1, minWidth: 160 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Trash2 size={18} color={COLORS.primary} />
+                <Text style={styles.chartTitle}>Manajemen Limbah</Text>
+              </View>
+              <Text style={styles.chartSubtitle}>Akumulasi produksi Feses dan Urine</Text>
+            </View>
+            <View style={styles.rangeSelector}>
+              <TouchableOpacity onPress={() => setWasteFilter('daily')} style={[styles.rangeBtn, wasteFilter === 'daily' && styles.rangeBtnActive]}><Text style={[styles.rangeBtnText, wasteFilter === 'daily' && styles.rangeBtnTextActive]}>Hr</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => setWasteFilter('weekly')} style={[styles.rangeBtn, wasteFilter === 'weekly' && styles.rangeBtnActive]}><Text style={[styles.rangeBtnText, wasteFilter === 'weekly' && styles.rangeBtnTextActive]}>Mg</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => setWasteFilter('monthly')} style={[styles.rangeBtn, wasteFilter === 'monthly' && styles.rangeBtnActive]}><Text style={[styles.rangeBtnText, wasteFilter === 'monthly' && styles.rangeBtnTextActive]}>Bl</Text></TouchableOpacity>
+            </View>
+          </View>
+          <View style={{ flexDirection: 'row', gap: 12, marginTop: 12 }}>
+            <View style={{ flex: 1, backgroundColor: '#fef3c7', padding: 16, borderRadius: 12, alignItems: 'center' }}>
+              <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#b45309' }}>{wasteStats.fecesKg}</Text>
+              <Text style={{ fontSize: 12, color: '#b45309', marginTop: 4, fontWeight: '500' }}>Feses (Kg)</Text>
+            </View>
+            <View style={{ flex: 1, backgroundColor: '#e0f2fe', padding: 16, borderRadius: 12, alignItems: 'center' }}>
+              <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#0369a1' }}>{wasteStats.urineL}</Text>
+              <Text style={{ fontSize: 12, color: '#0369a1', marginTop: 4, fontWeight: '500' }}>Urine (Liter)</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* GRAFIK TREN SENSOR */}
+        <View style={styles.chartContainer}>
+          <View style={styles.chartHeaderResponsive}>
+            <View style={{ flex: 1, minWidth: 160 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Thermometer size={18} color="#f97316" />
+                <Text style={styles.chartTitle}>Grafik Tren Sensor</Text>
+              </View>
+              <Text style={styles.chartSubtitle}>
+                {sensorTrendRange === '1h' ? '1 JAM TERAKHIR' : sensorTrendRange === '24h' ? '24 JAM TERAKHIR' : sensorTrendRange === '7d' ? '7 HARI TERAKHIR' : '1 BULAN TERAKHIR'}
+              </Text>
+            </View>
+            <View style={styles.rangeSelector}>
+              <TouchableOpacity onPress={() => setSensorTrendRange('1h')} style={[styles.rangeBtn, sensorTrendRange === '1h' && styles.rangeBtnActive]}><Text style={[styles.rangeBtnText, sensorTrendRange === '1h' && styles.rangeBtnTextActive]}>1J</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => setSensorTrendRange('24h')} style={[styles.rangeBtn, sensorTrendRange === '24h' && styles.rangeBtnActive]}><Text style={[styles.rangeBtnText, sensorTrendRange === '24h' && styles.rangeBtnTextActive]}>24J</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => setSensorTrendRange('7d')} style={[styles.rangeBtn, sensorTrendRange === '7d' && styles.rangeBtnActive]}><Text style={[styles.rangeBtnText, sensorTrendRange === '7d' && styles.rangeBtnTextActive]}>7H</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => setSensorTrendRange('30d')} style={[styles.rangeBtn, sensorTrendRange === '30d' && styles.rangeBtnActive]}><Text style={[styles.rangeBtnText, sensorTrendRange === '30d' && styles.rangeBtnTextActive]}>1B</Text></TouchableOpacity>
+            </View>
+          </View>
+          {sensorTrendData.length > 0 ? (
+            <View>
+              {/* Legend Gabungan */}
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 12, marginTop: 8, marginBottom: 8 }}>
+                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                   <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#f97316' }} />
+                   <Text style={{ fontSize: 10, color: COLORS.textLight }}>Suhu (°C)</Text>
+                 </View>
+                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                   <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#3b82f6' }} />
+                   <Text style={{ fontSize: 10, color: COLORS.textLight }}>Kelembapan (%)</Text>
+                 </View>
+                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                   <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#ef4444' }} />
+                   <Text style={{ fontSize: 10, color: COLORS.textLight }}>Amonia (ppm)</Text>
+                 </View>
+                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                   <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#06b6d4' }} />
+                   <Text style={{ fontSize: 10, color: COLORS.textLight }}>Kecepatan Angin (m/s)</Text>
+                 </View>
+              </View>
+
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <LineChart
+                  data={{
+                    labels: sensorTrendData.map(d => {
+                      const date = new Date(d.timestamp || d.time);
+                      if (sensorTrendRange === '1h' || sensorTrendRange === '24h') {
+                        return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+                      }
+                      return `${date.getDate()}/${date.getMonth()+1}`;
+                    }),
+                    datasets: [
+                      {
+                        data: sensorTrendData.map(d => d.temperature || d.temp || 0),
+                        color: (opacity = 1) => `rgba(249, 115, 22, ${opacity})`, // Orange
+                        strokeWidth: 2
+                      },
+                      {
+                        data: sensorTrendData.map(d => d.humidity || 0),
+                        color: (opacity = 1) => `rgba(59, 130, 246, ${opacity})`, // Blue
+                        strokeWidth: 2
+                      },
+                      {
+                        data: sensorTrendData.map(d => d.ammonia || 0),
+                        color: (opacity = 1) => `rgba(239, 68, 68, ${opacity})`, // Red
+                        strokeWidth: 2
+                      },
+                      {
+                        data: sensorTrendData.map((d, i) => windTrendData[i]?.windspeed || 0),
+                        color: (opacity = 1) => `rgba(6, 182, 212, ${opacity})`, // Cyan
+                        strokeWidth: 2
+                      }
+                    ]
+                  }}
+                  width={Math.max(Dimensions.get("window").width - SPACING.lg * 2, sensorTrendData.length * 40)}
+                  height={220}
+                  yAxisLabel=""
+                  yAxisSuffix=""
+                  yAxisInterval={1}
+                  chartConfig={{
+                    backgroundColor: COLORS.white,
+                    backgroundGradientFrom: COLORS.white,
+                    backgroundGradientTo: COLORS.white,
+                    decimalPlaces: 1,
+                    color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                    labelColor: (opacity = 1) => `rgba(100, 116, 139, ${opacity})`,
+                    style: { borderRadius: 16 },
+                    propsForDots: { r: "3", strokeWidth: "2" }
+                  }}
+                  bezier
+                  style={{ marginVertical: 8, borderRadius: 16 }}
+                />
+              </ScrollView>
+            </View>
+          ) : (
+            <View style={{ height: 150, justifyContent: 'center', alignItems: 'center' }}>
+              <Text style={{ color: COLORS.textLight }}>Belum ada data tren sensor.</Text>
+            </View>
+          )}
         </View>
 
         {/* GRAFIK PERFORMA */}
@@ -407,6 +581,19 @@ const styles = StyleSheet.create({
   statIconContainer: { padding: SPACING.sm, borderRadius: 8 },
   chartContainer: { backgroundColor: COLORS.white, borderRadius: 20, padding: SPACING.lg, ...SHADOWS.md, marginBottom: SPACING.xl },
   chartHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: SPACING.md },
+  chartHeaderResponsive: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: SPACING.md,
+  },
+  chartTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: COLORS.text,
+  },
   chartSubtitle: { fontSize: 12, color: COLORS.textLight, marginTop: 4 },
   rangeSelector: { flexDirection: 'row', backgroundColor: '#f1f5f9', borderRadius: 8, padding: 2 },
   rangeBtn: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },

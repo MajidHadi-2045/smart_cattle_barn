@@ -1,18 +1,53 @@
 import React, { useState, useEffect } from 'react';
 import { io } from 'socket.io-client';
 import toast from 'react-hot-toast';
+const playAlarmSound = () => {
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    
+    const playBeep = (startTime, frequency, duration) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      
+      osc.type = 'sawtooth'; // Siren-like tone
+      osc.frequency.setValueAtTime(frequency, startTime);
+      
+      gain.gain.setValueAtTime(0.15, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+      
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      
+      osc.start(startTime);
+      osc.stop(startTime + duration);
+    };
+    
+    const now = ctx.currentTime;
+    playBeep(now, 880, 0.25);
+    playBeep(now + 0.3, 1000, 0.25);
+  } catch (err) {
+    console.log('Failed to play alarm audio:', err);
+  }
+};
+
 const NotificationBell = () => {
   const [notifications, setNotifications] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
-    // Hubungkan ke WebSocket backend
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
-    const socket = io(apiUrl);
+    // Gunakan VITE_API_BASE_URL yang standar (misal: http://localhost:3000/api)
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+    
+    // Hilangkan suffix '/api' untuk koneksi WebSocket/Socket.io
+    const socketUrl = apiBaseUrl.replace(/\/api$/, '');
+    
+    const socket = io(socketUrl);
 
     // Ambil History Notifikasi dari Server
-    fetch(`${apiUrl}/dashboard/notifications`)
+    fetch(`${apiBaseUrl}/dashboard/notifications`)
       .then(res => res.json())
       .then(data => {
         if (data && Array.isArray(data)) {
@@ -29,6 +64,9 @@ const NotificationBell = () => {
 
     // Dengarkan event 'websocket:alert' dari Redis
     socket.on('websocket:alert', (payload) => {
+      // 0. Mainkan Suara Sirene/Alarm di browser
+      playAlarmSound();
+
       // 1. Munculkan Toast Merah di Layar (Seragam dengan Mobile)
       toast.error(
         (t) => (

@@ -84,7 +84,7 @@ const MainTabs = () => {
           name="FeedTab" 
           component={FeedScreen} 
           options={{
-            tabBarLabel: 'Pakan',
+            tabBarLabel: 'Silo Pakan',
             tabBarIcon: ({ color, size }) => <Utensils color={color} size={size} />
           }}
         />

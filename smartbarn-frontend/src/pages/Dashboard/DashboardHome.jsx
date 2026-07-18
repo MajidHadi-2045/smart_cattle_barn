@@ -1277,8 +1277,14 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                                 </LineChart>
                             </ResponsiveContainer>
                         ) : (
-                            <div className="flex h-full items-center justify-center text-slate-400 italic">
-                                Belum ada data korelasi performa yang memadai.
+                            <div className="flex h-full flex-col items-center justify-center text-center p-6">
+                                <svg className="w-12 h-12 text-amber-500 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                                <h4 className="text-lg font-bold text-slate-800 dark:text-white mb-1">Silakan Pilih Sapi</h4>
+                                <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md">
+                                    Pilih minimal 1 ID sapi pada menu filter di atas untuk melihat grafik performa DMI VS ADG.
+                                </p>
                             </div>
                         )}
                     </div>
@@ -1287,7 +1293,7 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                     {/* Ringkasan Performa Table (Multi-Cows) */}
                     <div className="mt-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-visible bg-white dark:bg-slate-900/50">
                         <div className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 p-3 flex justify-between items-center rounded-t-xl">
-                            <h5 className="text-sm font-bold text-slate-700 dark:text-slate-200">Tabel Komparasi Performa</h5>
+                            <h5 className="text-sm font-bold text-slate-700 dark:text-slate-200">Ringkasan Performa (Avg)</h5>
                             <div className="relative sm:min-w-[250px] z-50">
                                 <MultiSelectDropdown 
                                     options={cows} 

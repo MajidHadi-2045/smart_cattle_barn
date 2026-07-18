@@ -7,7 +7,9 @@ import {
   TouchableOpacity, 
   TextInput,
   ScrollView,
-  ActivityIndicator
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform
 } from 'react-native';
 import { COLORS, SPACING, SHADOWS } from '../theme';
 import { X, Beef, MapPin, Activity } from 'lucide-react-native';
@@ -89,8 +91,12 @@ const LivestockFormModal = ({
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
-      <View style={styles.overlay}>
-        <View style={styles.container}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
+        <View style={styles.overlay}>
+          <View style={styles.container}>
           <View style={styles.header}>
             <Text style={styles.title}>{initialData ? 'Edit Data Sapi' : 'Tambah Sapi Baru'}</Text>
             <TouchableOpacity onPress={onClose}>
@@ -182,6 +188,7 @@ const LivestockFormModal = ({
           </TouchableOpacity>
         </View>
       </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 };

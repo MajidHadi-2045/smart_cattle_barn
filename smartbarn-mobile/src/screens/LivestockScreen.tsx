@@ -551,8 +551,8 @@ const LivestockScreen = ({ navigation }: any) => {
         />
       )}
 
-      {/* Floating Action Button - Tambah Sapi (Hanya untuk Admin/Non-Staff) */}
-      {userRole !== 'STAFF' && (
+      {/* Floating Action Button - Tambah Sapi (Hanya untuk Staff) */}
+      {userRole === 'STAFF' && (
         <TouchableOpacity 
           style={styles.fab} 
           onPress={() => setFormVisible(true)}

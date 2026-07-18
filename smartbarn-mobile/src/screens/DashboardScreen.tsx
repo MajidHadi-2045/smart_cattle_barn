@@ -581,11 +581,11 @@ const DashboardScreen = ({ navigation }: any) => {
 
         {/* MANAJEMEN LIMBAH */}
         <View style={styles.chartContainer}>
-          <View style={[styles.chartHeader, { marginBottom: 16 }]}>
-            <View style={{ flex: 1 }}>
+          <View style={styles.chartHeaderResponsive}>
+            <View style={{ flex: 1, minWidth: 160 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <Trash2 size={18} color={COLORS.primary} />
-                <Text style={styles.sectionTitle}>Manajemen Limbah</Text>
+                <Text style={styles.chartTitle}>Manajemen Limbah</Text>
               </View>
               <Text style={styles.chartSubtitle}>Akumulasi produksi Feses dan Urine</Text>
             </View>
@@ -609,11 +609,11 @@ const DashboardScreen = ({ navigation }: any) => {
 
         {/* GRAFIK TREN SENSOR */}
         <View style={styles.chartContainer}>
-          <View style={styles.chartHeader}>
-            <View style={{ flex: 1 }}>
+          <View style={styles.chartHeaderResponsive}>
+            <View style={{ flex: 1, minWidth: 160 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <Thermometer size={18} color="#f97316" />
-                <Text style={styles.sectionTitle}>GRAFIK TREN SENSOR</Text>
+                <Text style={styles.chartTitle}>Grafik Tren Sensor</Text>
               </View>
               <Text style={styles.chartSubtitle}>
                 {sensorTrendRange === '1h' ? '1 JAM TERAKHIR' : sensorTrendRange === '24h' ? '24 JAM TERAKHIR' : sensorTrendRange === '7d' ? '7 HARI TERAKHIR' : '1 BULAN TERAKHIR'}
@@ -1493,6 +1493,19 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: SPACING.md,
+  },
+  chartHeaderResponsive: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: SPACING.md,
+  },
+  chartTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: COLORS.text,
   },
   chartSubtitle: {
     fontSize: 12,

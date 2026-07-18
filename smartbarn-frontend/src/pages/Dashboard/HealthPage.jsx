@@ -387,8 +387,9 @@ const HealthPage = () => {
                     </button>
                 </div>
                 
-                <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                    {!formData.id && (
+                <form onSubmit={handleSubmit} className="flex flex-col max-h-[80vh] overflow-hidden">
+                    <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
+                        {!formData.id && (
                         <div className="flex bg-slate-100 dark:bg-slate-900 p-1 rounded-xl mb-4">
                             <button
                                 type="button"
@@ -574,7 +575,8 @@ const HealthPage = () => {
                         />
                     </div>
 
-                    <div className="pt-4 flex gap-3">
+                    </div>
+                    <div className="p-5 border-t border-slate-100 dark:border-slate-700 flex gap-3 bg-slate-50 dark:bg-slate-800/50 shrink-0">
                         <button
                             type="button"
                             onClick={() => setIsModalOpen(false)}

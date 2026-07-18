@@ -10,7 +10,9 @@ import {
   Alert,
   Modal,
   TextInput,
-  ScrollView
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, SPACING, SHADOWS } from '../theme';
@@ -39,6 +41,11 @@ const HealthScreen = () => {
     status: 'SAKIT',
     pemeriksa: ''
   });
+  
+  const [livestock, setLivestock] = useState<any[]>([]);
+  const [isSelectAll, setIsSelectAll] = useState(true);
+  const [selectedCattleIds, setSelectedCattleIds] = useState<string[]>([]);
+  const [cattleSearchQuery, setCattleSearchQuery] = useState('');
 
   const fetchRecords = async () => {
     try {
@@ -67,14 +74,27 @@ const HealthScreen = () => {
         setFormData(prev => ({ ...prev, pemeriksa: userObj.name || '' }));
       }
     };
+    const fetchLivestock = async () => {
+      try {
+        const response = await apiClient.get('/livestock');
+        setLivestock(response.data || []);
+      } catch (error) {
+        console.error('Error fetching livestock:', error);
+      }
+    };
     getRole();
     fetchRecords();
+    fetchLivestock();
   }, []);
 
   const handleOpenAddForm = () => {
     setIsEditing(false);
     setSelectedRecordId(null);
     setFormData(prev => ({ ...prev, cattleId: '', diagnosa: '', penanganan: '', status: 'SAKIT' }));
+    setExamType('INDIVIDU');
+    setIsSelectAll(true);
+    setSelectedCattleIds([]);
+    setCattleSearchQuery('');
     setModalVisible(true);
   };
 
@@ -115,8 +135,16 @@ const HealthScreen = () => {
   };
 
   const handleSubmit = async () => {
-    if (!formData.cattleId || !formData.diagnosa || !formData.penanganan) {
-      Alert.alert('Error', 'Semua field wajib diisi!');
+    if (examType === 'INDIVIDU' && !formData.cattleId) {
+      Alert.alert('Error', 'ID Sapi wajib diisi!');
+      return;
+    }
+    if (examType === 'MASSAL' && !isSelectAll && selectedCattleIds.length === 0) {
+      Alert.alert('Error', 'Silakan pilih minimal 1 sapi!');
+      return;
+    }
+    if (!formData.diagnosa || !formData.penanganan) {
+      Alert.alert('Error', 'Diagnosis/Vaksin dan Detail Penanganan wajib diisi!');
       return;
     }
     
@@ -125,6 +153,18 @@ const HealthScreen = () => {
       if (isEditing && selectedRecordId) {
         await apiClient.patch(`/health/${selectedRecordId}`, formData);
         Alert.alert('Sukses', 'Catatan pemeriksaan berhasil diperbarui!');
+      } else if (examType === 'MASSAL') {
+        await apiClient.post('/health/bulk', {
+          cattleIds: isSelectAll ? [] : selectedCattleIds,
+          diagnosis: formData.diagnosa,
+          treatment: formData.penanganan,
+          status: formData.status === 'SAKIT' ? 'Sakit' : 
+                  formData.status === 'DALAM_PERAWATAN' ? 'Dalam Perawatan' : 
+                  formData.status === 'SEMBUH' ? 'Sembuh' : 
+                  formData.status === 'KRITIS' ? 'Kritis' : 'Mati',
+          vet: formData.pemeriksa
+        });
+        Alert.alert('Sukses', 'Catatan pemeriksaan massal berhasil disimpan!');
       } else {
         await apiClient.post('/health', formData);
         Alert.alert('Sukses', 'Catatan pemeriksaan berhasil ditambahkan!');
@@ -133,6 +173,9 @@ const HealthScreen = () => {
       setIsEditing(false);
       setSelectedRecordId(null);
       setFormData(prev => ({ ...prev, cattleId: '', diagnosa: '', penanganan: '', status: 'SAKIT' }));
+      setIsSelectAll(true);
+      setSelectedCattleIds([]);
+      setCattleSearchQuery('');
       fetchRecords(); // Refresh data
     } catch (error) {
       Alert.alert('Gagal', 'Terjadi kesalahan saat menyimpan data.');
@@ -261,8 +304,12 @@ const HealthScreen = () => {
         transparent={true}
         onRequestClose={() => setModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1 }}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{isEditing ? 'Edit Catatan Pemeriksaan' : 'Catatan Pemeriksaan Baru'}</Text>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
@@ -301,10 +348,113 @@ const HealthScreen = () => {
                 </View>
               ) : (
                 <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Pilih Target Sapi *</Text>
-                  <View style={styles.infoBox}>
-                    <Text style={styles.infoText}>Semua sapi yang terdaftar di peternakan akan dicatat rekam medis kesehatannya sekaligus.</Text>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <Text style={styles.inputLabel}>Pilih Target Sapi *</Text>
+                    <View style={{ flexDirection: 'row', gap: 8 }}>
+                      <TouchableOpacity
+                        style={{
+                          paddingHorizontal: 10,
+                          paddingVertical: 5,
+                          borderRadius: 6,
+                          backgroundColor: isSelectAll ? COLORS.primary : '#f1f5f9'
+                        }}
+                        onPress={() => setIsSelectAll(true)}
+                      >
+                        <Text style={{ fontSize: 11, fontWeight: 'bold', color: isSelectAll ? COLORS.white : COLORS.text }}>
+                          Semua Sapi
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={{
+                          paddingHorizontal: 10,
+                          paddingVertical: 5,
+                          borderRadius: 6,
+                          backgroundColor: !isSelectAll ? COLORS.primary : '#f1f5f9'
+                        }}
+                        onPress={() => setIsSelectAll(false)}
+                      >
+                        <Text style={{ fontSize: 11, fontWeight: 'bold', color: !isSelectAll ? COLORS.white : COLORS.text }}>
+                          Sapi Pilihan
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
+
+                  {isSelectAll ? (
+                    <View style={styles.infoBox}>
+                      <Text style={styles.infoText}>
+                        Semua sapi ({livestock.length} ekor) yang terdaftar di peternakan akan dicatat rekam medis kesehatannya sekaligus.
+                      </Text>
+                    </View>
+                  ) : (
+                    <View style={{ gap: 8 }}>
+                      <TextInput
+                        style={[styles.input, { height: 40, fontSize: 14 }]}
+                        placeholder="Cari ID Sapi..."
+                        value={cattleSearchQuery}
+                        onChangeText={setCattleSearchQuery}
+                      />
+                      <View style={{
+                        maxHeight: 150,
+                        borderWidth: 1,
+                        borderColor: '#e2e8f0',
+                        borderRadius: 8,
+                        padding: 8,
+                        backgroundColor: '#f8fafc'
+                      }}>
+                        <ScrollView nestedScrollEnabled style={{ flexGrow: 0 }}>
+                          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                            {livestock
+                              .filter(cow => (cow.cattleId || '').toLowerCase().includes(cattleSearchQuery.toLowerCase()))
+                              .map(cow => {
+                                const isChecked = selectedCattleIds.includes(cow.cattleId);
+                                return (
+                                  <TouchableOpacity
+                                    key={cow.cattleId}
+                                    style={{
+                                      flexDirection: 'row',
+                                      alignItems: 'center',
+                                      paddingHorizontal: 8,
+                                      paddingVertical: 6,
+                                      borderRadius: 6,
+                                      borderWidth: 1,
+                                      borderColor: isChecked ? COLORS.primary : '#e2e8f0',
+                                      backgroundColor: isChecked ? '#eff6ff' : COLORS.white,
+                                      gap: 4
+                                    }}
+                                    onPress={() => {
+                                      if (isChecked) {
+                                        setSelectedCattleIds(prev => prev.filter(id => id !== cow.cattleId));
+                                      } else {
+                                        setSelectedCattleIds(prev => [...prev, cow.cattleId]);
+                                      }
+                                    }}
+                                  >
+                                    <View style={{
+                                      width: 14,
+                                      height: 14,
+                                      borderRadius: 3,
+                                      borderWidth: 1.5,
+                                      borderColor: isChecked ? COLORS.primary : '#94a3b8',
+                                      backgroundColor: isChecked ? COLORS.primary : 'transparent',
+                                      justifyContent: 'center',
+                                      alignItems: 'center'
+                                    }}>
+                                      {isChecked && <Text style={{ color: COLORS.white, fontSize: 8, fontWeight: 'bold' }}>✓</Text>}
+                                    </View>
+                                    <Text style={{ fontSize: 12, fontWeight: 'bold', color: COLORS.text }}>{cow.cattleId}</Text>
+                                  </TouchableOpacity>
+                                );
+                              })
+                            }
+                          </View>
+                        </ScrollView>
+                      </View>
+                      <Text style={{ fontSize: 11, color: COLORS.textLight }}>
+                        Terpilih: <Text style={{ fontWeight: 'bold', color: COLORS.primary }}>{selectedCattleIds.length}</Text> dari {livestock.length} sapi
+                      </Text>
+                    </View>
+                  )}
                 </View>
               )}
 
@@ -391,7 +541,8 @@ const HealthScreen = () => {
             </View>
           </View>
         </View>
-      </Modal>
+      </KeyboardAvoidingView>
+    </Modal>
     </SafeAreaView>
   );
 };
