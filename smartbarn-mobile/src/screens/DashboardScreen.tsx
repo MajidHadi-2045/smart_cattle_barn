@@ -141,6 +141,14 @@ const DashboardScreen = ({ navigation }: any) => {
 
   const [lastEnvTimestamp, setLastEnvTimestamp] = useState<number>(0);
   const [lastWindTimestamp, setLastWindTimestamp] = useState<number>(0);
+  const [currentTime, setCurrentTime] = useState<number>(Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(Date.now()), 10000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const isDataLive = isConnected && lastEnvTimestamp > 0 && (currentTime - lastEnvTimestamp < 70000);
 
   // Update stats saat ada data baru dari socket
   useEffect(() => {
@@ -486,7 +494,9 @@ const DashboardScreen = ({ navigation }: any) => {
         <View>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Text style={styles.greeting}>Halo, {user?.name || 'Peternak'}!</Text>
-            <View style={[styles.statusDot, { backgroundColor: isConnected ? COLORS.success : COLORS.danger }]} />
+            <View 
+              style={[styles.statusDot, { backgroundColor: isDataLive ? COLORS.success : COLORS.danger }]} 
+            />
           </View>
           <Text style={styles.date}>{new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })}</Text>
         </View>

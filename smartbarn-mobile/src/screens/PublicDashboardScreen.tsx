@@ -63,6 +63,14 @@ const PublicDashboardScreen = ({ navigation }: any) => {
 
   const [lastEnvTimestamp, setLastEnvTimestamp] = useState<number>(0);
   const [lastWindTimestamp, setLastWindTimestamp] = useState<number>(0);
+  const [currentTime, setCurrentTime] = useState<number>(Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(Date.now()), 10000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const isDataLive = isConnected && lastEnvTimestamp > 0 && (currentTime - lastEnvTimestamp < 70000);
 
   const [wasteStats, setWasteStats] = useState({ fecesKg: 0, urineL: 0 });
   const [wasteFilter, setWasteFilter] = useState('daily');
@@ -91,6 +99,42 @@ const PublicDashboardScreen = ({ navigation }: any) => {
       }));
     }
   }, [socketData]);
+
+  // Efek interval untuk mendeteksi matinya data sensor lingkungan (stale) setelah 70 detik
+  useEffect(() => {
+    const checkStale = setInterval(() => {
+      const now = Date.now();
+      setStats(prev => {
+        let nextAvgTemp = prev.avgTemp;
+        let nextAvgHumidity = prev.avgHumidity;
+        let nextWindSpeed = prev.windSpeed;
+        let nextThi = prev.thi;
+
+        if (now - lastEnvTimestamp > 70000) {
+          nextAvgTemp = null;
+          nextAvgHumidity = null;
+          nextThi = null;
+        }
+        if (now - lastWindTimestamp > 70000) {
+          nextWindSpeed = null;
+        }
+
+        if (nextAvgTemp === prev.avgTemp && nextAvgHumidity === prev.avgHumidity && nextWindSpeed === prev.windSpeed && nextThi === prev.thi) {
+          return prev;
+        }
+
+        return {
+          ...prev,
+          avgTemp: nextAvgTemp,
+          avgHumidity: nextAvgHumidity,
+          windSpeed: nextWindSpeed,
+          thi: nextThi
+        };
+      });
+    }, 5000);
+
+    return () => clearInterval(checkStale);
+  }, [lastEnvTimestamp, lastWindTimestamp]);
 
   const fetchData = async () => {
     try {
@@ -219,9 +263,9 @@ const PublicDashboardScreen = ({ navigation }: any) => {
         <View style={{ alignItems: 'center' }}>
           <Text style={styles.headerTitle}>Dashboard Publik</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
-            <View style={[styles.statusDot, { backgroundColor: isConnected ? COLORS.success : COLORS.danger }]} />
+            <View style={[styles.statusDot, { backgroundColor: isDataLive ? COLORS.success : COLORS.danger }]} />
             <Text style={{ fontSize: 12, color: COLORS.textLight, marginLeft: 4 }}>
-              {isConnected ? 'Sensor Terhubung' : 'Sensor Terputus'}
+              {!isConnected ? 'Koneksi Terputus' : (!isDataLive ? 'Sensor Tidak Aktif' : 'Sensor Terhubung (Live)')}
             </Text>
           </View>
         </View>

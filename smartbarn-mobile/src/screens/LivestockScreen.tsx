@@ -12,7 +12,7 @@ import {
   ScrollView,
   Alert
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, SPACING, SHADOWS } from '../theme';
 import { 
   Search, 
@@ -55,6 +55,7 @@ const fetcherMulti = async () => {
 
 const LivestockScreen = ({ navigation }: any) => {
   const { data: swrData, isLoading: swrLoading, mutate: mutateLivestock } = useSWR('/livestock-bundle', fetcherMulti);
+  const insets = useSafeAreaInsets();
 
   const [livestock, setLivestock] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -551,15 +552,7 @@ const LivestockScreen = ({ navigation }: any) => {
         />
       )}
 
-      {/* Floating Action Button - Tambah Sapi (Hanya untuk Staff) */}
-      {userRole === 'STAFF' && (
-        <TouchableOpacity 
-          style={styles.fab} 
-          onPress={() => setFormVisible(true)}
-        >
-          <Plus size={30} color={COLORS.white} />
-        </TouchableOpacity>
-      )}
+
 
       {/* MODAL 1: COLLECTIVE WASTE LOGGING */}
       <Modal visible={wasteModalVisible} animationType="slide" transparent>
@@ -1122,9 +1115,15 @@ const LivestockScreen = ({ navigation }: any) => {
 
       {/* FLOATING ACTION BUTTON (SPEED DIAL) FOR STAFF */}
       {userRole === 'STAFF' && (
-        <View style={styles.fabContainer}>
+        <View style={[styles.fabContainer, { bottom: 24 + insets.bottom }]}>
           {fabExpanded && (
             <View style={styles.fabMenu}>
+              <TouchableOpacity style={styles.fabMenuItem} onPress={() => { setFabExpanded(false); setFormVisible(true); }}>
+                <Text style={styles.fabMenuLabel}>Tambah Sapi</Text>
+                <View style={[styles.fabIconBtn, { backgroundColor: COLORS.primary }]}>
+                  <Plus size={20} color={COLORS.white} />
+                </View>
+              </TouchableOpacity>
               <TouchableOpacity style={styles.fabMenuItem} onPress={() => { setFabExpanded(false); setWasteModalVisible(true); }}>
                 <Text style={styles.fabMenuLabel}>Manajemen Limbah</Text>
                 <View style={[styles.fabIconBtn, { backgroundColor: '#d97706' }]}>

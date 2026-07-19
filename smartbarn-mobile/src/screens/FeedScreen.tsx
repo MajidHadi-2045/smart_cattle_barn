@@ -40,6 +40,80 @@ const FeedScreen = () => {
   const [scheduleForm, setScheduleForm] = useState<any>({ id: null, time: '08:00', zoneId: '', feedType: 'Hijauan', siloId: '', status: 'BELUM' });
   const [userRole, setUserRole] = useState<string | null>(null);
 
+  // States untuk Silo & Transaksi Pakan
+  const [siloModalVisible, setSiloModalVisible] = useState(false);
+  const [siloForm, setSiloForm] = useState({ id: null as number | null, name: '', feedType: 'Hijauan', capacity: '100', currentStock: '0', unit: 'Kg', expiryDate: '' });
+  
+  const [txModalVisible, setTxModalVisible] = useState(false);
+  const [selectedSiloForTx, setSelectedSiloForTx] = useState<any>(null);
+  const [txForm, setTxForm] = useState({ type: 'MASUK' as 'MASUK' | 'KELUAR', weightKg: '', description: '', expiryDate: '' });
+
+  const handleSaveSilo = async () => {
+    if (!siloForm.name) return Alert.alert('Error', 'Nama silo tidak boleh kosong');
+    const payload = {
+      name: siloForm.name,
+      feedType: siloForm.feedType,
+      capacity: parseFloat(siloForm.capacity || '0'),
+      currentStock: parseFloat(siloForm.currentStock || '0'),
+      unit: siloForm.unit,
+      expiryDate: siloForm.expiryDate || null
+    };
+    try {
+      if (siloForm.id) {
+        await apiClient.patch(`/feed/silo/${siloForm.id}`, payload);
+        Alert.alert('Sukses', 'Silo berhasil diperbarui');
+      } else {
+        await apiClient.post('/feed/silo', payload);
+        Alert.alert('Sukses', 'Silo berhasil ditambahkan');
+      }
+      setSiloModalVisible(false);
+      fetchFeedData();
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.message || err.message || 'Gagal menyimpan silo';
+      Alert.alert('Error', errorMsg);
+    }
+  };
+
+  const handleDeleteSilo = (id: number) => {
+    Alert.alert('Hapus Silo', 'Yakin ingin menghapus silo ini?', [
+      { text: 'Batal', style: 'cancel' },
+      { 
+        text: 'Hapus', 
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await apiClient.delete(`/feed/silo/${id}`);
+            Alert.alert('Sukses', 'Silo terhapus');
+            fetchFeedData();
+          } catch (err: any) {
+            const errorMsg = err.response?.data?.message || err.message || 'Gagal menghapus silo';
+            Alert.alert('Error', errorMsg);
+          }
+        }
+      }
+    ]);
+  };
+
+  const handleSaveTransaction = async () => {
+    if (!selectedSiloForTx) return;
+    if (!txForm.weightKg) return Alert.alert('Error', 'Jumlah tidak boleh kosong');
+    const payload = {
+      type: txForm.type,
+      weightKg: parseFloat(txForm.weightKg),
+      description: txForm.description,
+      expiryDate: txForm.expiryDate || null
+    };
+    try {
+      await apiClient.post(`/feed/silo/${selectedSiloForTx.id}/transaction`, payload);
+      Alert.alert('Sukses', 'Transaksi berhasil disimpan');
+      setTxModalVisible(false);
+      fetchFeedData();
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.message || err.message || 'Gagal menyimpan transaksi';
+      Alert.alert('Error', errorMsg);
+    }
+  };
+
   useEffect(() => {
     const checkUserRole = async () => {
       const userStr = await AsyncStorage.getItem('user');
@@ -218,13 +292,37 @@ const FeedScreen = () => {
               </View>
             </View>
           </View>
-          <View style={[styles.statusBadge, { backgroundColor: isKritis ? '#fee2e2' : '#dcfce7' }]}>
-            <Text style={[styles.statusText, { color: isKritis ? COLORS.danger : COLORS.success }]}>
-              {silo.status}
-            </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            {userRole === 'STAFF' && (
+              <View style={{ flexDirection: 'row', gap: 6, marginRight: 4 }}>
+                <TouchableOpacity onPress={() => {
+                  setSiloForm({
+                    id: silo.id,
+                    name: silo.name,
+                    feedType: silo.feedType || 'Hijauan',
+                    capacity: silo.capacity.toString(),
+                    currentStock: silo.currentStock.toString(),
+                    unit: silo.unit,
+                    expiryDate: silo.expiryDate ? silo.expiryDate.split('T')[0] : ''
+                  });
+                  setSiloModalVisible(true);
+                }}>
+                  <Text style={{ color: COLORS.primary, fontWeight: 'bold', fontSize: 12 }}>Edit</Text>
+                </TouchableOpacity>
+                <Text style={{ color: '#cbd5e1', fontSize: 12 }}>|</Text>
+                <TouchableOpacity onPress={() => handleDeleteSilo(silo.id)}>
+                  <Text style={{ color: COLORS.danger, fontWeight: 'bold', fontSize: 12 }}>Hapus</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+            <View style={[styles.statusBadge, { backgroundColor: isKritis ? '#fee2e2' : '#dcfce7' }]}>
+              <Text style={[styles.statusText, { color: isKritis ? COLORS.danger : COLORS.success }]}>
+                {silo.status}
+              </Text>
+            </View>
           </View>
         </View>
-
+ 
         <View style={styles.stockContainer}>
           <View style={styles.progressBarBg}>
             <View style={[styles.progressBarFill, { width: `${Math.min(percentage, 100)}%`, backgroundColor: barColor }]} />
@@ -234,7 +332,7 @@ const FeedScreen = () => {
             <Text style={styles.percentageText}>{percentage}%</Text>
           </View>
         </View>
-
+ 
         {/* Info Estimasi Ketahanan (Sinkron dengan Web) */}
         {isVitamin ? (
           <View style={styles.expiryBox}>
@@ -265,7 +363,7 @@ const FeedScreen = () => {
                 </View>
               </View>
             </View>
-
+ 
             <View style={[styles.realisasiBox, { backgroundColor: '#f0fdf4', borderColor: '#bbf7d0', padding: SPACING.md, borderRadius: 12, borderWidth: 1, marginBottom: SPACING.md }]}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#16a34a' }}>📊 REALISASI KELUAR HARI INI</Text>
@@ -275,6 +373,32 @@ const FeedScreen = () => {
           </>
         )}
 
+        {userRole === 'STAFF' && (
+          <TouchableOpacity 
+            style={{ 
+              backgroundColor: '#eff6ff', 
+              borderColor: '#bfdbfe', 
+              borderWidth: 1, 
+              paddingVertical: 8, 
+              borderRadius: 8, 
+              alignItems: 'center', 
+              marginBottom: SPACING.md 
+            }}
+            onPress={() => {
+              setSelectedSiloForTx(silo);
+              setTxForm({
+                type: 'MASUK',
+                weightKg: '',
+                description: '',
+                expiryDate: silo.expiryDate ? silo.expiryDate.split('T')[0] : ''
+              });
+              setTxModalVisible(true);
+            }}
+          >
+            <Text style={{ color: COLORS.primary, fontWeight: 'bold', fontSize: 12 }}>🔄 Catat Transaksi (Pakan Masuk/Keluar)</Text>
+          </TouchableOpacity>
+        )}
+ 
         <View style={styles.footer}>
           <View style={styles.meta}>
             <Zap size={14} color={COLORS.textLight} />
@@ -318,31 +442,47 @@ const FeedScreen = () => {
       ) : activeTab === 'silo' ? (() => {
         const totalPages = Math.ceil(silos.length / ITEMS_PER_PAGE);
         const paginatedSilos = silos.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+        const canManageSilos = userRole === 'STAFF';
         return (
-        <FlatList
-          data={paginatedSilos}
-          renderItem={SiloCard}
-          keyExtractor={item => item.id.toString()}
-          contentContainerStyle={styles.listContent}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchFeedData(); setCurrentPage(1); }} />}
-          ListFooterComponent={
-            totalPages > 1 ? (
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 15, paddingHorizontal: 10 }}>
-                <Text style={{ color: COLORS.primary, fontWeight: 'bold' }} onPress={() => setCurrentPage(prev => Math.max(prev - 1, 1))}>
-                  {currentPage > 1 ? 'Mundur' : ''}
-                </Text>
-                <Text style={{ color: COLORS.text, fontWeight: 'bold' }}>{currentPage} / {totalPages}</Text>
-                <Text style={{ color: COLORS.primary, fontWeight: 'bold' }} onPress={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}>
-                  {currentPage < totalPages ? 'Lanjut' : ''}
-                </Text>
+          <View style={{ flex: 1 }}>
+            {canManageSilos && (
+              <View style={{ padding: SPACING.md, backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }}>
+                <TouchableOpacity 
+                  style={{ backgroundColor: COLORS.primary, padding: 12, borderRadius: 8, alignItems: 'center' }}
+                  onPress={() => {
+                    setSiloForm({ id: null, name: '', feedType: 'Hijauan', capacity: '100', currentStock: '0', unit: 'Kg', expiryDate: '' });
+                    setSiloModalVisible(true);
+                  }}
+                >
+                  <Text style={{ color: COLORS.white, fontWeight: 'bold' }}>+ Tambah Silo</Text>
+                </TouchableOpacity>
               </View>
-            ) : null
-          }
-        />
+            )}
+            <FlatList
+              data={paginatedSilos}
+              renderItem={SiloCard}
+              keyExtractor={item => item.id.toString()}
+              contentContainerStyle={styles.listContent}
+              refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchFeedData(); setCurrentPage(1); }} />}
+              ListFooterComponent={
+                totalPages > 1 ? (
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 15, paddingHorizontal: 10 }}>
+                    <Text style={{ color: COLORS.primary, fontWeight: 'bold' }} onPress={() => setCurrentPage(prev => Math.max(prev - 1, 1))}>
+                      {currentPage > 1 ? 'Mundur' : ''}
+                    </Text>
+                    <Text style={{ color: COLORS.text, fontWeight: 'bold' }}>{currentPage} / {totalPages}</Text>
+                    <Text style={{ color: COLORS.primary, fontWeight: 'bold' }} onPress={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}>
+                      {currentPage < totalPages ? 'Lanjut' : ''}
+                    </Text>
+                  </View>
+                ) : null
+              }
+            />
+          </View>
         );
       })() : activeTab === 'schedule' ? (
         <View style={{ flex: 1 }}>
-          {userRole !== 'STAFF' && (
+          {userRole === 'STAFF' && (
             <View style={{ padding: SPACING.md, backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }}>
               <TouchableOpacity 
                 style={{ backgroundColor: COLORS.primary, padding: 12, borderRadius: 8, alignItems: 'center' }}
@@ -377,7 +517,7 @@ const FeedScreen = () => {
               <Text style={{ color: COLORS.textLight, fontSize: 14 }}>Waktu: {item.time}</Text>
               <Text style={{ color: COLORS.textLight, fontSize: 14 }}>Kandang: {item.zone ? item.zone.name : 'Semua Kandang'}</Text>
               
-              {userRole !== 'STAFF' && (
+              {userRole === 'STAFF' && (
                 <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 10, gap: 10 }}>
                   <TouchableOpacity onPress={() => {
                     setScheduleForm({
@@ -483,6 +623,147 @@ const FeedScreen = () => {
                   <Text style={{ color: COLORS.text, fontWeight: 'bold' }}>Batal</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={handleSaveSchedule} style={{ padding: 12, backgroundColor: COLORS.primary, borderRadius: 8 }}>
+                  <Text style={{ color: COLORS.white, fontWeight: 'bold' }}>Simpan</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* MODAL TAMBAH/EDIT SILO */}
+      <Modal visible={siloModalVisible} transparent animationType="slide">
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 }}>
+          <View style={{ backgroundColor: COLORS.white, borderRadius: 12, padding: 20, maxHeight: '85%' }}>
+            <ScrollView>
+              <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 15, color: COLORS.text }}>
+                {siloForm.id ? 'Edit Silo' : 'Tambah Silo'}
+              </Text>
+
+              <Text style={{ fontWeight: 'bold', marginBottom: 5, color: COLORS.textLight }}>Nama Silo</Text>
+              <TextInput 
+                style={{ borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 8, padding: 10, marginBottom: 15, color: COLORS.text }}
+                value={siloForm.name}
+                onChangeText={(t) => setSiloForm({...siloForm, name: t})}
+                placeholder="Contoh: Silo Utama A"
+              />
+
+              <Text style={{ fontWeight: 'bold', marginBottom: 5, color: COLORS.textLight }}>Jenis Pakan</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 15 }}>
+                {['Hijauan', 'Konsentrat', 'Vitamin', 'TMR'].map(type => (
+                  <TouchableOpacity 
+                    key={type}
+                    onPress={() => setSiloForm({...siloForm, feedType: type})}
+                    style={{ 
+                      padding: 8, 
+                      borderRadius: 6, 
+                      backgroundColor: siloForm.feedType === type ? COLORS.primary : '#f1f5f9'
+                    }}
+                  >
+                    <Text style={{ color: siloForm.feedType === type ? COLORS.white : COLORS.text }}>{type}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <Text style={{ fontWeight: 'bold', marginBottom: 5, color: COLORS.textLight }}>Kapasitas Maksimal (Kg)</Text>
+              <TextInput 
+                style={{ borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 8, padding: 10, marginBottom: 15, color: COLORS.text }}
+                value={siloForm.capacity}
+                onChangeText={(t) => setSiloForm({...siloForm, capacity: t})}
+                keyboardType="numeric"
+                placeholder="Contoh: 1000"
+              />
+
+              <Text style={{ fontWeight: 'bold', marginBottom: 5, color: COLORS.textLight }}>Stok Sekarang (Kg)</Text>
+              <TextInput 
+                style={{ borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 8, padding: 10, marginBottom: 15, color: COLORS.text }}
+                value={siloForm.currentStock}
+                onChangeText={(t) => setSiloForm({...siloForm, currentStock: t})}
+                keyboardType="numeric"
+                placeholder="Contoh: 500"
+              />
+
+              <Text style={{ fontWeight: 'bold', marginBottom: 5, color: COLORS.textLight }}>Satuan</Text>
+              <TextInput 
+                style={{ borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 8, padding: 10, marginBottom: 15, color: COLORS.text }}
+                value={siloForm.unit}
+                onChangeText={(t) => setSiloForm({...siloForm, unit: t})}
+                placeholder="Contoh: Kg"
+              />
+
+              <Text style={{ fontWeight: 'bold', marginBottom: 5, color: COLORS.textLight }}>Tanggal Kadaluarsa (Khusus Vitamin, YYYY-MM-DD)</Text>
+              <TextInput 
+                style={{ borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 8, padding: 10, marginBottom: 15, color: COLORS.text }}
+                value={siloForm.expiryDate}
+                onChangeText={(t) => setSiloForm({...siloForm, expiryDate: t})}
+                placeholder="Contoh: 2026-12-31"
+              />
+
+              <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 10, marginTop: 10 }}>
+                <TouchableOpacity onPress={() => setSiloModalVisible(false)} style={{ padding: 12, backgroundColor: '#f1f5f9', borderRadius: 8 }}>
+                  <Text style={{ color: COLORS.text, fontWeight: 'bold' }}>Batal</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={handleSaveSilo} style={{ padding: 12, backgroundColor: COLORS.primary, borderRadius: 8 }}>
+                  <Text style={{ color: COLORS.white, fontWeight: 'bold' }}>Simpan</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* MODAL TRANSAKSI SILO */}
+      <Modal visible={txModalVisible} transparent animationType="slide">
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 }}>
+          <View style={{ backgroundColor: COLORS.white, borderRadius: 12, padding: 20, maxHeight: '80%' }}>
+            <ScrollView>
+              <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 15, color: COLORS.text }}>
+                Transaksi Silo: {selectedSiloForTx?.name}
+              </Text>
+
+              <Text style={{ fontWeight: 'bold', marginBottom: 5, color: COLORS.textLight }}>Tipe Transaksi</Text>
+              <View style={{ flexDirection: 'row', gap: 10, marginBottom: 15 }}>
+                {['MASUK', 'KELUAR'].map(st => (
+                  <TouchableOpacity 
+                    key={st}
+                    onPress={() => setTxForm({...txForm, type: st as 'MASUK' | 'KELUAR'})}
+                    style={{ 
+                      padding: 8, 
+                      borderRadius: 6, 
+                      backgroundColor: txForm.type === st ? COLORS.primary : '#f1f5f9',
+                      flex: 1,
+                      alignItems: 'center'
+                    }}
+                  >
+                    <Text style={{ color: txForm.type === st ? COLORS.white : COLORS.text, fontWeight: 'bold' }}>
+                      {st === 'MASUK' ? '📥 Pakan Masuk' : '📤 Pakan Keluar'}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <Text style={{ fontWeight: 'bold', marginBottom: 5, color: COLORS.textLight }}>Jumlah (Kg)</Text>
+              <TextInput 
+                style={{ borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 8, padding: 10, marginBottom: 15, color: COLORS.text }}
+                value={txForm.weightKg}
+                onChangeText={(t) => setTxForm({...txForm, weightKg: t})}
+                keyboardType="numeric"
+                placeholder="Contoh: 100"
+              />
+
+              <Text style={{ fontWeight: 'bold', marginBottom: 5, color: COLORS.textLight }}>Keterangan / Deskripsi</Text>
+              <TextInput 
+                style={{ borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 8, padding: 10, marginBottom: 15, color: COLORS.text }}
+                value={txForm.description}
+                onChangeText={(t) => setTxForm({...txForm, description: t})}
+                placeholder="Contoh: Restock pakan baru"
+              />
+
+              <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 10, marginTop: 10 }}>
+                <TouchableOpacity onPress={() => setTxModalVisible(false)} style={{ padding: 12, backgroundColor: '#f1f5f9', borderRadius: 8 }}>
+                  <Text style={{ color: COLORS.text, fontWeight: 'bold' }}>Batal</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={handleSaveTransaction} style={{ padding: 12, backgroundColor: COLORS.primary, borderRadius: 8 }}>
                   <Text style={{ color: COLORS.white, fontWeight: 'bold' }}>Simpan</Text>
                 </TouchableOpacity>
               </View>
