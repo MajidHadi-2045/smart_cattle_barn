@@ -81,6 +81,8 @@ enum FeedStatus {
 enum ScheduleStatus {
   BELUM
   SUDAH
+  TELAT
+  LEBIH_AWAL
 }
 
 // ==========================================

@@ -137,28 +137,9 @@ const Feed = () => {
 
     // --- 3.1 QUICK TOGGLE JADWAL ---
     const handleToggleStatus = async (sch) => {
-        if (userRole !== 'STAFF') return;
-        
-        // Cek status saat ini, jika BELUM -> SUDAH, jika SUDAH/TELAT -> BELUM
-        const newStatus = (sch.status === 'BELUM') ? 'SUDAH' : 'BELUM';
-        
-        toast.promise(
-            fetchApi(`/feed/schedule/${sch.id}`, {
-                method: 'PATCH',
-                body: JSON.stringify({ status: newStatus })
-            }).then(async (res) => {
-                if (!res.ok) throw new Error('Gagal update status jadwal');
-                return res.json();
-            }),
-            {
-                loading: 'Mengupdate status...',
-                success: () => {
-                    mutateSchedules();
-                    return `Jadwal ditandai ${newStatus}`;
-                },
-                error: 'Gagal update status'
-            }
-        );
+        toast('Info: Status jadwal pakan kini diperbarui otomatis (menjadi SUDAH, TELAT, atau LEBIH AWAL) saat Anda mencatat pakan.', {
+            icon: 'ℹ️',
+        });
     };
 
     // --- 3.1 FUNGSI MANAJEMEN SILO (CRUD) ---
@@ -599,14 +580,14 @@ const Feed = () => {
                                             <div className="flex items-center gap-2 self-start sm:self-auto">
                                                 <button 
                                                     onClick={() => handleToggleStatus(sch)}
-                                                    disabled={userRole !== 'STAFF'}
                                                     className={`px-3 py-1 text-xs font-bold rounded-full transition ${
                                                         sch.status === 'SUDAH' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 hover:bg-green-200' :
-                                                        sch.status === 'SUDAH_TELAT' || sch.status === 'TELAT' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 hover:bg-red-200' :
+                                                        sch.status === 'LEBIH_AWAL' ? 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400 hover:bg-sky-200' :
+                                                        sch.status === 'TELAT' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 hover:bg-red-200' :
                                                         'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300 hover:bg-slate-300'
                                                     }`}
                                                 >
-                                                    {sch.status === 'SUDAH_TELAT' ? 'SUDAH (TELAT)' : sch.status}
+                                                    {sch.status === 'LEBIH_AWAL' ? 'LEBIH AWAL' : sch.status}
                                                 </button>
                                                 {userRole === 'STAFF' && (
                                                     <div className="flex gap-1 ml-2">

@@ -534,6 +534,84 @@ export class LivestockService {
     return start;
   }
 
+  private async autoUpdateScheduleStatus(feedType: string, zoneId?: number) {
+    try {
+      const now = new Date();
+      const currentHour = now.getHours();
+      const currentMinute = now.getMinutes();
+      const currentTimeInMinutes = currentHour * 60 + currentMinute;
+      
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+
+      const keyword = feedType.toLowerCase().includes('konsentrat+hijauan') || feedType.toLowerCase() === 'tmr' 
+          ? '' 
+          : feedType.toLowerCase();
+
+      const schedules = await this.prisma.feedingSchedule.findMany();
+      
+      let matchedSchedules = schedules.filter(s => {
+          if (keyword && !s.feedType.toLowerCase().includes(keyword) && !keyword.includes(s.feedType.toLowerCase())) return false;
+          if (zoneId && s.zoneId && s.zoneId !== zoneId) return false;
+          return true;
+      });
+
+      matchedSchedules = matchedSchedules.filter(s => {
+          const isUpdatedToday = s.updatedAt && new Date(s.updatedAt) >= todayStart;
+          return !isUpdatedToday || s.status === 'BELUM';
+      });
+
+      if (matchedSchedules.length === 0) return;
+
+      matchedSchedules.sort((a, b) => {
+          const parseTime = (timeStr: string) => {
+              const parts = timeStr.split('-');
+              const end = parts.length > 1 ? parts[1].trim() : parts[0].trim();
+              const [h, m] = end.split(':').map(Number);
+              return (!isNaN(h) && !isNaN(m)) ? h * 60 + m : 0;
+          };
+          const diffA = Math.abs(currentTimeInMinutes - parseTime(a.time));
+          const diffB = Math.abs(currentTimeInMinutes - parseTime(b.time));
+          return diffA - diffB;
+      });
+
+      const targetSchedule = matchedSchedules[0];
+      const timeParts = targetSchedule.time.split('-');
+      const endTimeStr = timeParts.length > 1 ? timeParts[1].trim() : timeParts[0].trim();
+      const [endHour, endMinute] = endTimeStr.split(':').map(Number);
+      
+      if (!isNaN(endHour) && !isNaN(endMinute)) {
+          const schedTimeInMinutes = endHour * 60 + endMinute;
+          const diffMinutes = currentTimeInMinutes - schedTimeInMinutes;
+          
+          let newStatus = 'SUDAH';
+          let isLate = false;
+          
+          if (diffMinutes < -30) {
+              newStatus = 'LEBIH_AWAL';
+          } else if (diffMinutes > 30) {
+              newStatus = 'TELAT';
+              isLate = true;
+          }
+          
+          await this.prisma.feedingSchedule.update({
+              where: { id: targetSchedule.id },
+              data: { 
+                  status: newStatus as any, 
+                  isLate: isLate,
+                  updatedAt: now
+              }
+          });
+          
+          try {
+            await this.redis.del('feed:schedules');
+          } catch(e) {}
+      }
+    } catch (err) {
+      console.error('Error auto-updating schedule:', err);
+    }
+  }
+
   // 1. Catat Berat Sapi (Dengan opsi tanggal mundur/kustom)
   async recordWeight(cattleId: string, weight: number, author: string = 'Admin', dateStr?: string) {
     const config = this.loadChecklistConfig();
@@ -702,6 +780,14 @@ export class LivestockService {
 
     await this.clearLivestockCache();
     await this.activityService.log(author, 'TAMBAH', 'TERNAK', `Mencatat pakan sapi ${cattleId}: ${feedType} ${weightKg}kg`);
+    
+    // Trigger auto-update schedule
+    const cowModel = await this.prisma.livestock.findUnique({
+      where: { cattleId },
+      include: { section: true }
+    });
+    await this.autoUpdateScheduleStatus(feedType, cowModel?.section?.zoneId);
+
     return record;
   }
 
@@ -842,6 +928,10 @@ export class LivestockService {
 
     await this.clearLivestockCache();
     await this.activityService.log(author, 'TAMBAH', 'TERNAK', `Mencatat pakan BARENGAN untuk ${cattleIds.length} sapi: ${feedType} (${weightKgPerCow}kg/sapi)`);
+    
+    // Trigger auto-update schedule (zoneId tidak disertakan karena massal)
+    await this.autoUpdateScheduleStatus(feedType);
+
     return { success: true, count: results.length };
   }
 

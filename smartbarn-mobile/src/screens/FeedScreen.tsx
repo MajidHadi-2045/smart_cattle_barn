@@ -201,15 +201,7 @@ const FeedScreen = () => {
   };
 
   const handleToggleStatus = async (item: any) => {
-    if (userRole !== 'STAFF') return;
-    try {
-      const newStatus = item.status === 'BELUM' ? 'SUDAH' : 'BELUM';
-      await apiClient.patch(`/feed/schedule/${item.id}`, { status: newStatus });
-      fetchFeedData();
-    } catch (err) {
-      console.error(err);
-      Alert.alert('Error', 'Gagal update status jadwal');
-    }
+    Alert.alert('Info', 'Status jadwal pakan kini diperbarui otomatis (menjadi SUDAH, TELAT, atau LEBIH AWAL) saat Anda mencatat pakan pada form "Beri Pakan Massal".');
   };
 
   const SiloCard = ({ item: silo }: { item: any }) => {
@@ -505,12 +497,19 @@ const FeedScreen = () => {
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                 <Text style={{ fontWeight: 'bold', fontSize: 16, color: COLORS.text, flex: 1, marginRight: 10 }} numberOfLines={2}>{item.feedType}</Text>
                 <TouchableOpacity 
-                  disabled={userRole !== 'STAFF'}
                   onPress={() => handleToggleStatus(item)}
-                  style={[styles.statusBadge, { backgroundColor: item.status === 'SUDAH' ? '#dcfce7' : item.status === 'SUDAH_TELAT' || item.status === 'TELAT' ? '#fee2e2' : '#f1f5f9' }]}
+                  style={[styles.statusBadge, { 
+                    backgroundColor: item.status === 'SUDAH' ? '#dcfce7' : 
+                                     item.status === 'LEBIH_AWAL' ? '#e0f2fe' : 
+                                     item.status === 'TELAT' ? '#fee2e2' : '#f1f5f9' 
+                  }]}
                 >
-                  <Text style={[styles.statusText, { color: item.status === 'SUDAH' ? COLORS.success : item.status === 'SUDAH_TELAT' || item.status === 'TELAT' ? COLORS.danger : COLORS.textLight }]}>
-                    {item.status === 'SUDAH_TELAT' ? 'SUDAH (TELAT)' : item.status}
+                  <Text style={[styles.statusText, { 
+                    color: item.status === 'SUDAH' ? COLORS.success : 
+                           item.status === 'LEBIH_AWAL' ? '#0369a1' : 
+                           item.status === 'TELAT' ? COLORS.danger : COLORS.textLight 
+                  }]}>
+                    {item.status === 'LEBIH_AWAL' ? 'LEBIH AWAL' : item.status}
                   </Text>
                 </TouchableOpacity>
               </View>
