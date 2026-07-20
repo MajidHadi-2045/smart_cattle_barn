@@ -453,7 +453,7 @@ const Feed = () => {
                                             {silo.isCritical && <span className="animate-pulse px-2 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-md mt-1">Kritis</span>}
                                         </div>
                                         <div className="flex items-end gap-2 mb-4">
-                                            <span className="text-4xl font-black text-slate-800 dark:text-slate-100">{silo.current}</span>
+                                            <span className="text-4xl font-black text-slate-800 dark:text-slate-100">{parseFloat(Number(silo.current).toFixed(2))}</span>
                                             <span className="text-slate-500 font-medium mb-1">/ {silo.max} {silo.unit}</span>
                                         </div>
                                         {/* Progress Bar */}
@@ -504,7 +504,7 @@ const Feed = () => {
                                                     <div className="bg-emerald-50/50 dark:bg-emerald-950/10 p-3 rounded-lg mt-3 border border-emerald-100 dark:border-emerald-900/20 flex justify-between items-center text-xs">
                                                         <span className="font-bold text-emerald-800 dark:text-emerald-400 flex items-center gap-1">📊 Realisasi Keluar Hari Ini:</span>
                                                         <strong className="text-emerald-700 dark:text-emerald-300">
-                                                            {silo.estimasiKeluarHariIni ?? 0} {silo.unit}
+                                                            {parseFloat(Number(silo.estimasiKeluarHariIni ?? 0).toFixed(2))} {silo.unit}
                                                         </strong>
                                                     </div>
                                                 </div>
@@ -843,16 +843,19 @@ const Feed = () => {
                                 </div>
                             </div>
                             
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium mb-1">Jenis Pakan</label>
-                                    <input type="text" required value={editFormData.feedType} onChange={e => setEditFormData({...editFormData, feedType: e.target.value})} className="w-full px-4 py-2 border rounded-lg dark:bg-slate-900 dark:border-slate-700 outline-none" />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Status</label>
-                                    <select value={editFormData.status} onChange={e => setEditFormData({...editFormData, status: e.target.value})} className="w-full px-4 py-2 border rounded-lg dark:bg-slate-900 dark:border-slate-700 outline-none">
-                                        <option value="BELUM">BELUM</option>
-                                        <option value="SUDAH">SUDAH</option>
+                                    <select 
+                                        required 
+                                        value={editFormData.feedType} 
+                                        onChange={e => setEditFormData({...editFormData, feedType: e.target.value})} 
+                                        className="w-full px-4 py-2 border rounded-lg dark:bg-slate-900 dark:border-slate-700 outline-none"
+                                    >
+                                        <option value="">-- Pilih Jenis Pakan dari Silo --</option>
+                                        {silos.map(s => (
+                                            <option key={s.id} value={s.name}>{s.name} ({s.feedType})</option>
+                                        ))}
                                     </select>
                                 </div>
                             </div>
@@ -1009,11 +1012,10 @@ const Feed = () => {
                                     <div className="col-span-2">
                                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Jenis Pakan</label>
                                         <select required value={newSchedule.feedType} onChange={e => setNewSchedule({...newSchedule, feedType: e.target.value})} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none dark:text-white">
-                                            <option value="">Pilih Metode/Jenis Pakan</option>
-                                            <option value="Hijauan">Hijauan</option>
-                                            <option value="Konsentrat">Konsentrat</option>
-                                            <option value="Hijauan + Konsentrat">Hijauan + Konsentrat</option>
-                                            <option value="TMR">TMR</option>
+                                            <option value="">Pilih Metode/Jenis Pakan dari Silo</option>
+                                            {silos.map(s => (
+                                                <option key={s.id} value={s.name}>{s.name} ({s.feedType})</option>
+                                            ))}
                                         </select>
                                     </div>
                                 </div>

@@ -320,7 +320,7 @@ const FeedScreen = () => {
             <View style={[styles.progressBarFill, { width: `${Math.min(percentage, 100)}%`, backgroundColor: barColor }]} />
           </View>
           <View style={styles.stockInfo}>
-            <Text style={styles.stockValue}>{silo.currentStock} / {silo.capacity} {silo.unit}</Text>
+            <Text style={styles.stockValue}>{parseFloat(Number(silo.currentStock).toFixed(2))} / {silo.capacity} {silo.unit}</Text>
             <Text style={styles.percentageText}>{percentage}%</Text>
           </View>
         </View>
@@ -359,7 +359,7 @@ const FeedScreen = () => {
             <View style={[styles.realisasiBox, { backgroundColor: '#f0fdf4', borderColor: '#bbf7d0', padding: SPACING.md, borderRadius: 12, borderWidth: 1, marginBottom: SPACING.md }]}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#16a34a' }}>📊 REALISASI KELUAR HARI INI</Text>
-                <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#15803d' }}>{silo.estimasiKeluarHariIni ?? 0} {silo.unit}</Text>
+                <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#15803d' }}>{parseFloat(Number(silo.estimasiKeluarHariIni ?? 0).toFixed(2))} {silo.unit}</Text>
               </View>
             </View>
           </>
@@ -585,34 +585,17 @@ const FeedScreen = () => {
 
               <Text style={{ fontWeight: 'bold', marginBottom: 5, color: COLORS.textLight }}>Jenis Pakan</Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 15 }}>
-                {['Hijauan', 'Konsentrat', 'Hijauan + Konsentrat', 'TMR'].map(type => (
+                {silos.map(s => (
                   <TouchableOpacity 
-                    key={type}
-                    onPress={() => setScheduleForm({...scheduleForm, feedType: type})}
+                    key={s.id}
+                    onPress={() => setScheduleForm({...scheduleForm, feedType: s.name})}
                     style={{ 
                       padding: 8, 
                       borderRadius: 6, 
-                      backgroundColor: scheduleForm.feedType === type ? COLORS.primary : '#f1f5f9'
+                      backgroundColor: scheduleForm.feedType === s.name ? COLORS.primary : '#f1f5f9'
                     }}
                   >
-                    <Text style={{ color: scheduleForm.feedType === type ? COLORS.white : COLORS.text }}>{type}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              <Text style={{ fontWeight: 'bold', marginBottom: 5, color: COLORS.textLight }}>Status</Text>
-              <View style={{ flexDirection: 'row', gap: 10, marginBottom: 15 }}>
-                {['BELUM', 'SUDAH'].map(st => (
-                  <TouchableOpacity 
-                    key={st}
-                    onPress={() => setScheduleForm({...scheduleForm, status: st})}
-                    style={{ 
-                      padding: 8, 
-                      borderRadius: 6, 
-                      backgroundColor: scheduleForm.status === st ? COLORS.primary : '#f1f5f9'
-                    }}
-                  >
-                    <Text style={{ color: scheduleForm.status === st ? COLORS.white : COLORS.text }}>{st}</Text>
+                    <Text style={{ color: scheduleForm.feedType === s.name ? COLORS.white : COLORS.text }}>{s.name} ({s.feedType})</Text>
                   </TouchableOpacity>
                 ))}
               </View>
