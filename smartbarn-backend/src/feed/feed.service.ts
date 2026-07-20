@@ -34,10 +34,11 @@ export class FeedService {
       const todayStart = new Date();
       todayStart.setHours(0, 0, 0, 0);
 
-      const feedTodayGrouped = await this.prisma.livestockFeedRecord.groupBy({
-        by: ['feedType'],
+      const siloTransactionsToday = await this.prisma.siloTransaction.groupBy({
+        by: ['siloId'],
         where: {
-          feedDate: { gte: todayStart }
+          createdAt: { gte: todayStart },
+          type: 'KELUAR'
         },
         _sum: {
           weightKg: true
@@ -45,17 +46,8 @@ export class FeedService {
       });
 
       return silos.map(silo => {
-        let estimasiKeluarHariIni = 0;
-        const isVitamin = silo.feedType.toLowerCase().includes('vitamin') || silo.name.toLowerCase().includes('vitamin');
-        
-        if (!isVitamin) {
-          const match = feedTodayGrouped.find(f => 
-            f.feedType.toLowerCase() === silo.feedType.toLowerCase() ||
-            silo.feedType.toLowerCase().includes(f.feedType.toLowerCase()) ||
-            f.feedType.toLowerCase().includes(silo.feedType.toLowerCase())
-          );
-          estimasiKeluarHariIni = match?._sum?.weightKg || 0;
-        }
+        const match = siloTransactionsToday.find(t => t.siloId === silo.id);
+        const estimasiKeluarHariIni = match?._sum?.weightKg || 0;
 
         return {
           ...silo,
