@@ -7,9 +7,13 @@ import {
   TouchableOpacity,
   RefreshControl,
   Dimensions,
-  Modal
+  Modal,
+  KeyboardAvoidingView,
+  Platform,
+  TextInput,
+  Alert
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, SPACING, SHADOWS } from '../theme';
 import apiClient from '../api/client';
 import { useSocket } from '../hooks/useSocket';
@@ -30,6 +34,7 @@ import {
 import { LineChart } from 'react-native-chart-kit';
 
 const PublicDashboardScreen = ({ navigation }: any) => {
+  const insets = useSafeAreaInsets();
   const [refreshing, setRefreshing] = useState(false);
   const { data: socketData, isConnected } = useSocket(['websocket:environment', 'websocket:windspeed']);
   const [stats, setStats] = useState<{
@@ -60,6 +65,8 @@ const PublicDashboardScreen = ({ navigation }: any) => {
   const [selectedCowsForChart, setSelectedCowsForChart] = useState<string[]>([]);
   const [isCowSelectModalVisible, setIsCowSelectModalVisible] = useState(false);
   const [isTableSelectModalVisible, setIsTableSelectModalVisible] = useState(false);
+  const [searchChartText, setSearchChartText] = useState('');
+  const [searchTableText, setSearchTableText] = useState('');
 
   const [lastEnvTimestamp, setLastEnvTimestamp] = useState<number>(0);
   const [lastWindTimestamp, setLastWindTimestamp] = useState<number>(0);
@@ -145,25 +152,34 @@ const PublicDashboardScreen = ({ navigation }: any) => {
         totalCattle: farmData.total || 0,
         activeAlerts: farmData.sakit || 0
       }));
-      
+    } catch (err) {
+      console.warn('Error fetching dashboard summary:', err);
+    }
+    
+    try {
       const cowsRes = await apiClient.get('/livestock');
       if (cowsRes.data) setLivestock(cowsRes.data);
+    } catch (err) {
+      console.warn('Error fetching livestock:', err);
+    }
 
-      try {
-        const liveEnvRes = await apiClient.get('/environment/live/1');
-        if (liveEnvRes.data) {
-          setStats(prev => ({
-            ...prev,
-            avgTemp: liveEnvRes.data.temperature !== undefined ? liveEnvRes.data.temperature : prev.avgTemp,
-            avgHumidity: liveEnvRes.data.humidity !== undefined ? liveEnvRes.data.humidity : prev.avgHumidity,
-            ammonia: liveEnvRes.data.ammonia !== undefined ? liveEnvRes.data.ammonia : prev.ammonia,
-            thi: liveEnvRes.data.thi !== undefined ? liveEnvRes.data.thi : prev.thi
-          }));
-          setLastEnvTimestamp(Date.now());
-        }
-      } catch (err) {
+    try {
+      const liveEnvRes = await apiClient.get('/environment/live/1');
+      if (liveEnvRes.data) {
+        setStats(prev => ({
+          ...prev,
+          avgTemp: liveEnvRes.data.temperature !== undefined ? liveEnvRes.data.temperature : prev.avgTemp,
+          avgHumidity: liveEnvRes.data.humidity !== undefined ? liveEnvRes.data.humidity : prev.avgHumidity,
+          ammonia: liveEnvRes.data.ammonia !== undefined ? liveEnvRes.data.ammonia : prev.ammonia,
+          thi: liveEnvRes.data.thi !== undefined ? liveEnvRes.data.thi : prev.thi
+        }));
+        setLastEnvTimestamp(Date.now());
       }
+    } catch (err) {
+      // Abaikan error jika data tidak tersedia (misal 404 saat awal mula)
+    }
 
+    try {
       if (selectedChartCows.length === 0) {
         setPerformanceData([]);
       } else {
@@ -177,7 +193,11 @@ const PublicDashboardScreen = ({ navigation }: any) => {
           setSelectedCowsForChart(selectedChartCows);
         }
       }
+    } catch (err) {
+      console.warn('Error fetching chart performance:', err);
+    }
 
+    try {
       if (selectedTableCows.length === 0) {
         setPerformanceSummaries([]);
       } else {
@@ -191,33 +211,33 @@ const PublicDashboardScreen = ({ navigation }: any) => {
           setPerformanceSummaries([]);
         }
       }
-
-      // Fetch Trend Environment
-      try {
-        const trendRes = await apiClient.get(`/environment/trend/1?range=${sensorTrendRange}`);
-        if (trendRes.data && Array.isArray(trendRes.data)) {
-          const chronological = [...trendRes.data].reverse();
-          setSensorTrendData(chronological.slice(-15));
-        }
-      } catch (e) {}
-
-      // Fetch Trend Wind
-      try {
-        const windRes = await apiClient.get(`/wind/trend/1?range=${sensorTrendRange}`);
-        if (windRes.data && Array.isArray(windRes.data)) {
-          const chronologicalWind = [...windRes.data].reverse();
-          setWindTrendData(chronologicalWind.slice(-15));
-        } else {
-          const windResFallback = await apiClient.get(`/environment/wind/trend/1?range=${sensorTrendRange}`);
-          if (windResFallback.data && Array.isArray(windResFallback.data)) {
-            const chronologicalWind = [...windResFallback.data].reverse();
-            setWindTrendData(chronologicalWind.slice(-15));
-          }
-        }
-      } catch (e) {}
-    } catch (error) {
-      console.warn('Error fetching public dashboard data:', error);
+    } catch (err) {
+      console.warn('Error fetching table performance:', err);
     }
+
+    // Fetch Trend Environment
+    try {
+      const trendRes = await apiClient.get(`/environment/trend/1?range=${sensorTrendRange}`);
+      if (trendRes.data && Array.isArray(trendRes.data)) {
+        const chronological = [...trendRes.data].reverse();
+        setSensorTrendData(chronological.slice(-15));
+      }
+    } catch (e) {}
+
+    // Fetch Trend Wind
+    try {
+      const windRes = await apiClient.get(`/wind/trend/1?range=${sensorTrendRange}`);
+      if (windRes.data && Array.isArray(windRes.data)) {
+        const chronologicalWind = [...windRes.data].reverse();
+        setWindTrendData(chronologicalWind.slice(-15));
+      } else {
+        const windResFallback = await apiClient.get(`/environment/wind/trend/1?range=${sensorTrendRange}`);
+        if (windResFallback.data && Array.isArray(windResFallback.data)) {
+          const chronologicalWind = [...windResFallback.data].reverse();
+          setWindTrendData(chronologicalWind.slice(-15));
+        }
+      }
+    } catch (e) {}
   };
 
   useEffect(() => {
@@ -429,8 +449,14 @@ const PublicDashboardScreen = ({ navigation }: any) => {
               <Text style={styles.chartSubtitle}>Bahan Kering (BK) Konsumsi vs Pertambahan Bobot</Text>
             </View>
             <View style={{ flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
-              <TouchableOpacity style={styles.cowSelectFilterBtn} onPress={() => setIsCowSelectModalVisible(true)}>
-                <Text style={styles.cowSelectFilterBtnText}>{selectedChartCows.length > 0 ? `${selectedChartCows.length} Sapi` : 'Semua Sapi'}</Text>
+              <TouchableOpacity 
+                style={styles.cowSelectFilterBtn} 
+                onPress={() => {
+                  setSearchChartText('');
+                  setIsCowSelectModalVisible(true);
+                }}
+              >
+                <Text style={styles.cowSelectFilterBtnText}>{selectedChartCows.length > 0 ? `${selectedChartCows.length} Sapi` : 'Pilih Sapi'}</Text>
               </TouchableOpacity>
               <View style={styles.rangeSelector}>
                 <TouchableOpacity onPress={() => setPerformanceRange('hari')} style={[styles.rangeBtn, performanceRange === 'hari' && styles.rangeBtnActive]}><Text style={[styles.rangeBtnText, performanceRange === 'hari' && styles.rangeBtnTextActive]}>Hari</Text></TouchableOpacity>
@@ -519,7 +545,13 @@ const PublicDashboardScreen = ({ navigation }: any) => {
           <View style={styles.tableContainer}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.sm }}>
               <Text style={styles.tableTitle}>Ringkasan Performa (Avg)</Text>
-              <TouchableOpacity style={styles.cowSelectFilterBtn} onPress={() => setIsTableSelectModalVisible(true)}>
+              <TouchableOpacity 
+                style={styles.cowSelectFilterBtn} 
+                onPress={() => {
+                  setSearchTableText('');
+                  setIsTableSelectModalVisible(true);
+                }}
+              >
                 <Text style={styles.cowSelectFilterBtnText}>{selectedTableCows.length > 0 ? `${selectedTableCows.length} Sapi` : 'Pilih Sapi'}</Text>
               </TouchableOpacity>
             </View>
@@ -544,7 +576,13 @@ const PublicDashboardScreen = ({ navigation }: any) => {
                       <Text style={[styles.tableRowText, { width: 60, textAlign: 'center' }]}>{sum.startWeight}</Text>
                       <View style={{ width: 60, alignItems: 'center' }}>
                         <Text style={[styles.tableRowText, { textAlign: 'center' }]}>{sum.endWeight}</Text>
-                        {sum.isEstimated && <Text style={{ fontSize: 9, color: '#f59e0b', marginTop: -2 }}>~estimasi</Text>}
+                        {sum.isEstimated ? (
+                          <Text style={{ fontSize: 8, color: '#f59e0b', marginTop: -2 }}>~estimasi</Text>
+                        ) : (
+                          <Text style={{ fontSize: 8, color: '#64748b', marginTop: -2 }}>
+                            ~{sum.estimatedWeight || sum.endWeight} <Text style={{ color: '#f59e0b', fontSize: 7 }}>(est)</Text>
+                          </Text>
+                        )}
                       </View>
                       <Text style={[styles.tableRowText, { width: 60, textAlign: 'center', color: COLORS.success, fontWeight: 'bold' }]}>{sum.adg}</Text>
                       <Text style={[styles.tableRowText, { width: 50, textAlign: 'center', color: COLORS.primary, fontWeight: 'bold' }]}>{sum.fcr}</Text>
@@ -570,83 +608,233 @@ const PublicDashboardScreen = ({ navigation }: any) => {
       </ScrollView>
 
       {/* MODAL FILTER SAPI (GRAFIK) */}
-      <Modal visible={isCowSelectModalVisible} animationType="slide" transparent={true} onRequestClose={() => setIsCowSelectModalVisible(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Pilih Sapi (Grafik - Maks 5)</Text>
-              <TouchableOpacity onPress={() => setIsCowSelectModalVisible(false)}>
-                <X size={20} color={COLORS.text} />
-              </TouchableOpacity>
-            </View>
-            <ScrollView style={{ maxHeight: 300, marginBottom: SPACING.md }}>
-              <View style={styles.cowSelectGrid}>
-                {livestock.map(cow => {
-                  const isSelected = selectedChartCows.includes(cow.cattleId);
-                  return (
-                    <TouchableOpacity
-                      key={cow.id}
-                      style={[styles.cowSelectCard, isSelected && styles.cowSelectCardActive]}
-                      onPress={() => {
-                        if (isSelected) {
-                          setSelectedChartCows(prev => prev.filter(id => id !== cow.cattleId));
-                        } else {
-                          if (selectedChartCows.length >= 5) return;
-                          setSelectedChartCows(prev => [...prev, cow.cattleId]);
-                        }
-                      }}
-                    >
-                      <Text style={[styles.cowSelectId, isSelected && styles.cowSelectIdActive]}>{cow.cattleId}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
+      <Modal
+        visible={isCowSelectModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => {
+          setSearchChartText('');
+          setIsCowSelectModalVisible(false);
+        }}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1 }}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, { paddingBottom: Math.max(insets.bottom, SPACING.xl) }]}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Pilih Sapi (Grafik - Maks 5)</Text>
+                <TouchableOpacity onPress={() => {
+                  setSearchChartText('');
+                  setIsCowSelectModalVisible(false);
+                }}>
+                  <X size={20} color={COLORS.text} />
+                </TouchableOpacity>
               </View>
-            </ScrollView>
-            <TouchableOpacity style={styles.modalSaveBtn} onPress={() => setIsCowSelectModalVisible(false)}>
-              <Text style={styles.modalSaveBtnText}>Terapkan</Text>
-            </TouchableOpacity>
+              <Text style={{ fontSize: 12, color: COLORS.textLight, marginBottom: SPACING.md }}>
+                Pilih sapi yang ingin dibandingkan performanya di grafik.
+              </Text>
+              
+              <TextInput
+                style={{
+                  backgroundColor: '#f1f5f9',
+                  borderRadius: 10,
+                  paddingHorizontal: SPACING.md,
+                  paddingVertical: 10,
+                  fontSize: 15,
+                  color: COLORS.text,
+                  marginBottom: 12
+                }}
+                placeholder="Cari ID Sapi..."
+                value={searchChartText}
+                onChangeText={setSearchChartText}
+                placeholderTextColor={COLORS.textLight}
+              />
+
+              <ScrollView style={{ maxHeight: 300, marginBottom: SPACING.md }}>
+                <View style={styles.cowSelectGrid}>
+                  {livestock.filter(cow => cow.cattleId.toLowerCase().includes(searchChartText.toLowerCase())).slice(0, 5).map(cow => {
+                    const isSelected = selectedChartCows.includes(cow.cattleId);
+                    return (
+                      <TouchableOpacity
+                        key={cow.id}
+                        style={[styles.cowSelectCard, isSelected && styles.cowSelectCardActive]}
+                        onPress={() => {
+                          if (isSelected) {
+                            setSelectedChartCows(prev => prev.filter(id => id !== cow.cattleId));
+                          } else {
+                            if (selectedChartCows.length >= 5) {
+                              Alert.alert('Batas Maksimal', 'Anda hanya dapat memilih maksimal 5 sapi.');
+                              return;
+                            }
+                            setSelectedChartCows(prev => [...prev, cow.cattleId]);
+                          }
+                        }}
+                      >
+                        <Text style={[styles.cowSelectId, isSelected && styles.cowSelectIdActive]}>{cow.cattleId}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                  {livestock.length === 0 && (
+                    <Text style={{ color: COLORS.textLight, fontStyle: 'italic' }}>Tidak ada data sapi.</Text>
+                  )}
+                </View>
+              </ScrollView>
+              
+              <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 12, marginTop: SPACING.sm }}>
+                <TouchableOpacity 
+                  style={{
+                    backgroundColor: '#f1f5f9',
+                    paddingVertical: 10,
+                    paddingHorizontal: 20,
+                    borderRadius: 10,
+                    alignItems: 'center',
+                    minWidth: 90
+                  }} 
+                  onPress={() => {
+                    setSelectedChartCows([]);
+                    setSearchChartText('');
+                    setIsCowSelectModalVisible(false);
+                  }}
+                >
+                  <Text style={{ fontWeight: 'bold', color: COLORS.textLight }}>Reset Semua</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={{
+                    backgroundColor: COLORS.primary,
+                    paddingVertical: 10,
+                    paddingHorizontal: 20,
+                    borderRadius: 10,
+                    alignItems: 'center',
+                    minWidth: 90
+                  }} 
+                  onPress={() => {
+                    setSearchChartText('');
+                    setIsCowSelectModalVisible(false);
+                  }}
+                >
+                  <Text style={{ color: COLORS.white, fontWeight: 'bold' }}>Terapkan</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* MODAL FILTER SAPI (TABEL) */}
-      <Modal visible={isTableSelectModalVisible} animationType="slide" transparent={true} onRequestClose={() => setIsTableSelectModalVisible(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Pilih Sapi (Tabel - Maks 10)</Text>
-              <TouchableOpacity onPress={() => setIsTableSelectModalVisible(false)}>
-                <X size={20} color={COLORS.text} />
-              </TouchableOpacity>
-            </View>
-            <ScrollView style={{ maxHeight: 300, marginBottom: SPACING.md }}>
-              <View style={styles.cowSelectGrid}>
-                {livestock.map(cow => {
-                  const isSelected = selectedTableCows.includes(cow.cattleId);
-                  return (
-                    <TouchableOpacity
-                      key={cow.id}
-                      style={[styles.cowSelectCard, isSelected && styles.cowSelectCardActive]}
-                      onPress={() => {
-                        if (isSelected) {
-                          setSelectedTableCows(prev => prev.filter(id => id !== cow.cattleId));
-                        } else {
-                          if (selectedTableCows.length >= 10) return;
-                          setSelectedTableCows(prev => [...prev, cow.cattleId]);
-                        }
-                      }}
-                    >
-                      <Text style={[styles.cowSelectId, isSelected && styles.cowSelectIdActive]}>{cow.cattleId}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
+      <Modal
+        visible={isTableSelectModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => {
+          setSearchTableText('');
+          setIsTableSelectModalVisible(false);
+        }}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1 }}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, { paddingBottom: Math.max(insets.bottom, SPACING.xl) }]}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Pilih Sapi (Tabel - Maks 10)</Text>
+                <TouchableOpacity onPress={() => {
+                  setSearchTableText('');
+                  setIsTableSelectModalVisible(false);
+                }}>
+                  <X size={20} color={COLORS.text} />
+                </TouchableOpacity>
               </View>
-            </ScrollView>
-            <TouchableOpacity style={styles.modalSaveBtn} onPress={() => setIsTableSelectModalVisible(false)}>
-              <Text style={styles.modalSaveBtnText}>Terapkan</Text>
-            </TouchableOpacity>
+              <Text style={{ fontSize: 12, color: COLORS.textLight, marginBottom: SPACING.md }}>
+                Pilih sapi yang ingin dibandingkan ringkasan performanya di tabel.
+              </Text>
+              
+              <TextInput
+                style={{
+                  backgroundColor: '#f1f5f9',
+                  borderRadius: 10,
+                  paddingHorizontal: SPACING.md,
+                  paddingVertical: 10,
+                  fontSize: 15,
+                  color: COLORS.text,
+                  marginBottom: 12
+                }}
+                placeholder="Cari ID Sapi..."
+                value={searchTableText}
+                onChangeText={setSearchTableText}
+                placeholderTextColor={COLORS.textLight}
+              />
+
+              <ScrollView style={{ maxHeight: 300, marginBottom: SPACING.md }}>
+                <View style={styles.cowSelectGrid}>
+                  {livestock.filter(cow => cow.cattleId.toLowerCase().includes(searchTableText.toLowerCase())).slice(0, 10).map(cow => {
+                    const isSelected = selectedTableCows.includes(cow.cattleId);
+                    return (
+                      <TouchableOpacity
+                        key={cow.id}
+                        style={[styles.cowSelectCard, isSelected && styles.cowSelectCardActive]}
+                        onPress={() => {
+                          if (isSelected) {
+                            setSelectedTableCows(prev => prev.filter(id => id !== cow.cattleId));
+                          } else {
+                            if (selectedTableCows.length >= 10) {
+                              Alert.alert('Batas Maksimal', 'Anda hanya dapat memilih maksimal 10 sapi untuk tabel.');
+                              return;
+                            }
+                            setSelectedTableCows(prev => [...prev, cow.cattleId]);
+                          }
+                        }}
+                      >
+                        <Text style={[styles.cowSelectId, isSelected && styles.cowSelectIdActive]}>{cow.cattleId}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                  {livestock.length === 0 && (
+                    <Text style={{ color: COLORS.textLight, fontStyle: 'italic' }}>Tidak ada data sapi.</Text>
+                  )}
+                </View>
+              </ScrollView>
+              
+              <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 12, marginTop: SPACING.sm }}>
+                <TouchableOpacity 
+                  style={{
+                    backgroundColor: '#f1f5f9',
+                    paddingVertical: 10,
+                    paddingHorizontal: 20,
+                    borderRadius: 10,
+                    alignItems: 'center',
+                    minWidth: 90
+                  }} 
+                  onPress={() => {
+                    setSelectedTableCows([]);
+                    setSearchTableText('');
+                    setIsTableSelectModalVisible(false);
+                  }}
+                >
+                  <Text style={{ fontWeight: 'bold', color: COLORS.textLight }}>Reset Semua</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={{
+                    backgroundColor: COLORS.primary,
+                    paddingVertical: 10,
+                    paddingHorizontal: 20,
+                    borderRadius: 10,
+                    alignItems: 'center',
+                    minWidth: 90
+                  }} 
+                  onPress={() => {
+                    setSearchTableText('');
+                    setIsTableSelectModalVisible(false);
+                  }}
+                >
+                  <Text style={{ color: COLORS.white, fontWeight: 'bold' }}>Terapkan</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );
@@ -696,8 +884,8 @@ const styles = StyleSheet.create({
   tableHeaderText: { fontSize: 11, fontWeight: 'bold', color: COLORS.textLight },
   tableRow: { flexDirection: 'row', paddingVertical: 10, paddingHorizontal: 8, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
   tableRowText: { fontSize: 12, color: COLORS.text },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: SPACING.lg },
-  modalContent: { backgroundColor: COLORS.white, borderRadius: 20, padding: SPACING.lg },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  modalContent: { backgroundColor: COLORS.white, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: SPACING.lg },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.md },
   modalTitle: { fontSize: 16, fontWeight: 'bold', color: COLORS.text },
   cowSelectGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

@@ -10,9 +10,11 @@ import {
   Alert,
   TextInput,
   ActivityIndicator,
-  FlatList
+  FlatList,
+  KeyboardAvoidingView,
+  Platform
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, SPACING, SHADOWS } from '../theme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import apiClient from '../api/client';
@@ -53,6 +55,7 @@ import { Dimensions } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 
 const DashboardScreen = ({ navigation }: any) => {
+  const insets = useSafeAreaInsets();
   const [refreshing, setRefreshing] = useState(false);
   const { isReadingMode, toggleReadingMode } = useReadingMode();
   const { data: socketData, isConnected } = useSocket(['websocket:environment', 'websocket:windspeed', 'websocket:alert']);
@@ -218,78 +221,85 @@ const DashboardScreen = ({ navigation }: any) => {
         totalCattle: farmData.total || 0,
         activeAlerts: farmData.sakit || 0
       }));
-      
+    } catch (err) {
+      console.warn('Error fetching dashboard summary:', err);
+    }
+    
+    try {
       const userStr = await AsyncStorage.getItem('user');
       if (userStr) setUser(JSON.parse(userStr));
-      
+    } catch (err) {
+      console.warn('Error getting user from storage:', err);
+    }
+    
+    try {
       const cowsRes = await apiClient.get('/livestock');
       if (cowsRes.data) setLivestock(cowsRes.data);
+    } catch (err) {
+      console.warn('Error fetching livestock:', err);
+    }
 
-      try {
-        const liveEnvRes = await apiClient.get('/environment/live/1');
-        if (liveEnvRes.data) {
-          setStats(prev => ({
-            ...prev,
-            avgTemp: liveEnvRes.data.temperature !== undefined ? liveEnvRes.data.temperature : prev.avgTemp,
-            avgHumidity: liveEnvRes.data.humidity !== undefined ? liveEnvRes.data.humidity : prev.avgHumidity,
-            ammonia: liveEnvRes.data.ammonia !== undefined ? liveEnvRes.data.ammonia : prev.ammonia,
-            thi: liveEnvRes.data.thi !== undefined ? liveEnvRes.data.thi : prev.thi
-          }));
-          setLastEnvTimestamp(Date.now());
-        }
-      } catch (err) {
-        // Abaikan error jika data tidak tersedia (misal 404 saat awal mula)
+    try {
+      const liveEnvRes = await apiClient.get('/environment/live/1');
+      if (liveEnvRes.data) {
+        setStats(prev => ({
+          ...prev,
+          avgTemp: liveEnvRes.data.temperature !== undefined ? liveEnvRes.data.temperature : prev.avgTemp,
+          avgHumidity: liveEnvRes.data.humidity !== undefined ? liveEnvRes.data.humidity : prev.avgHumidity,
+          ammonia: liveEnvRes.data.ammonia !== undefined ? liveEnvRes.data.ammonia : prev.ammonia,
+          thi: liveEnvRes.data.thi !== undefined ? liveEnvRes.data.thi : prev.thi
+        }));
+        setLastEnvTimestamp(Date.now());
       }
+    } catch (err) {
+      // Abaikan error jika data tidak tersedia (misal 404 saat awal mula)
+    }
 
-      // Fetch Waste
-      try {
-        const wasteRes = await apiClient.get(`/dashboard/waste?filter=${wasteFilter}`);
-        if (wasteRes.data) {
-          setWasteStats({ fecesKg: wasteRes.data.fecesKg || 0, urineL: wasteRes.data.urineL || 0 });
-        }
-      } catch (e) {}
-
-      // Fetch Trend Environment
-      try {
-        const trendRes = await apiClient.get(`/environment/trend/1?range=${sensorTrendRange}`);
-        if (trendRes.data && Array.isArray(trendRes.data)) {
-          // API returns desc, we reverse to asc, take 15 points
-          const chronological = [...trendRes.data].reverse();
-          setSensorTrendData(chronological.slice(-15));
-        }
-      } catch (e) {}
-
-      // Fetch Trend Wind
-      try {
-        const windRes = await apiClient.get(`/wind/trend/1?range=${sensorTrendRange}`);
-        if (windRes.data && Array.isArray(windRes.data)) {
-          const chronologicalWind = [...windRes.data].reverse();
-          setWindTrendData(chronologicalWind.slice(-15));
-        } else {
-            // fallback if wind trend fails or uses different path
-            const windResFallback = await apiClient.get(`/environment/wind/trend/1?range=${sensorTrendRange}`);
-            if (windResFallback.data && Array.isArray(windResFallback.data)) {
-                const chronologicalWind = [...windResFallback.data].reverse();
-                setWindTrendData(chronologicalWind.slice(-15));
-            }
-        }
-      } catch (e) {}
-
-
-
-      // Fetch Daily Checklist
-      try {
-        const checklistRes = await apiClient.get('/dashboard/daily-checklist');
-        if (checklistRes.data) {
-          setChecklist(checklistRes.data);
-        }
-      } catch (err) {
-        console.warn('Error fetching daily checklist:', err);
+    // Fetch Waste
+    try {
+      const wasteRes = await apiClient.get(`/dashboard/waste?filter=${wasteFilter}`);
+      if (wasteRes.data) {
+        setWasteStats({ fecesKg: wasteRes.data.fecesKg || 0, urineL: wasteRes.data.urineL || 0 });
       }
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
+    } catch (e) {}
+
+    // Fetch Trend Environment
+    try {
+      const trendRes = await apiClient.get(`/environment/trend/1?range=${sensorTrendRange}`);
+      if (trendRes.data && Array.isArray(trendRes.data)) {
+        // API returns desc, we reverse to asc, take 15 points
+        const chronological = [...trendRes.data].reverse();
+        setSensorTrendData(chronological.slice(-15));
+      }
+    } catch (e) {}
+
+    // Fetch Trend Wind
+    try {
+      const windRes = await apiClient.get(`/wind/trend/1?range=${sensorTrendRange}`);
+      if (windRes.data && Array.isArray(windRes.data)) {
+        const chronologicalWind = [...windRes.data].reverse();
+        setWindTrendData(chronologicalWind.slice(-15));
+      } else {
+          // fallback if wind trend fails or uses different path
+          const windResFallback = await apiClient.get(`/environment/wind/trend/1?range=${sensorTrendRange}`);
+          if (windResFallback.data && Array.isArray(windResFallback.data)) {
+              const chronologicalWind = [...windResFallback.data].reverse();
+              setWindTrendData(chronologicalWind.slice(-15));
+          }
+      }
+    } catch (e) {}
+
+    // Fetch Daily Checklist
+    try {
+      const checklistRes = await apiClient.get('/dashboard/daily-checklist');
+      if (checklistRes.data) {
+        setChecklist(checklistRes.data);
+      }
+    } catch (err) {
+      console.warn('Error fetching daily checklist:', err);
     }
   };
+
 
   const fetchRecentInputs = async () => {
     setLoadingHistory(true);
@@ -735,7 +745,10 @@ const DashboardScreen = ({ navigation }: any) => {
             <View style={{ flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
               <TouchableOpacity 
                 style={styles.cowSelectFilterBtn} 
-                onPress={() => setIsCowSelectModalVisible(true)}
+                onPress={() => {
+                  setSearchChartText('');
+                  setIsCowSelectModalVisible(true);
+                }}
               >
                 <Text style={styles.cowSelectFilterBtnText}>
                   {selectedChartCows.length > 0 ? `${selectedChartCows.length} Sapi` : 'Pilih Sapi'}
@@ -836,7 +849,10 @@ const DashboardScreen = ({ navigation }: any) => {
               <Text style={styles.tableTitle}>Ringkasan Performa (Avg)</Text>
               <TouchableOpacity 
                 style={styles.cowSelectFilterBtn} 
-                onPress={() => setIsTableSelectModalVisible(true)}
+                onPress={() => {
+                  setSearchTableText('');
+                  setIsTableSelectModalVisible(true);
+                }}
               >
                 <Text style={styles.cowSelectFilterBtnText}>
                   {selectedTableCows.length > 0 ? `${selectedTableCows.length} Sapi` : 'Pilih Sapi'}
@@ -864,7 +880,13 @@ const DashboardScreen = ({ navigation }: any) => {
                       <Text style={[styles.tableRowText, { width: 60, textAlign: 'center' }]}>{sum.startWeight}</Text>
                       <View style={{ width: 60, alignItems: 'center' }}>
                         <Text style={[styles.tableRowText, { textAlign: 'center' }]}>{sum.endWeight}</Text>
-                        {sum.isEstimated && <Text style={{ fontSize: 9, color: '#f59e0b', marginTop: -2 }}>~estimasi</Text>}
+                        {sum.isEstimated ? (
+                          <Text style={{ fontSize: 8, color: '#f59e0b', marginTop: -2 }}>~estimasi</Text>
+                        ) : (
+                          <Text style={{ fontSize: 8, color: '#64748b', marginTop: -2 }}>
+                            ~{sum.estimatedWeight || sum.endWeight} <Text style={{ color: '#f59e0b', fontSize: 7 }}>(est)</Text>
+                          </Text>
+                        )}
                       </View>
                       <Text style={[styles.tableRowText, { width: 60, textAlign: 'center', color: COLORS.success, fontWeight: 'bold' }]}>{sum.adg}</Text>
                       <Text style={[styles.tableRowText, { width: 50, textAlign: 'center', color: COLORS.primary, fontWeight: 'bold' }]}>{sum.fcr}</Text>
@@ -950,7 +972,7 @@ const DashboardScreen = ({ navigation }: any) => {
         onRequestClose={() => setIsHistoryModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.historyModalContent}>
+          <View style={[styles.historyModalContent, { paddingBottom: Math.max(insets.bottom, SPACING.lg) }]}>
             <View style={styles.modalHeader}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <History size={22} color={COLORS.primary} />
@@ -1041,88 +1063,93 @@ const DashboardScreen = ({ navigation }: any) => {
         transparent={true}
         onRequestClose={() => setIsEditModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.editModalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Koreksi Data {selectedItemForEdit?.type === 'LIMBAH_KANDANG' ? 'Limbah Kandang' : selectedItemForEdit?.type}</Text>
-              <TouchableOpacity onPress={() => setIsEditModalVisible(false)}>
-                <X size={20} color={COLORS.text} />
-              </TouchableOpacity>
-            </View>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1 }}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={[styles.editModalContent, { paddingBottom: Math.max(insets.bottom, SPACING.xl) }]}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Koreksi Data {selectedItemForEdit?.type === 'LIMBAH_KANDANG' ? 'Limbah Kandang' : selectedItemForEdit?.type}</Text>
+                <TouchableOpacity onPress={() => setIsEditModalVisible(false)}>
+                  <X size={20} color={COLORS.text} />
+                </TouchableOpacity>
+              </View>
 
-            <View style={styles.editForm}>
-              <Text style={styles.editLabel}>
-                {selectedItemForEdit?.type === 'LIMBAH_KANDANG' ? `Kandang: ${selectedItemForEdit?.zoneName}` : `Sapi: ${selectedItemForEdit?.cattleId}`}
-              </Text>
-              
-              {selectedItemForEdit?.type === 'PAKAN' && (
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Berat Pakan (kg)</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={editValue}
-                    onChangeText={setEditValue}
-                    keyboardType="decimal-pad"
-                    placeholder="Masukkan berat pakan baru"
-                  />
-                </View>
-              )}
-
-              {selectedItemForEdit?.type === 'TIMBANGAN' && (
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Berat Sapi (kg)</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={editValue}
-                    onChangeText={setEditValue}
-                    keyboardType="decimal-pad"
-                    placeholder="Masukkan berat sapi baru"
-                  />
-                </View>
-              )}
-
-              {(selectedItemForEdit?.type === 'LIMBAH' || selectedItemForEdit?.type === 'LIMBAH_KANDANG') && (
-                <View>
+              <View style={styles.editForm}>
+                <Text style={styles.editLabel}>
+                  {selectedItemForEdit?.type === 'LIMBAH_KANDANG' ? `Kandang: ${selectedItemForEdit?.zoneName}` : `Sapi: ${selectedItemForEdit?.cattleId}`}
+                </Text>
+                
+                {selectedItemForEdit?.type === 'PAKAN' && (
                   <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>Feces (kg)</Text>
+                    <Text style={styles.inputLabel}>Berat Pakan (kg)</Text>
                     <TextInput
                       style={styles.input}
                       value={editValue}
                       onChangeText={setEditValue}
                       keyboardType="decimal-pad"
-                      placeholder="Feces baru"
+                      placeholder="Masukkan berat pakan baru"
                     />
                   </View>
+                )}
+
+                {selectedItemForEdit?.type === 'TIMBANGAN' && (
                   <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>Urine (L)</Text>
+                    <Text style={styles.inputLabel}>Berat Sapi (kg)</Text>
                     <TextInput
                       style={styles.input}
-                      value={editValue2}
-                      onChangeText={setEditValue2}
+                      value={editValue}
+                      onChangeText={setEditValue}
                       keyboardType="decimal-pad"
-                      placeholder="Urine baru"
+                      placeholder="Masukkan berat sapi baru"
                     />
                   </View>
-                </View>
-              )}
+                )}
 
-              <View style={styles.modalFooter}>
-                <TouchableOpacity 
-                  style={[styles.modalBtn, styles.modalCancelBtn]} 
-                  onPress={() => setIsEditModalVisible(false)}
-                >
-                  <Text style={styles.modalCancelBtnText}>Batal</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  style={[styles.modalBtn, styles.modalSaveBtn]} 
-                  onPress={saveEdit}
-                >
-                  <Text style={styles.modalSaveBtnText}>Simpan</Text>
-                </TouchableOpacity>
+                {(selectedItemForEdit?.type === 'LIMBAH' || selectedItemForEdit?.type === 'LIMBAH_KANDANG') && (
+                  <View>
+                    <View style={styles.inputGroup}>
+                      <Text style={styles.inputLabel}>Feces (kg)</Text>
+                      <TextInput
+                        style={styles.input}
+                        value={editValue}
+                        onChangeText={setEditValue}
+                        keyboardType="decimal-pad"
+                        placeholder="Feces baru"
+                      />
+                    </View>
+                    <View style={styles.inputGroup}>
+                      <Text style={styles.inputLabel}>Urine (L)</Text>
+                      <TextInput
+                        style={styles.input}
+                        value={editValue2}
+                        onChangeText={setEditValue2}
+                        keyboardType="decimal-pad"
+                        placeholder="Urine baru"
+                      />
+                    </View>
+                  </View>
+                )}
+
+                <View style={styles.modalFooter}>
+                  <TouchableOpacity 
+                    style={[styles.modalBtn, styles.modalCancelBtn]} 
+                    onPress={() => setIsEditModalVisible(false)}
+                  >
+                    <Text style={styles.modalCancelBtnText}>Batal</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={[styles.modalBtn, styles.modalSaveBtn]} 
+                    onPress={saveEdit}
+                  >
+                    <Text style={styles.modalSaveBtnText}>Simpan</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* ========================================== */}
@@ -1132,77 +1159,92 @@ const DashboardScreen = ({ navigation }: any) => {
         visible={isCowSelectModalVisible}
         animationType="slide"
         transparent={true}
-        onRequestClose={() => setIsCowSelectModalVisible(false)}
+        onRequestClose={() => {
+          setSearchChartText('');
+          setIsCowSelectModalVisible(false);
+        }}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.editModalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Pilih Sapi (Maksimal 5)</Text>
-              <TouchableOpacity onPress={() => setIsCowSelectModalVisible(false)}>
-                <X size={20} color={COLORS.text} />
-              </TouchableOpacity>
-            </View>
-            <Text style={styles.modalSubtitle}>Pilih sapi yang ingin dibandingkan performanya di grafik.</Text>
-            
-            <TextInput
-              style={[styles.input, { marginBottom: 12, backgroundColor: '#f1f5f9', borderWidth: 0 }]}
-              placeholder="Cari ID Sapi..."
-              value={searchChartText}
-              onChangeText={setSearchChartText}
-              placeholderTextColor={COLORS.textLight}
-            />
-
-            <ScrollView style={{ maxHeight: 300, marginBottom: SPACING.md }}>
-              <View style={styles.cowSelectGrid}>
-                {livestock.filter(cow => cow.cattleId.toLowerCase().includes(searchChartText.toLowerCase())).slice(0, 15).map(cow => {
-                  const isSelected = selectedChartCows.includes(cow.cattleId);
-                  return (
-                    <TouchableOpacity
-                      key={cow.id}
-                      style={[styles.cowSelectCard, isSelected && styles.cowSelectCardActive]}
-                      onPress={() => {
-                        if (isSelected) {
-                          setSelectedChartCows(prev => prev.filter(id => id !== cow.cattleId));
-                        } else {
-                          if (selectedChartCows.length >= 5) {
-                            Alert.alert('Batas Maksimal', 'Anda hanya dapat memilih maksimal 5 sapi.');
-                            return;
-                          }
-                          setSelectedChartCows(prev => [...prev, cow.cattleId]);
-                        }
-                      }}
-                    >
-                      <Text style={[styles.cowSelectId, isSelected && styles.cowSelectIdActive]}>
-                        {cow.cattleId}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-                {livestock.length === 0 && (
-                  <Text style={{ color: COLORS.textLight, fontStyle: 'italic' }}>Tidak ada data sapi.</Text>
-                )}
-              </View>
-            </ScrollView>
-
-            <View style={styles.modalFooter}>
-              <TouchableOpacity 
-                style={[styles.modalBtn, styles.modalCancelBtn]} 
-                onPress={() => {
-                  setSelectedChartCows([]);
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1 }}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={[styles.editModalContent, { paddingBottom: Math.max(insets.bottom, SPACING.xl) }]}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Pilih Sapi (Maksimal 5)</Text>
+                <TouchableOpacity onPress={() => {
+                  setSearchChartText('');
                   setIsCowSelectModalVisible(false);
-                }}
-              >
-                <Text style={styles.modalCancelBtnText}>Reset Semua</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.modalBtn, styles.modalSaveBtn]} 
-                onPress={() => setIsCowSelectModalVisible(false)}
-              >
-                <Text style={styles.modalSaveBtnText}>Terapkan Filter</Text>
-              </TouchableOpacity>
+                }}>
+                  <X size={20} color={COLORS.text} />
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.modalSubtitle}>Pilih sapi yang ingin dibandingkan performanya di grafik.</Text>
+              
+              <TextInput
+                style={[styles.input, { marginBottom: 12, backgroundColor: '#f1f5f9', borderWidth: 0 }]}
+                placeholder="Cari ID Sapi..."
+                value={searchChartText}
+                onChangeText={setSearchChartText}
+                placeholderTextColor={COLORS.textLight}
+              />
+
+              <ScrollView style={{ maxHeight: 300, marginBottom: SPACING.md }}>
+                <View style={styles.cowSelectGrid}>
+                  {livestock.filter(cow => cow.cattleId.toLowerCase().includes(searchChartText.toLowerCase())).slice(0, 5).map(cow => {
+                    const isSelected = selectedChartCows.includes(cow.cattleId);
+                    return (
+                      <TouchableOpacity
+                        key={cow.id}
+                        style={[styles.cowSelectCard, isSelected && styles.cowSelectCardActive]}
+                        onPress={() => {
+                          if (isSelected) {
+                            setSelectedChartCows(prev => prev.filter(id => id !== cow.cattleId));
+                          } else {
+                            if (selectedChartCows.length >= 5) {
+                              Alert.alert('Batas Maksimal', 'Anda hanya dapat memilih maksimal 5 sapi.');
+                              return;
+                            }
+                            setSelectedChartCows(prev => [...prev, cow.cattleId]);
+                          }
+                        }}
+                      >
+                        <Text style={[styles.cowSelectId, isSelected && styles.cowSelectIdActive]}>
+                          {cow.cattleId}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                  {livestock.length === 0 && (
+                    <Text style={{ color: COLORS.textLight, fontStyle: 'italic' }}>Tidak ada data sapi.</Text>
+                  )}
+                </View>
+              </ScrollView>
+
+              <View style={styles.modalFooter}>
+                <TouchableOpacity 
+                  style={[styles.modalBtn, styles.modalCancelBtn]} 
+                  onPress={() => {
+                    setSelectedChartCows([]);
+                    setSearchChartText('');
+                    setIsCowSelectModalVisible(false);
+                  }}
+                >
+                  <Text style={styles.modalCancelBtnText}>Reset Semua</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.modalBtn, styles.modalSaveBtn]} 
+                  onPress={() => {
+                    setSearchChartText('');
+                    setIsCowSelectModalVisible(false);
+                  }}
+                >
+                  <Text style={styles.modalSaveBtnText}>Terapkan Filter</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* ========================================== */}
@@ -1212,77 +1254,92 @@ const DashboardScreen = ({ navigation }: any) => {
         visible={isTableSelectModalVisible}
         animationType="slide"
         transparent={true}
-        onRequestClose={() => setIsTableSelectModalVisible(false)}
+        onRequestClose={() => {
+          setSearchTableText('');
+          setIsTableSelectModalVisible(false);
+        }}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.editModalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Pilih Sapi untuk Tabel (Maksimal 10)</Text>
-              <TouchableOpacity onPress={() => setIsTableSelectModalVisible(false)}>
-                <X size={20} color={COLORS.text} />
-              </TouchableOpacity>
-            </View>
-            <Text style={styles.modalSubtitle}>Pilih sapi yang ingin dibandingkan ringkasan performanya di tabel.</Text>
-            
-            <TextInput
-              style={[styles.input, { marginBottom: 12, backgroundColor: '#f1f5f9', borderWidth: 0 }]}
-              placeholder="Cari ID Sapi..."
-              value={searchTableText}
-              onChangeText={setSearchTableText}
-              placeholderTextColor={COLORS.textLight}
-            />
-
-            <ScrollView style={{ maxHeight: 300, marginBottom: SPACING.md }}>
-              <View style={styles.cowSelectGrid}>
-                {livestock.filter(cow => cow.cattleId.toLowerCase().includes(searchTableText.toLowerCase())).slice(0, 15).map(cow => {
-                  const isSelected = selectedTableCows.includes(cow.cattleId);
-                  return (
-                    <TouchableOpacity
-                      key={cow.id}
-                      style={[styles.cowSelectCard, isSelected && styles.cowSelectCardActive]}
-                      onPress={() => {
-                        if (isSelected) {
-                          setSelectedTableCows(prev => prev.filter(id => id !== cow.cattleId));
-                        } else {
-                          if (selectedTableCows.length >= 10) {
-                            Alert.alert('Batas Maksimal', 'Anda hanya dapat memilih maksimal 10 sapi untuk tabel.');
-                            return;
-                          }
-                          setSelectedTableCows(prev => [...prev, cow.cattleId]);
-                        }
-                      }}
-                    >
-                      <Text style={[styles.cowSelectId, isSelected && styles.cowSelectIdActive]}>
-                        {cow.cattleId}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-                {livestock.length === 0 && (
-                  <Text style={{ color: COLORS.textLight, fontStyle: 'italic' }}>Tidak ada data sapi.</Text>
-                )}
-              </View>
-            </ScrollView>
-
-            <View style={styles.modalFooter}>
-              <TouchableOpacity 
-                style={[styles.modalBtn, styles.modalCancelBtn]} 
-                onPress={() => {
-                  setSelectedTableCows([]);
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1 }}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={[styles.editModalContent, { paddingBottom: Math.max(insets.bottom, SPACING.xl) }]}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Pilih Sapi untuk Tabel (Maksimal 10)</Text>
+                <TouchableOpacity onPress={() => {
+                  setSearchTableText('');
                   setIsTableSelectModalVisible(false);
-                }}
-              >
-                <Text style={styles.modalCancelBtnText}>Reset Semua</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.modalBtn, styles.modalSaveBtn]} 
-                onPress={() => setIsTableSelectModalVisible(false)}
-              >
-                <Text style={styles.modalSaveBtnText}>Terapkan Filter</Text>
-              </TouchableOpacity>
+                }}>
+                  <X size={20} color={COLORS.text} />
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.modalSubtitle}>Pilih sapi yang ingin dibandingkan ringkasan performanya di tabel.</Text>
+              
+              <TextInput
+                style={[styles.input, { marginBottom: 12, backgroundColor: '#f1f5f9', borderWidth: 0 }]}
+                placeholder="Cari ID Sapi..."
+                value={searchTableText}
+                onChangeText={setSearchTableText}
+                placeholderTextColor={COLORS.textLight}
+              />
+
+              <ScrollView style={{ maxHeight: 300, marginBottom: SPACING.md }}>
+                <View style={styles.cowSelectGrid}>
+                  {livestock.filter(cow => cow.cattleId.toLowerCase().includes(searchTableText.toLowerCase())).slice(0, 10).map(cow => {
+                    const isSelected = selectedTableCows.includes(cow.cattleId);
+                    return (
+                      <TouchableOpacity
+                        key={cow.id}
+                        style={[styles.cowSelectCard, isSelected && styles.cowSelectCardActive]}
+                        onPress={() => {
+                          if (isSelected) {
+                            setSelectedTableCows(prev => prev.filter(id => id !== cow.cattleId));
+                          } else {
+                            if (selectedTableCows.length >= 10) {
+                              Alert.alert('Batas Maksimal', 'Anda hanya dapat memilih maksimal 10 sapi untuk tabel.');
+                              return;
+                            }
+                            setSelectedTableCows(prev => [...prev, cow.cattleId]);
+                          }
+                        }}
+                      >
+                        <Text style={[styles.cowSelectId, isSelected && styles.cowSelectIdActive]}>
+                          {cow.cattleId}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                  {livestock.length === 0 && (
+                    <Text style={{ color: COLORS.textLight, fontStyle: 'italic' }}>Tidak ada data sapi.</Text>
+                  )}
+                </View>
+              </ScrollView>
+
+              <View style={styles.modalFooter}>
+                <TouchableOpacity 
+                  style={[styles.modalBtn, styles.modalCancelBtn]} 
+                  onPress={() => {
+                    setSelectedTableCows([]);
+                    setSearchTableText('');
+                    setIsTableSelectModalVisible(false);
+                  }}
+                >
+                  <Text style={styles.modalCancelBtnText}>Reset Semua</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.modalBtn, styles.modalSaveBtn]} 
+                  onPress={() => {
+                    setSearchTableText('');
+                    setIsTableSelectModalVisible(false);
+                  }}
+                >
+                  <Text style={styles.modalSaveBtnText}>Terapkan Filter</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* ========================================== */}
@@ -1295,7 +1352,7 @@ const DashboardScreen = ({ navigation }: any) => {
         onRequestClose={() => setActivityModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.historyModalContent}>
+          <View style={[styles.historyModalContent, { paddingBottom: Math.max(insets.bottom, SPACING.lg) }]}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Aktivitas 24 Jam Terakhir</Text>
               <TouchableOpacity onPress={() => setActivityModalVisible(false)}>
@@ -1357,7 +1414,7 @@ const DashboardScreen = ({ navigation }: any) => {
         onRequestClose={() => setNotificationModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.historyModalContent, { maxHeight: '80%' }]}>
+          <View style={[styles.historyModalContent, { maxHeight: '80%', paddingBottom: Math.max(insets.bottom, SPACING.lg) }]}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Peringatan Sistem</Text>
               <TouchableOpacity onPress={() => setNotificationModalVisible(false)}>

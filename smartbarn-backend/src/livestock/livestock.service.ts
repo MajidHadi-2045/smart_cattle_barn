@@ -1168,11 +1168,14 @@ export class LivestockService {
           fcr = sum.totalDmi / sum.totalWeightGain;
       }
 
+      const estimatedWeightVal = sum.startWeight + (sum.totalDmi * 0.15);
+
       return {
          cowId: id,
          totalBk: parseFloat(sum.totalDmi.toFixed(2)),
          startWeight: parseFloat(sum.startWeight.toFixed(2)),
          endWeight: parseFloat(sum.endWeight.toFixed(2)),
+         estimatedWeight: parseFloat(estimatedWeightVal.toFixed(2)),
          adg: parseFloat(adgTotal.toFixed(2)),
          fcr: parseFloat(fcr.toFixed(2)),
          isEstimated

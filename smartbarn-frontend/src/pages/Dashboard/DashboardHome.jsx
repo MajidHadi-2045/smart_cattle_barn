@@ -1327,8 +1327,19 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                                         <td className="px-4 py-3 text-center text-slate-600 dark:text-slate-300">{sum.totalBk}</td>
                                         <td className="px-4 py-3 text-center text-slate-600 dark:text-slate-300">{sum.startWeight}</td>
                                         <td className="px-4 py-3 text-center font-semibold text-slate-700 dark:text-slate-200">
-                                            {sum.endWeight}
-                                            {sum.isEstimated && <span className="block text-[9px] text-amber-500/80 -mt-0.5">~estimasi</span>}
+                                            {sum.isEstimated ? (
+                                                <>
+                                                    <div>{sum.endWeight}</div>
+                                                    <span className="block text-[9px] text-amber-500/80 -mt-0.5">~estimasi</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <div>{sum.endWeight}</div>
+                                                    <span className="block text-[10px] text-slate-400 font-normal -mt-0.5">
+                                                        ~{sum.estimatedWeight || sum.endWeight} <span className="text-[9px] text-amber-500/80 font-medium">(estimasi)</span>
+                                                    </span>
+                                                </>
+                                            )}
                                         </td>
                                         <td className="px-4 py-3 text-center font-bold text-emerald-600 dark:text-emerald-400">{sum.adg}</td>
                                         <td className="px-4 py-3 text-center font-bold text-purple-600 dark:text-purple-400">{sum.fcr}</td>

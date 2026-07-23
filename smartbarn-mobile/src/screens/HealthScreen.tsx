@@ -342,9 +342,38 @@ const HealthScreen = () => {
                   <TextInput
                     style={styles.input}
                     placeholder="Cth: C-302"
+                    placeholderTextColor="#94a3b8"
                     value={formData.cattleId}
                     onChangeText={(text) => setFormData({ ...formData, cattleId: text })}
                   />
+                  {/* Suggestions list (max 5) */}
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                    {livestock
+                      .filter(cow => {
+                        const term = (formData.cattleId || '').toLowerCase();
+                        return term === '' || (cow.cattleId || '').toLowerCase().includes(term);
+                      })
+                      .slice(0, 5)
+                      .map(cow => (
+                        <TouchableOpacity
+                          key={cow.cattleId}
+                          style={{
+                            backgroundColor: '#eff6ff',
+                            borderColor: COLORS.primary,
+                            borderWidth: 1,
+                            borderRadius: 6,
+                            paddingHorizontal: 10,
+                            paddingVertical: 5
+                          }}
+                          onPress={() => setFormData({ ...formData, cattleId: cow.cattleId })}
+                        >
+                          <Text style={{ fontSize: 12, fontWeight: 'bold', color: COLORS.primary }}>
+                            {cow.cattleId}
+                          </Text>
+                        </TouchableOpacity>
+                      ))
+                    }
+                  </View>
                 </View>
               ) : (
                 <View style={styles.inputGroup}>
@@ -391,6 +420,7 @@ const HealthScreen = () => {
                       <TextInput
                         style={[styles.input, { height: 40, fontSize: 14 }]}
                         placeholder="Cari ID Sapi..."
+                        placeholderTextColor="#94a3b8"
                         value={cattleSearchQuery}
                         onChangeText={setCattleSearchQuery}
                       />
@@ -492,6 +522,7 @@ const HealthScreen = () => {
                 <TextInput
                   style={styles.input}
                   placeholder={examType === 'MASSAL' ? 'Vaksinasi' : 'Cth: Flu Bovine'}
+                  placeholderTextColor="#94a3b8"
                   value={formData.diagnosa}
                   onChangeText={(text) => setFormData({ ...formData, diagnosa: text })}
                 />
@@ -502,6 +533,7 @@ const HealthScreen = () => {
                 <TextInput
                   style={[styles.input, { height: 80, textAlignVertical: 'top' }]}
                   placeholder={examType === 'MASSAL' ? 'Vaksin PMK Dosis 1' : 'Cth: Injeksi Vitamin C'}
+                  placeholderTextColor="#94a3b8"
                   multiline
                   value={formData.penanganan}
                   onChangeText={(text) => setFormData({ ...formData, penanganan: text })}
@@ -513,6 +545,7 @@ const HealthScreen = () => {
                 <TextInput
                   style={styles.input}
                   placeholder="Nama Pemeriksa / Petugas"
+                  placeholderTextColor="#94a3b8"
                   value={formData.pemeriksa}
                   onChangeText={(text) => setFormData({ ...formData, pemeriksa: text })}
                 />

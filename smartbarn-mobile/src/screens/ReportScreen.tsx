@@ -6,12 +6,15 @@ import {
   ScrollView, 
   TouchableOpacity,
   ActivityIndicator,
-  Dimensions
+  Dimensions,
+  Linking
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, SPACING, SHADOWS } from '../theme';
 import { ChevronLeft, FileText, Download, TrendingUp, PieChart, Info, Calendar, CheckCircle } from 'lucide-react-native';
-import apiClient from '../api/client';
+import apiClient, { BASE_URL } from '../api/client';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import { useToast } from '../context/ToastContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 
@@ -50,16 +53,20 @@ const ReportScreen = ({ navigation }: any) => {
   const handleDownload = async () => {
     setIsDownloading(true);
     try {
-      // Di React Native, kita bisa membuka URL download langsung atau menggunakan library khusus
-      // Untuk MVP, kita asumsikan pemanggilan endpoint sukses.
-      await apiClient.get(`/reports/download?jenis=${jenisLaporan}&start=${startDate}&end=${endDate}&format=PDF`);
-      showToast(`Laporan ${jenisLaporan} sedang diunduh...`, 'success');
+      const token = await AsyncStorage.getItem('token');
+      const downloadUrl = `${BASE_URL}/api/reports/download?jenis=${jenisLaporan}&start=${startDate}&end=${endDate}&format=PDF&token=${token}`;
+      
+      // Buka URL download menggunakan browser sistem untuk mengunduh file secara langsung
+      await Linking.openURL(downloadUrl);
+      showToast(`Membuka unduhan laporan ${jenisLaporan}...`, 'success');
     } catch (error) {
+      console.error('Download error:', error);
       showToast('Gagal mengunduh laporan', 'error');
     } finally {
       setIsDownloading(false);
     }
   };
+
 
   useEffect(() => {
     fetchReports();

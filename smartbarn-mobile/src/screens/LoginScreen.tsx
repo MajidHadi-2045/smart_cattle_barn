@@ -70,9 +70,16 @@ const LoginScreen = ({ navigation }: any) => {
         style={styles.content}
       >
         <View style={styles.header}>
-          <View style={styles.logoContainer}>
-            <LogIn size={40} color={COLORS.white} />
-          </View>
+          <TouchableOpacity 
+            style={styles.logoContainer} 
+            onPress={() => navigation.navigate('Welcome')}
+          >
+            <Image 
+              source={require('../../assets/icon.png')} 
+              style={{ width: 80, height: 80, borderRadius: 20 }}
+              resizeMode="contain"
+            />
+          </TouchableOpacity>
           <Text style={styles.title}>Smart Cattle Barn</Text>
           <Text style={styles.subtitle}>Monitoring peternakan dalam genggaman</Text>
         </View>
@@ -193,10 +200,10 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.xl,
   },
   logoContainer: {
-    backgroundColor: COLORS.primary,
-    padding: SPACING.md,
-    borderRadius: 20,
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.lg,
+    padding: SPACING.sm,
+    backgroundColor: '#f8fafc',
+    borderRadius: 24,
     ...SHADOWS.md,
   },
   title: {

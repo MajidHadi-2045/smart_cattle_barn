@@ -10,7 +10,9 @@ import {
   RefreshControl,
   Modal,
   ScrollView,
-  Alert
+  Alert,
+  KeyboardAvoidingView,
+  Platform
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, SPACING, SHADOWS } from '../theme';
@@ -555,241 +557,312 @@ const LivestockScreen = ({ navigation }: any) => {
 
 
       {/* MODAL 1: COLLECTIVE WASTE LOGGING */}
-      <Modal visible={wasteModalVisible} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Catat Limbah Kandang</Text>
-              <TouchableOpacity onPress={() => setWasteModalVisible(false)}>
-                <Text style={styles.closeBtnText}>Tutup</Text>
-              </TouchableOpacity>
+      <Modal
+        visible={wasteModalVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setWasteModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1 }}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, { paddingBottom: Math.max(insets.bottom, SPACING.lg) }]}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Catat Limbah Kandang</Text>
+                <TouchableOpacity onPress={() => setWasteModalVisible(false)}>
+                  <Text style={styles.closeBtnText}>Tutup</Text>
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView contentContainerStyle={styles.modalScroll}>
+                <View style={styles.infoAlert}>
+                  <Info size={16} color="#0284c7" />
+                  <Text style={styles.infoAlertText}>
+                    Catat volume limbah padat & cair kolektif untuk seluruh kandang terpilih sekaligus.
+                  </Text>
+                </View>
+
+                <View style={styles.inputRow}>
+                  <View style={styles.inputField}>
+                    <Text style={styles.inputLabel}>Limbah Padat (Feces)</Text>
+                    <TextInput
+                       style={styles.textInput}
+                       placeholder="Contoh: 15"
+                       keyboardType="numeric"
+                       value={groupFecesKg}
+                       onChangeText={setGroupFecesKg}
+                    />
+                    <Text style={styles.unitLabel}>Kg / Kandang</Text>
+                  </View>
+
+                  <View style={styles.inputField}>
+                    <Text style={styles.inputLabel}>Limbah Cair (Urine)</Text>
+                    <TextInput
+                       style={styles.textInput}
+                       placeholder="Contoh: 8"
+                       keyboardType="numeric"
+                       value={groupUrineL}
+                       onChangeText={setGroupUrineL}
+                    />
+                    <Text style={styles.unitLabel}>Liter / Kandang</Text>
+                  </View>
+                </View>
+
+                <View style={styles.selectorSection}>
+                  <View style={styles.selectorHeader}>
+                    <Text style={styles.selectorTitle}>Pilih Kandang</Text>
+                  </View>
+
+                  <View style={styles.cowSelectGrid}>
+                    {zones.map(zone => {
+                      const isSelected = selectedWasteZoneId === zone.id.toString();
+                      return (
+                        <TouchableOpacity 
+                          key={zone.id} 
+                          style={[styles.cowSelectCard, isSelected && styles.cowSelectCardActive]}
+                          onPress={() => setSelectedWasteZoneId(zone.id.toString())}
+                        >
+                          <Beef size={16} color={isSelected ? COLORS.primary : COLORS.textLight} />
+                          <Text style={[styles.cowSelectId, isSelected && styles.cowSelectIdActive]}>
+                            {zone.name}
+                          </Text>
+                          {isSelected && (
+                            <View style={styles.checkIcon}>
+                              <Check size={10} color={COLORS.white} />
+                            </View>
+                          )}
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </View>
+
+                <TouchableOpacity style={styles.submitGroupBtn} onPress={submitGroupWaste}>
+                  <Text style={styles.submitGroupBtnText}>Simpan Limbah Kandang</Text>
+                </TouchableOpacity>
+              </ScrollView>
             </View>
-
-            <ScrollView contentContainerStyle={styles.modalScroll}>
-              <View style={styles.infoAlert}>
-                <Info size={16} color="#0284c7" />
-                <Text style={styles.infoAlertText}>
-                  Catat volume limbah padat & cair kolektif untuk seluruh kandang terpilih sekaligus.
-                </Text>
-              </View>
-
-              <View style={styles.inputRow}>
-                <View style={styles.inputField}>
-                  <Text style={styles.inputLabel}>Limbah Padat (Feces)</Text>
-                  <TextInput
-                     style={styles.textInput}
-                     placeholder="Contoh: 15"
-                     keyboardType="numeric"
-                     value={groupFecesKg}
-                     onChangeText={setGroupFecesKg}
-                  />
-                  <Text style={styles.unitLabel}>Kg / Kandang</Text>
-                </View>
-
-                <View style={styles.inputField}>
-                  <Text style={styles.inputLabel}>Limbah Cair (Urine)</Text>
-                  <TextInput
-                     style={styles.textInput}
-                     placeholder="Contoh: 8"
-                     keyboardType="numeric"
-                     value={groupUrineL}
-                     onChangeText={setGroupUrineL}
-                  />
-                  <Text style={styles.unitLabel}>Liter / Kandang</Text>
-                </View>
-              </View>
-
-              <View style={styles.selectorSection}>
-                <View style={styles.selectorHeader}>
-                  <Text style={styles.selectorTitle}>Pilih Kandang</Text>
-                </View>
-
-                <View style={styles.cowSelectGrid}>
-                  {zones.map(zone => {
-                    const isSelected = selectedWasteZoneId === zone.id.toString();
-                    return (
-                      <TouchableOpacity 
-                        key={zone.id} 
-                        style={[styles.cowSelectCard, isSelected && styles.cowSelectCardActive]}
-                        onPress={() => setSelectedWasteZoneId(zone.id.toString())}
-                      >
-                        <Beef size={16} color={isSelected ? COLORS.primary : COLORS.textLight} />
-                        <Text style={[styles.cowSelectId, isSelected && styles.cowSelectIdActive]}>
-                          {zone.name}
-                        </Text>
-                        {isSelected && (
-                          <View style={styles.checkIcon}>
-                            <Check size={10} color={COLORS.white} />
-                          </View>
-                        )}
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </View>
-
-              <TouchableOpacity style={styles.submitGroupBtn} onPress={submitGroupWaste}>
-                <Text style={styles.submitGroupBtnText}>Simpan Limbah Kandang</Text>
-              </TouchableOpacity>
-            </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* MODAL 2: COLLECTIVE WEIGHT LOGGING */}
-      <Modal visible={weightModalVisible} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Timbang Berat</Text>
-              <TouchableOpacity onPress={() => setWeightModalVisible(false)}>
-                <Text style={styles.closeBtnText}>Tutup</Text>
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView contentContainerStyle={styles.modalScroll}>
-              <View style={[styles.infoAlert, { backgroundColor: '#eff6ff', borderColor: '#bfdbfe' }]}>
-                <Info size={16} color="#2563eb" />
-                <Text style={[styles.infoAlertText, { color: '#1e40af' }]}>
-                  Pencatatan berat badan (timbang) secara massal untuk sapi terpilih.
-                </Text>
+      <Modal
+        visible={weightModalVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setWeightModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1 }}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, { paddingBottom: Math.max(insets.bottom, SPACING.lg) }]}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Timbang Berat</Text>
+                <TouchableOpacity onPress={() => setWeightModalVisible(false)}>
+                  <Text style={styles.closeBtnText}>Tutup</Text>
+                </TouchableOpacity>
               </View>
 
-              {/* Timbang Section */}
-              <View style={styles.formSectionBox}>
-                <Text style={styles.sectionBoxTitle}>⚖️ Berat Badan Sapi</Text>
-                <View style={styles.inputField}>
-                  <Text style={styles.inputLabel}>Timbang Berat Badan Baru</Text>
-                  <TextInput
-                    style={styles.textInput}
-                    placeholder="Masukkan berat badan baru (Kg)"
-                    keyboardType="numeric"
-                    value={groupWeight}
-                    onChangeText={setGroupWeight}
-                  />
-                </View>
-              </View>
-
-              {/* Cow Selector Grid */}
-              <View style={styles.selectorSection}>
-                <View style={styles.selectorHeader}>
-                  <Text style={styles.selectorTitle}>Pilih Sapi Penerima</Text>
-                  <TouchableOpacity 
-                    style={[styles.selectAllBtn, selectFeedWeightAll && styles.selectAllBtnActive]} 
-                    onPress={toggleSelectFeedWeightAll}
-                  >
-                    <Text style={[styles.selectAllText, selectFeedWeightAll && styles.selectAllTextActive]}>
-                      {selectFeedWeightAll ? 'Batal Pilih Semua' : 'Pilih Semua'}
-                    </Text>
-                  </TouchableOpacity>
+              <ScrollView contentContainerStyle={styles.modalScroll}>
+                <View style={[styles.infoAlert, { backgroundColor: '#eff6ff', borderColor: '#bfdbfe' }]}>
+                  <Info size={16} color="#2563eb" />
+                  <Text style={[styles.infoAlertText, { color: '#1e40af' }]}>
+                    Pencatatan berat badan (timbang) secara massal untuk sapi terpilih.
+                  </Text>
                 </View>
 
-                {/* MODAL SEARCH & FILTER */}
-                <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
-                  <View style={[styles.searchContainer, { flex: 1, margin: 0, height: 40 }]}>
-                    <Search color={COLORS.textLight} size={18} />
+                {/* Timbang Section */}
+                <View style={styles.formSectionBox}>
+                  <Text style={styles.sectionBoxTitle}>⚖️ Berat Badan Sapi</Text>
+                  <View style={styles.inputField}>
+                    <Text style={styles.inputLabel}>Timbang Berat Badan Baru</Text>
                     <TextInput
-                      style={styles.searchInput}
-                      placeholder="Cari ID/Nama Sapi..."
-                      value={modalSearch}
-                      onChangeText={setModalSearch}
-                      placeholderTextColor={COLORS.textLight}
+                      style={styles.textInput}
+                      placeholder="Masukkan berat badan baru (Kg)"
+                      keyboardType="numeric"
+                      value={groupWeight}
+                      onChangeText={setGroupWeight}
                     />
                   </View>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ maxHeight: 40 }}>
+                </View>
+
+                {/* Cow Selector Grid */}
+                <View style={styles.selectorSection}>
+                  <View style={styles.selectorHeader}>
+                    <Text style={styles.selectorTitle}>Pilih Sapi Penerima</Text>
                     <TouchableOpacity 
-                      style={[styles.pickerFakeItem, { width: 'auto', marginBottom: 0, paddingVertical: 8, marginRight: 8 }, modalZoneFilter === 'ALL' && styles.pickerFakeItemActive]}
-                      onPress={() => setModalZoneFilter('ALL')}
-                    ><Text style={[styles.pickerFakeText, modalZoneFilter === 'ALL' && styles.pickerFakeTextActive]}>Semua</Text></TouchableOpacity>
-                    {zones.map(z => (
+                      style={[styles.selectAllBtn, selectFeedWeightAll && styles.selectAllBtnActive]} 
+                      onPress={toggleSelectFeedWeightAll}
+                    >
+                      <Text style={[styles.selectAllText, selectFeedWeightAll && styles.selectAllTextActive]}>
+                        {selectFeedWeightAll ? 'Batal Pilih Semua' : 'Pilih Semua'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* MODAL SEARCH & FILTER */}
+                  <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+                    <View style={[styles.searchContainer, { flex: 1, margin: 0, height: 40 }]}>
+                      <Search color={COLORS.textLight} size={18} />
+                      <TextInput
+                        style={styles.searchInput}
+                        placeholder="Cari ID/Nama Sapi..."
+                        value={modalSearch}
+                        onChangeText={setModalSearch}
+                        placeholderTextColor={COLORS.textLight}
+                      />
+                    </View>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ maxHeight: 40 }}>
                       <TouchableOpacity 
-                        key={z.id}
-                        style={[styles.pickerFakeItem, { width: 'auto', marginBottom: 0, paddingVertical: 8, marginRight: 8 }, modalZoneFilter === z.id && styles.pickerFakeItemActive]}
-                        onPress={() => setModalZoneFilter(z.id)}
-                      ><Text style={[styles.pickerFakeText, modalZoneFilter === z.id && styles.pickerFakeTextActive]}>{z.name}</Text></TouchableOpacity>
-                    ))}
-                  </ScrollView>
+                        style={[styles.pickerFakeItem, { width: 'auto', marginBottom: 0, paddingVertical: 8, marginRight: 8 }, modalZoneFilter === 'ALL' && styles.pickerFakeItemActive]}
+                        onPress={() => setModalZoneFilter('ALL')}
+                      ><Text style={[styles.pickerFakeText, modalZoneFilter === 'ALL' && styles.pickerFakeTextActive]}>Semua</Text></TouchableOpacity>
+                      {zones.map(z => (
+                        <TouchableOpacity 
+                          key={z.id}
+                          style={[styles.pickerFakeItem, { width: 'auto', marginBottom: 0, paddingVertical: 8, marginRight: 8 }, modalZoneFilter === z.id && styles.pickerFakeItemActive]}
+                          onPress={() => setModalZoneFilter(z.id)}
+                        ><Text style={[styles.pickerFakeText, modalZoneFilter === z.id && styles.pickerFakeTextActive]}>{z.name}</Text></TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+
+                  <View style={styles.cowSelectGrid}>
+                    {filteredModalLivestock.map(cow => {
+                      const isSelected = selectedFeedWeightCows.includes(cow.cattleId) || selectFeedWeightAll;
+                      return (
+                        <TouchableOpacity 
+                          key={cow.id} 
+                          style={[styles.cowSelectCard, isSelected && styles.cowSelectCardActive]}
+                          onPress={() => toggleSelectFeedWeightCattle(cow.cattleId)}
+                        >
+                          <Beef size={16} color={isSelected ? COLORS.primary : COLORS.textLight} />
+                          <Text style={[styles.cowSelectId, isSelected && styles.cowSelectIdActive]}>
+                            {cow.cattleId}
+                          </Text>
+                          {isSelected && (
+                            <View style={styles.checkIcon}>
+                              <Check size={10} color={COLORS.white} />
+                            </View>
+                          )}
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
                 </View>
 
-                <View style={styles.cowSelectGrid}>
-                  {filteredModalLivestock.map(cow => {
-                    const isSelected = selectedFeedWeightCows.includes(cow.cattleId) || selectFeedWeightAll;
-                    return (
-                      <TouchableOpacity 
-                        key={cow.id} 
-                        style={[styles.cowSelectCard, isSelected && styles.cowSelectCardActive]}
-                        onPress={() => toggleSelectFeedWeightCattle(cow.cattleId)}
-                      >
-                        <Beef size={16} color={isSelected ? COLORS.primary : COLORS.textLight} />
-                        <Text style={[styles.cowSelectId, isSelected && styles.cowSelectIdActive]}>
-                          {cow.cattleId}
-                        </Text>
-                        {isSelected && (
-                          <View style={styles.checkIcon}>
-                            <Check size={10} color={COLORS.white} />
-                          </View>
-                        )}
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </View>
-
-              <TouchableOpacity 
-                style={[styles.submitGroupBtn, { backgroundColor: '#2563eb' }]} 
-                onPress={submitGroupWeight}
-              >
-                <Text style={styles.submitGroupBtnText}>Simpan Timbang Berat</Text>
-              </TouchableOpacity>
-            </ScrollView>
+                <TouchableOpacity 
+                  style={[styles.submitGroupBtn, { backgroundColor: '#2563eb' }]} 
+                  onPress={submitGroupWeight}
+                >
+                  <Text style={styles.submitGroupBtnText}>Simpan Timbang Berat</Text>
+                </TouchableOpacity>
+              </ScrollView>
+            </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* MODAL 3: COLLECTIVE FEED LOGGING */}
-      <Modal visible={feedModalVisible} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Pemberian Pakan</Text>
-              <TouchableOpacity onPress={() => setFeedModalVisible(false)}>
-                <Text style={styles.closeBtnText}>Tutup</Text>
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView contentContainerStyle={styles.modalScroll}>
-              <View style={[styles.infoAlert, { backgroundColor: '#ecfdf5', borderColor: '#a7f3d0' }]}>
-                <Info size={16} color="#059669" />
-                <Text style={[styles.infoAlertText, { color: '#047857' }]}>
-                  Pencatatan pemberian pakan secara massal untuk sapi terpilih.
-                </Text>
+      <Modal
+        visible={feedModalVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setFeedModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1 }}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, { paddingBottom: Math.max(insets.bottom, SPACING.lg) }]}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Pemberian Pakan</Text>
+                <TouchableOpacity onPress={() => setFeedModalVisible(false)}>
+                  <Text style={styles.closeBtnText}>Tutup</Text>
+                </TouchableOpacity>
               </View>
 
-              {/* Feed Section */}
-              <View style={[styles.formSectionBox, { backgroundColor: '#f0fdf4', borderColor: '#bbf7d0' }]}>
-                <Text style={[styles.sectionBoxTitle, { color: '#166534' }]}>🌾 Detail Pakan</Text>
-                <View style={{ marginBottom: 12 }}>
-                  <Text style={styles.inputLabel}>Jenis Pakan</Text>
-                  <View style={styles.pickerFakeContainer}>
-                    {['Hijauan', 'Konsentrat', 'Konsentrat+hijauan', 'Tmr'].map(type => (
-                      <TouchableOpacity
-                        key={type}
-                        style={[styles.pickerFakeItem, groupFeedType === type && styles.pickerFakeItemActive]}
-                        onPress={() => setGroupFeedType(type)}
-                      >
-                        <Text style={[styles.pickerFakeText, groupFeedType === type && styles.pickerFakeTextActive]}>
-                          {type}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
+              <ScrollView contentContainerStyle={styles.modalScroll}>
+                <View style={[styles.infoAlert, { backgroundColor: '#ecfdf5', borderColor: '#a7f3d0' }]}>
+                  <Info size={16} color="#059669" />
+                  <Text style={[styles.infoAlertText, { color: '#047857' }]}>
+                    Pencatatan pemberian pakan secara massal untuk sapi terpilih.
+                  </Text>
                 </View>
 
-                <View style={{ marginBottom: 12 }}>
-                  { (groupFeedType.toLowerCase().includes('konsentrat+hijauan') || groupFeedType.toLowerCase() === 'tmr') ? (
-                    <View style={{ gap: 12 }}>
+                {/* Feed Section */}
+                <View style={[styles.formSectionBox, { backgroundColor: '#f0fdf4', borderColor: '#bbf7d0' }]}>
+                  <Text style={[styles.sectionBoxTitle, { color: '#166534' }]}>🌾 Detail Pakan</Text>
+                  <View style={{ marginBottom: 12 }}>
+                    <Text style={styles.inputLabel}>Jenis Pakan</Text>
+                    <View style={styles.pickerFakeContainer}>
+                      {['Hijauan', 'Konsentrat', 'Konsentrat+hijauan', 'Tmr'].map(type => (
+                        <TouchableOpacity
+                          key={type}
+                          style={[styles.pickerFakeItem, groupFeedType === type && styles.pickerFakeItemActive]}
+                          onPress={() => setGroupFeedType(type)}
+                        >
+                          <Text style={[styles.pickerFakeText, groupFeedType === type && styles.pickerFakeTextActive]}>
+                            {type}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+
+                  <View style={{ marginBottom: 12 }}>
+                    { groupFeedType.toLowerCase().includes('konsentrat+hijauan') ? (
+                      <View style={{ gap: 12 }}>
+                        <View>
+                          <Text style={styles.inputLabel}>Pilih Silo 1 (Hijauan)</Text>
+                          <View style={{ gap: 8, marginTop: 4 }}>
+                            <TouchableOpacity
+                              style={[styles.pickerFakeItem, !groupSiloId && styles.pickerFakeItemActive, { padding: 10, borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 8 }]}
+                              onPress={() => setGroupSiloId('')}
+                            >
+                              <Text style={[styles.pickerFakeText, !groupSiloId && styles.pickerFakeTextActive]}>-- Otomatis --</Text>
+                            </TouchableOpacity>
+                            {(silos || []).filter(s => (s.feedType || '').toLowerCase().includes('hijauan') || (s.name || '').toLowerCase().includes('hijauan')).map(s => (
+                              <TouchableOpacity
+                                key={s.id}
+                                style={[styles.pickerFakeItem, groupSiloId === s.id.toString() && styles.pickerFakeItemActive, { padding: 10, borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 8 }]}
+                                onPress={() => setGroupSiloId(s.id.toString())}
+                              >
+                                <Text style={[styles.pickerFakeText, groupSiloId === s.id.toString() && styles.pickerFakeTextActive]}>{s.name} - Sisa {s.currentStock} {s.unit}</Text>
+                              </TouchableOpacity>
+                            ))}
+                          </View>
+                        </View>
+                        <View>
+                          <Text style={styles.inputLabel}>Pilih Silo 2 (Konsentrat)</Text>
+                          <View style={{ gap: 8, marginTop: 4 }}>
+                            <TouchableOpacity
+                              style={[styles.pickerFakeItem, !groupSiloId2 && styles.pickerFakeItemActive, { padding: 10, borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 8 }]}
+                              onPress={() => setGroupSiloId2('')}
+                            >
+                              <Text style={[styles.pickerFakeText, !groupSiloId2 && styles.pickerFakeTextActive]}>-- Otomatis --</Text>
+                            </TouchableOpacity>
+                            {(silos || []).filter(s => (s.feedType || '').toLowerCase().includes('konsentrat') || (s.name || '').toLowerCase().includes('konsentrat')).map(s => (
+                              <TouchableOpacity
+                                key={s.id}
+                                style={[styles.pickerFakeItem, groupSiloId2 === s.id.toString() && styles.pickerFakeItemActive, { padding: 10, borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 8 }]}
+                                onPress={() => setGroupSiloId2(s.id.toString())}
+                              >
+                                <Text style={[styles.pickerFakeText, groupSiloId2 === s.id.toString() && styles.pickerFakeTextActive]}>{s.name} - Sisa {s.currentStock} {s.unit}</Text>
+                              </TouchableOpacity>
+                            ))}
+                          </View>
+                        </View>
+                      </View>
+                    ) : (
                       <View>
-                        <Text style={styles.inputLabel}>Pilih Silo 1 (Hijauan)</Text>
+                        <Text style={styles.inputLabel}>Pilih Silo (Opsional)</Text>
                         <View style={{ gap: 8, marginTop: 4 }}>
                           <TouchableOpacity
                             style={[styles.pickerFakeItem, !groupSiloId && styles.pickerFakeItemActive, { padding: 10, borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 8 }]}
@@ -797,7 +870,10 @@ const LivestockScreen = ({ navigation }: any) => {
                           >
                             <Text style={[styles.pickerFakeText, !groupSiloId && styles.pickerFakeTextActive]}>-- Otomatis --</Text>
                           </TouchableOpacity>
-                          {(silos || []).filter(s => (s.feedType || '').toLowerCase().includes('hijauan') || (s.name || '').toLowerCase().includes('hijauan')).map(s => (
+                          {(silos || []).filter(s => {
+                            const fType = groupFeedType.toLowerCase();
+                            return (s.feedType || '').toLowerCase().includes(fType) || (s.name || '').toLowerCase().includes(fType);
+                          }).map(s => (
                             <TouchableOpacity
                               key={s.id}
                               style={[styles.pickerFakeItem, groupSiloId === s.id.toString() && styles.pickerFakeItemActive, { padding: 10, borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 8 }]}
@@ -808,293 +884,254 @@ const LivestockScreen = ({ navigation }: any) => {
                           ))}
                         </View>
                       </View>
-                      <View>
-                        <Text style={styles.inputLabel}>Pilih Silo 2 (Konsentrat)</Text>
-                        <View style={{ gap: 8, marginTop: 4 }}>
-                          <TouchableOpacity
-                            style={[styles.pickerFakeItem, !groupSiloId2 && styles.pickerFakeItemActive, { padding: 10, borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 8 }]}
-                            onPress={() => setGroupSiloId2('')}
-                          >
-                            <Text style={[styles.pickerFakeText, !groupSiloId2 && styles.pickerFakeTextActive]}>-- Otomatis --</Text>
-                          </TouchableOpacity>
-                          {(silos || []).filter(s => (s.feedType || '').toLowerCase().includes('konsentrat') || (s.name || '').toLowerCase().includes('konsentrat')).map(s => (
-                            <TouchableOpacity
-                              key={s.id}
-                              style={[styles.pickerFakeItem, groupSiloId2 === s.id.toString() && styles.pickerFakeItemActive, { padding: 10, borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 8 }]}
-                              onPress={() => setGroupSiloId2(s.id.toString())}
-                            >
-                              <Text style={[styles.pickerFakeText, groupSiloId2 === s.id.toString() && styles.pickerFakeTextActive]}>{s.name} - Sisa {s.currentStock} {s.unit}</Text>
-                            </TouchableOpacity>
-                          ))}
-                        </View>
-                      </View>
-                    </View>
-                  ) : (
-                    <View>
-                      <Text style={styles.inputLabel}>Pilih Silo (Opsional)</Text>
-                      <View style={{ gap: 8, marginTop: 4 }}>
-                        <TouchableOpacity
-                          style={[styles.pickerFakeItem, !groupSiloId && styles.pickerFakeItemActive, { padding: 10, borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 8 }]}
-                          onPress={() => setGroupSiloId('')}
-                        >
-                          <Text style={[styles.pickerFakeText, !groupSiloId && styles.pickerFakeTextActive]}>-- Otomatis --</Text>
-                        </TouchableOpacity>
-                        {(silos || []).filter(s => {
-                          const fType = groupFeedType.toLowerCase();
-                          return (s.feedType || '').toLowerCase().includes(fType) || (s.name || '').toLowerCase().includes(fType);
-                        }).map(s => (
-                          <TouchableOpacity
-                            key={s.id}
-                            style={[styles.pickerFakeItem, groupSiloId === s.id.toString() && styles.pickerFakeItemActive, { padding: 10, borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 8 }]}
-                            onPress={() => setGroupSiloId(s.id.toString())}
-                          >
-                            <Text style={[styles.pickerFakeText, groupSiloId === s.id.toString() && styles.pickerFakeTextActive]}>{s.name} - Sisa {s.currentStock} {s.unit}</Text>
-                          </TouchableOpacity>
-                        ))}
-                      </View>
-                    </View>
-                  )}
-                </View>
-
-                <View style={{ marginBottom: 4 }}>
-                  <Text style={styles.inputLabel}>{(selectFeedWeightAll ? livestock.length : selectedFeedWeightCows.length) > 1 ? 'Rata-rata Pakan per Sapi (Kg)' : 'Berat Pakan (Kg per Sapi)'}</Text>
-                  <TextInput
-                    style={styles.textInput}
-                    placeholder="Contoh: 12.5"
-                    keyboardType="numeric"
-                    value={groupFeedWeight}
-                    onChangeText={setGroupFeedWeight}
-                  />
-                  <Text style={styles.unitLabel}>
-                    {(selectFeedWeightAll ? livestock.length : selectedFeedWeightCows.length) > 1 ? '*Total pakan akan didistribusikan secara proporsional sesuai kebutuhan BK.' : 'Masukkan porsi makan per sapi'}
-                  </Text>
-                </View>
-              </View>
-
-              {/* Live Recommendation Card */}
-              {(selectedFeedWeightCows.length > 0 || selectFeedWeightAll) && (() => {
-                const recs = calculateGroupRecommendations();
-                const cowCount = selectFeedWeightAll ? livestock.length : selectedFeedWeightCows.length;
-                
-                let selectedRecTotal = 0;
-                let labelRec = '';
-                
-                if (groupFeedType === 'Hijauan') {
-                  selectedRecTotal = recs.totalForageAsFed;
-                  labelRec = 'Rekomendasi Hijauan';
-                } else if (groupFeedType === 'Konsentrat') {
-                  selectedRecTotal = recs.totalConcentrateAsFed;
-                  labelRec = 'Rekomendasi Konsentrat';
-                } else if (groupFeedType === 'Tmr') {
-                  selectedRecTotal = recs.totalTmrAsFed;
-                  labelRec = 'Rekomendasi TMR';
-                } else if (groupFeedType === 'Konsentrat+hijauan') {
-                  selectedRecTotal = recs.totalForageAsFed + recs.totalConcentrateAsFed;
-                  labelRec = 'Rekomendasi Campuran';
-                }
-
-                const recPerCow = selectedRecTotal / cowCount;
-                const recPerCowSession = recPerCow / feedGoal;
-
-                return (
-                  <View style={{ backgroundColor: '#f0f9ff', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: '#bae6fd', marginBottom: 12, gap: 6 }}>
-                    <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#0369a1' }}>
-                      💡 Rekomendasi Nutrisi Kelompok ({cowCount} Sapi)
-                    </Text>
-                    
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                      <Text style={{ fontSize: 11, color: COLORS.textLight }}>Total BK Kelompok:</Text>
-                      <Text style={{ fontSize: 11, fontWeight: 'bold', color: COLORS.text }}>{recs.totalBk.toFixed(2)} kg BK/hari</Text>
-                    </View>
-
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                      <Text style={{ fontSize: 11, color: COLORS.textLight }}>Goal Makan Harian:</Text>
-                      <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#2563eb' }}>{feedGoal}x sehari</Text>
-                    </View>
-
-                    {groupFeedType === 'Konsentrat+hijauan' ? (
-                      <View style={{ marginTop: 4, paddingTop: 4, borderTopWidth: 1, borderTopColor: '#e0f2fe', gap: 4 }}>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                          <Text style={{ fontSize: 11, color: COLORS.textLight }}>Hijauan Harian (Kelompok):</Text>
-                          <Text style={{ fontSize: 11, fontWeight: 'bold', color: COLORS.text }}>{recs.totalForageAsFed.toFixed(2)} kg</Text>
-                        </View>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                          <Text style={{ fontSize: 11, color: COLORS.textLight }}>Konsentrat Harian (Kelompok):</Text>
-                          <Text style={{ fontSize: 11, fontWeight: 'bold', color: COLORS.text }}>{recs.totalConcentrateAsFed.toFixed(2)} kg</Text>
-                        </View>
-                        <View style={{ borderTopWidth: 1, borderTopColor: '#e0f2fe', paddingTop: 4, marginTop: 2 }}>
-                          <Text style={{ fontSize: 10, fontWeight: '500', color: COLORS.textLight }}>
-                            Distribusi per Sapi ({feedGoal}x): {cowCount > 1 ? 'Proporsional (Sesuai Kebutuhan BK)' : `H: ${(recs.totalForageAsFed / feedGoal).toFixed(2)} kg | K: ${(recs.totalConcentrateAsFed / feedGoal).toFixed(2)} kg`}
-                          </Text>
-                        </View>
-                      </View>
-                    ) : (
-                      <View style={{ marginTop: 4, paddingTop: 4, borderTopWidth: 1, borderTopColor: '#e0f2fe', gap: 4 }}>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                          <Text style={{ fontSize: 11, color: COLORS.textLight }}>Total Harian (Kelompok):</Text>
-                          <Text style={{ fontSize: 11, fontWeight: 'bold', color: COLORS.text }}>{selectedRecTotal.toFixed(2)} kg</Text>
-                        </View>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                          <Text style={{ fontSize: 11, color: COLORS.textLight }}>{cowCount > 1 ? 'Rata-rata Harian (Per Sapi):' : 'Total Harian (Per Sapi):'}</Text>
-                          <Text style={{ fontSize: 11, fontWeight: 'bold', color: COLORS.text }}>{recPerCow.toFixed(2)} kg</Text>
-                        </View>
-                        {feedGoal > 1 && (
-                          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                            <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#059669' }}>{cowCount > 1 ? 'Rata-rata 1x (Per Sapi):' : 'Porsi 1x (Per Sapi):'}</Text>
-                            <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#059669' }}>{recPerCowSession.toFixed(2)} kg</Text>
-                          </View>
-                        )}
-                      </View>
                     )}
+                  </View>
 
-                    <View style={{ flexDirection: 'row', gap: 8, marginTop: 6 }}>
-                      <TouchableOpacity 
-                        style={{ flex: 1, backgroundColor: '#eff6ff', borderWidth: 1, borderColor: '#bfdbfe', paddingVertical: 6, borderRadius: 6, alignItems: 'center' }}
-                        onPress={() => setGroupFeedWeight(recPerCow.toFixed(2))}
-                      >
-                        <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#1e40af' }}>🎯 Harian ({cowCount > 1 ? 'Rata-rata ' : ''}{recPerCow.toFixed(2)} kg)</Text>
-                      </TouchableOpacity>
-                      
-                      {feedGoal > 1 && (
-                        <TouchableOpacity 
-                          style={{ flex: 1, backgroundColor: '#ecfdf5', borderWidth: 1, borderColor: '#a7f3d0', paddingVertical: 6, borderRadius: 6, alignItems: 'center' }}
-                          onPress={() => setGroupFeedWeight(recPerCowSession.toFixed(2))}
-                        >
-                          <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#065f46' }}>🎯 Porsi 1x ({cowCount > 1 ? 'Rata-rata ' : ''}{recPerCowSession.toFixed(2)} kg)</Text>
-                        </TouchableOpacity>
-                      )}
-                    </View>
+                  <View style={{ marginBottom: 4 }}>
+                    <Text style={styles.inputLabel}>{(selectFeedWeightAll ? livestock.length : selectedFeedWeightCows.length) > 1 ? 'Rata-rata Pakan per Sapi (Kg)' : 'Berat Pakan (Kg per Sapi)'}</Text>
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="Contoh: 12.5"
+                      keyboardType="numeric"
+                      value={groupFeedWeight}
+                      onChangeText={setGroupFeedWeight}
+                    />
+                    <Text style={styles.unitLabel}>
+                      {(selectFeedWeightAll ? livestock.length : selectedFeedWeightCows.length) > 1 ? '*Total pakan akan didistribusikan secara proporsional sesuai kebutuhan BK.' : 'Masukkan porsi makan per sapi'}
+                    </Text>
+                  </View>
+                </View>
 
-                    {/* Proportional Distribution Breakdown */}
-                    {groupFeedWeight && parseFloat(groupFeedWeight) > 0 && cowCount > 1 && (() => {
-                      const asFedInputVal = parseFloat(groupFeedWeight);
-                      const totalInputAsFed = asFedInputVal * cowCount;
-                      const feedType = groupFeedType;
-                      let bkPct = 0;
-                      if (feedType === 'Hijauan') bkPct = 20;
-                      else if (feedType === 'Konsentrat') bkPct = 86;
-                      else if (feedType === 'Tmr') bkPct = 53;
-                      else if (feedType === 'Konsentrat+hijauan') bkPct = 53;
+                {/* Live Recommendation Card */}
+                {(selectedFeedWeightCows.length > 0 || selectFeedWeightAll) && (() => {
+                  const recs = calculateGroupRecommendations();
+                  const cowCount = selectFeedWeightAll ? livestock.length : selectedFeedWeightCows.length;
+                  
+                  let selectedRecTotal = 0;
+                  let labelRec = '';
+                  
+                  if (groupFeedType === 'Hijauan') {
+                    selectedRecTotal = recs.totalForageAsFed;
+                    labelRec = 'Rekomendasi Hijauan';
+                  } else if (groupFeedType === 'Konsentrat') {
+                    selectedRecTotal = recs.totalConcentrateAsFed;
+                    labelRec = 'Rekomendasi Konsentrat';
+                  } else if (groupFeedType === 'Tmr') {
+                    selectedRecTotal = recs.totalTmrAsFed;
+                    labelRec = 'Rekomendasi TMR';
+                  } else if (groupFeedType === 'Konsentrat+hijauan') {
+                    selectedRecTotal = recs.totalForageAsFed + recs.totalConcentrateAsFed;
+                    labelRec = 'Rekomendasi Campuran';
+                  }
+
+                  const recPerCow = selectedRecTotal / cowCount;
+                  const recPerCowSession = recPerCow / feedGoal;
+
+                  return (
+                    <View style={{ backgroundColor: '#f0f9ff', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: '#bae6fd', marginBottom: 12, gap: 6 }}>
+                      <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#0369a1' }}>
+                        💡 Rekomendasi Nutrisi Kelompok ({cowCount} Sapi)
+                      </Text>
                       
-                      return (
-                        <View style={{ marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: '#bae6fd' }}>
-                          <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#0369a1', marginBottom: 4 }}>Rincian Distribusi (Total: {totalInputAsFed.toFixed(2)} kg):</Text>
-                          <View style={{ maxHeight: 150 }}>
-                            <ScrollView nestedScrollEnabled={true}>
-                              {livestock.filter(c => selectFeedWeightAll || selectedFeedWeightCows.includes(c.cattleId)).map(cow => {
-                                const cowWeight = cow.weight || 300;
-                                const bkReq = cowWeight * ((cow.targetBkPercent ?? 2.5) / 100);
-                                const proportion = recs.totalBk > 0 ? (bkReq / recs.totalBk) : (1 / cowCount);
-                                const cowAsFed = totalInputAsFed * proportion;
-                                const forageRatio = cow.forageRatio ?? 60;
-                                const concentrateRatio = cow.concentrateRatio ?? 40;
-                                const forageDM = cow.forageDM ?? 20;
-                                const concentrateDM = cow.concentrateDM ?? 86;
-                                let expectedAsFed = 0;
-                                if (feedType === 'Hijauan') {
-                                    expectedAsFed = bkReq / (forageDM / 100);
-                                } else if (feedType === 'Konsentrat') {
-                                    expectedAsFed = bkReq / (concentrateDM / 100);
-                                } else if (feedType === 'Tmr') {
-                                    expectedAsFed = bkReq / (forageDM / 100);
-                                } else {
-                                    expectedAsFed = (bkReq * (forageRatio / 100)) / (forageDM / 100) + (bkReq * (concentrateRatio / 100)) / (concentrateDM / 100);
-                                }
-                                const trueBkPct = expectedAsFed > 0 ? (bkReq / expectedAsFed) : (bkPct / 100);
-                                const cowBk = cowAsFed * trueBkPct;
-                                return (
-                                  <View key={cow.id} style={{ flexDirection: 'row', justifyContent: 'space-between', backgroundColor: '#fff', padding: 6, borderRadius: 4, marginBottom: 4, borderWidth: 1, borderColor: '#e0f2fe' }}>
-                                    <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#334155' }}>{cow.cattleId}</Text>
-                                    <Text style={{ fontSize: 10, color: '#475569' }}>
-                                      <Text style={{ fontWeight: 'bold' }}>{cowAsFed.toFixed(2)} kg</Text> <Text style={{ fontSize: 9 }}>({cowBk.toFixed(2)} kg BK)</Text>
-                                    </Text>
-                                  </View>
-                                );
-                              })}
-                            </ScrollView>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                        <Text style={{ fontSize: 11, color: COLORS.textLight }}>Total BK Kelompok:</Text>
+                        <Text style={{ fontSize: 11, fontWeight: 'bold', color: COLORS.text }}>{recs.totalBk.toFixed(2)} kg BK/hari</Text>
+                      </View>
+
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                        <Text style={{ fontSize: 11, color: COLORS.textLight }}>{labelRec} Kelompok:</Text>
+                        <Text style={{ fontSize: 11, fontWeight: 'bold', color: COLORS.text }}>{selectedRecTotal.toFixed(2)} kg/hari</Text>
+                      </View>
+
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                        <Text style={{ fontSize: 11, color: COLORS.textLight }}>Goal Makan Harian:</Text>
+                        <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#2563eb' }}>{feedGoal}x sehari</Text>
+                      </View>
+
+                      {groupFeedType === 'Konsentrat+hijauan' ? (
+                        <View style={{ marginTop: 4, paddingTop: 4, borderTopWidth: 1, borderTopColor: '#e0f2fe', gap: 4 }}>
+                          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                            <Text style={{ fontSize: 11, color: COLORS.textLight }}>Hijauan Harian (Kelompok):</Text>
+                            <Text style={{ fontSize: 11, fontWeight: 'bold', color: COLORS.text }}>{recs.totalForageAsFed.toFixed(2)} kg</Text>
+                          </View>
+                          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                            <Text style={{ fontSize: 11, color: COLORS.textLight }}>Konsentrat Harian (Kelompok):</Text>
+                            <Text style={{ fontSize: 11, fontWeight: 'bold', color: COLORS.text }}>{recs.totalConcentrateAsFed.toFixed(2)} kg</Text>
+                          </View>
+                          <View style={{ borderTopWidth: 1, borderTopColor: '#e0f2fe', paddingTop: 4, marginTop: 2 }}>
+                            <Text style={{ fontSize: 10, fontWeight: '500', color: COLORS.textLight }}>
+                              Distribusi per Sapi ({feedGoal}x): {cowCount > 1 ? 'Proporsional (Sesuai Kebutuhan BK)' : `H: ${(recs.totalForageAsFed / feedGoal).toFixed(2)} kg | K: ${(recs.totalConcentrateAsFed / feedGoal).toFixed(2)} kg`}
+                            </Text>
                           </View>
                         </View>
-                      );
-                    })()}
-
-                  </View>
-                );
-              })()}
-
-              {/* Cow Selector Grid */}
-              <View style={styles.selectorSection}>
-                <View style={styles.selectorHeader}>
-                  <Text style={styles.selectorTitle}>Pilih Sapi Penerima</Text>
-                  <TouchableOpacity 
-                    style={[styles.selectAllBtn, selectFeedWeightAll && styles.selectAllBtnActive]} 
-                    onPress={toggleSelectFeedWeightAll}
-                  >
-                    <Text style={[styles.selectAllText, selectFeedWeightAll && styles.selectAllTextActive]}>
-                      {selectFeedWeightAll ? 'Batal Pilih Semua' : 'Pilih Semua'}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-
-                {/* MODAL SEARCH & FILTER */}
-                <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
-                  <View style={[styles.searchContainer, { flex: 1, margin: 0, height: 40 }]}>
-                    <Search color={COLORS.textLight} size={18} />
-                    <TextInput
-                      style={styles.searchInput}
-                      placeholder="Cari ID/Nama Sapi..."
-                      value={modalSearch}
-                      onChangeText={setModalSearch}
-                      placeholderTextColor={COLORS.textLight}
-                    />
-                  </View>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ maxHeight: 40 }}>
-                    <TouchableOpacity 
-                      style={[styles.pickerFakeItem, { width: 'auto', marginBottom: 0, paddingVertical: 8, marginRight: 8 }, modalZoneFilter === 'ALL' && styles.pickerFakeItemActive]}
-                      onPress={() => setModalZoneFilter('ALL')}
-                    ><Text style={[styles.pickerFakeText, modalZoneFilter === 'ALL' && styles.pickerFakeTextActive]}>Semua</Text></TouchableOpacity>
-                    {zones.map(z => (
-                      <TouchableOpacity 
-                        key={z.id}
-                        style={[styles.pickerFakeItem, { width: 'auto', marginBottom: 0, paddingVertical: 8, marginRight: 8 }, modalZoneFilter === z.id && styles.pickerFakeItemActive]}
-                        onPress={() => setModalZoneFilter(z.id)}
-                      ><Text style={[styles.pickerFakeText, modalZoneFilter === z.id && styles.pickerFakeTextActive]}>{z.name}</Text></TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                </View>
-
-                <View style={styles.cowSelectGrid}>
-                  {filteredModalLivestock.map(cow => {
-                    const isSelected = selectedFeedWeightCows.includes(cow.cattleId) || selectFeedWeightAll;
-                    return (
-                      <TouchableOpacity 
-                        key={cow.id} 
-                        style={[styles.cowSelectCard, isSelected && styles.cowSelectCardActive]}
-                        onPress={() => toggleSelectFeedWeightCattle(cow.cattleId)}
-                      >
-                        <Beef size={16} color={isSelected ? COLORS.primary : COLORS.textLight} />
-                        <Text style={[styles.cowSelectId, isSelected && styles.cowSelectIdActive]}>
-                          {cow.cattleId}
-                        </Text>
-                        {isSelected && (
-                          <View style={styles.checkIcon}>
-                            <Check size={10} color={COLORS.white} />
+                      ) : (
+                        <View style={{ marginTop: 4, paddingTop: 4, borderTopWidth: 1, borderTopColor: '#e0f2fe', gap: 4 }}>
+                          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                            <Text style={{ fontSize: 11, color: COLORS.textLight }}>Total Harian (Kelompok):</Text>
+                            <Text style={{ fontSize: 11, fontWeight: 'bold', color: COLORS.text }}>{selectedRecTotal.toFixed(2)} kg</Text>
                           </View>
-                        )}
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </View>
+                          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                            <Text style={{ fontSize: 11, color: COLORS.textLight }}>{cowCount > 1 ? 'Rata-rata Harian (Per Sapi):' : 'Total Harian (Per Sapi):'}</Text>
+                            <Text style={{ fontSize: 11, fontWeight: 'bold', color: COLORS.text }}>{recPerCow.toFixed(2)} kg</Text>
+                          </View>
+                          {feedGoal > 1 && (
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                              <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#059669' }}>{cowCount > 1 ? 'Rata-rata 1x (Per Sapi):' : 'Porsi 1x (Per Sapi):'}</Text>
+                              <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#059669' }}>{recPerCowSession.toFixed(2)} kg</Text>
+                            </View>
+                          )}
+                        </View>
+                      )}
 
-              <TouchableOpacity 
-                style={[styles.submitGroupBtn, { backgroundColor: '#059669' }]} 
-                onPress={submitGroupFeed}
-              >
-                <Text style={styles.submitGroupBtnText}>Simpan Pakan Kelompok</Text>
-              </TouchableOpacity>
-            </ScrollView>
+                      <View style={{ flexDirection: 'row', gap: 8, marginTop: 6 }}>
+                        <TouchableOpacity 
+                          style={{ flex: 1, backgroundColor: '#eff6ff', borderWidth: 1, borderColor: '#bfdbfe', paddingVertical: 6, borderRadius: 6, alignItems: 'center' }}
+                          onPress={() => setGroupFeedWeight(recPerCow.toFixed(2))}
+                        >
+                          <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#1e40af' }}>🎯 Harian ({cowCount > 1 ? 'Rata-rata ' : ''}{recPerCow.toFixed(2)} kg)</Text>
+                        </TouchableOpacity>
+                        
+                        {feedGoal > 1 && (
+                          <TouchableOpacity 
+                            style={{ flex: 1, backgroundColor: '#ecfdf5', borderWidth: 1, borderColor: '#a7f3d0', paddingVertical: 6, borderRadius: 6, alignItems: 'center' }}
+                            onPress={() => setGroupFeedWeight(recPerCowSession.toFixed(2))}
+                          >
+                            <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#065f46' }}>🎯 Porsi 1x ({cowCount > 1 ? 'Rata-rata ' : ''}{recPerCowSession.toFixed(2)} kg)</Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
+
+                      {/* Proportional Distribution Breakdown */}
+                      {groupFeedWeight && parseFloat(groupFeedWeight) > 0 && cowCount > 1 && (() => {
+                        const asFedInputVal = parseFloat(groupFeedWeight);
+                        const totalInputAsFed = asFedInputVal * cowCount;
+                        const feedType = groupFeedType;
+                        let bkPct = 0;
+                        if (feedType === 'Hijauan') bkPct = 20;
+                        else if (feedType === 'Konsentrat') bkPct = 86;
+                        else if (feedType === 'Tmr') bkPct = 53;
+                        else if (feedType === 'Konsentrat+hijauan') bkPct = 53;
+                        
+                        return (
+                          <View style={{ marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: '#bae6fd' }}>
+                            <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#0369a1', marginBottom: 4 }}>Rincian Distribusi (Total: {totalInputAsFed.toFixed(2)} kg):</Text>
+                            <View style={{ maxHeight: 150 }}>
+                              <ScrollView nestedScrollEnabled={true}>
+                                {livestock.filter(c => selectFeedWeightAll || selectedFeedWeightCows.includes(c.cattleId)).map(cow => {
+                                  const cowWeight = cow.weight || 300;
+                                  const bkReq = cowWeight * ((cow.targetBkPercent ?? 2.5) / 100);
+                                  const proportion = recs.totalBk > 0 ? (bkReq / recs.totalBk) : (1 / cowCount);
+                                  const cowAsFed = totalInputAsFed * proportion;
+                                  const forageRatio = cow.forageRatio ?? 60;
+                                  const concentrateRatio = cow.concentrateRatio ?? 40;
+                                  const forageDM = cow.forageDM ?? 20;
+                                  const concentrateDM = cow.concentrateDM ?? 86;
+                                  let expectedAsFed = 0;
+                                  if (feedType === 'Hijauan') {
+                                      expectedAsFed = bkReq / (forageDM / 100);
+                                  } else if (feedType === 'Konsentrat') {
+                                      expectedAsFed = bkReq / (concentrateDM / 100);
+                                  } else if (feedType === 'Tmr') {
+                                      expectedAsFed = bkReq / (forageDM / 100);
+                                  } else {
+                                      expectedAsFed = (bkReq * (forageRatio / 100)) / (forageDM / 100) + (bkReq * (concentrateRatio / 100)) / (concentrateDM / 100);
+                                  }
+                                  const trueBkPct = expectedAsFed > 0 ? (bkReq / expectedAsFed) : (bkPct / 100);
+                                  const cowBk = cowAsFed * trueBkPct;
+                                  return (
+                                    <View key={cow.id} style={{ flexDirection: 'row', justifyContent: 'space-between', backgroundColor: '#fff', padding: 6, borderRadius: 4, marginBottom: 4, borderWidth: 1, borderColor: '#e0f2fe' }}>
+                                      <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#334155' }}>{cow.cattleId}</Text>
+                                      <Text style={{ fontSize: 10, color: '#475569' }}>
+                                        <Text style={{ fontWeight: 'bold' }}>{cowAsFed.toFixed(2)} kg</Text> <Text style={{ fontSize: 9 }}>({cowBk.toFixed(2)} kg BK)</Text>
+                                      </Text>
+                                    </View>
+                                  );
+                                })}
+                              </ScrollView>
+                            </View>
+                          </View>
+                        );
+                      })()}
+
+                    </View>
+                  );
+                })()}
+
+                {/* Cow Selector Grid */}
+                <View style={styles.selectorSection}>
+                  <View style={styles.selectorHeader}>
+                    <Text style={styles.selectorTitle}>Pilih Sapi Penerima</Text>
+                    <TouchableOpacity 
+                      style={[styles.selectAllBtn, selectFeedWeightAll && styles.selectAllBtnActive]} 
+                      onPress={toggleSelectFeedWeightAll}
+                    >
+                      <Text style={[styles.selectAllText, selectFeedWeightAll && styles.selectAllTextActive]}>
+                        {selectFeedWeightAll ? 'Batal Pilih Semua' : 'Pilih Semua'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* MODAL SEARCH & FILTER */}
+                  <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+                    <View style={[styles.searchContainer, { flex: 1, margin: 0, height: 40 }]}>
+                      <Search color={COLORS.textLight} size={18} />
+                      <TextInput
+                        style={styles.searchInput}
+                        placeholder="Cari ID/Nama Sapi..."
+                        value={modalSearch}
+                        onChangeText={setModalSearch}
+                        placeholderTextColor={COLORS.textLight}
+                      />
+                    </View>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ maxHeight: 40 }}>
+                      <TouchableOpacity 
+                        style={[styles.pickerFakeItem, { width: 'auto', marginBottom: 0, paddingVertical: 8, marginRight: 8 }, modalZoneFilter === 'ALL' && styles.pickerFakeItemActive]}
+                        onPress={() => setModalZoneFilter('ALL')}
+                      ><Text style={[styles.pickerFakeText, modalZoneFilter === 'ALL' && styles.pickerFakeTextActive]}>Semua</Text></TouchableOpacity>
+                      {zones.map(z => (
+                        <TouchableOpacity 
+                          key={z.id}
+                          style={[styles.pickerFakeItem, { width: 'auto', marginBottom: 0, paddingVertical: 8, marginRight: 8 }, modalZoneFilter === z.id && styles.pickerFakeItemActive]}
+                          onPress={() => setModalZoneFilter(z.id)}
+                        ><Text style={[styles.pickerFakeText, modalZoneFilter === z.id && styles.pickerFakeTextActive]}>{z.name}</Text></TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+
+                  <View style={styles.cowSelectGrid}>
+                    {filteredModalLivestock.map(cow => {
+                      const isSelected = selectedFeedWeightCows.includes(cow.cattleId) || selectFeedWeightAll;
+                      return (
+                        <TouchableOpacity 
+                          key={cow.id} 
+                          style={[styles.cowSelectCard, isSelected && styles.cowSelectCardActive]}
+                          onPress={() => toggleSelectFeedWeightCattle(cow.cattleId)}
+                        >
+                          <Beef size={16} color={isSelected ? COLORS.primary : COLORS.textLight} />
+                          <Text style={[styles.cowSelectId, isSelected && styles.cowSelectIdActive]}>
+                            {cow.cattleId}
+                          </Text>
+                          {isSelected && (
+                            <View style={styles.checkIcon}>
+                              <Check size={10} color={COLORS.white} />
+                            </View>
+                          )}
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </View>
+
+                <TouchableOpacity 
+                  style={[styles.submitGroupBtn, { backgroundColor: '#059669' }]} 
+                  onPress={submitGroupFeed}
+                >
+                  <Text style={styles.submitGroupBtnText}>Simpan Pakan Kelompok</Text>
+                </TouchableOpacity>
+              </ScrollView>
+            </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       <LivestockFormModal 

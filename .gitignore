@@ -43,3 +43,8 @@ Thumbs.db
 # Google API Configs
 google-services.json
 google.json
+
+# Temporary testing scripts
+check-cows.js
+fetch-test.js
+

@@ -276,6 +276,7 @@ const ProfileScreen = ({ navigation }: any) => {
                 onChangeText={setEditPhone}
                 keyboardType="phone-pad"
                 placeholder="Contoh: 08123456789"
+                placeholderTextColor="#94a3b8"
               />
             ) : (
               <Text style={styles.infoText}>{user?.phone || 'Belum diatur'}</Text>
@@ -293,6 +294,7 @@ const ProfileScreen = ({ navigation }: any) => {
               <TextInput
                 style={styles.input}
                 placeholder="Masukkan password saat ini"
+                placeholderTextColor="#94a3b8"
                 secureTextEntry
                 value={currentPassword}
                 onChangeText={setCurrentPassword}
@@ -306,6 +308,7 @@ const ProfileScreen = ({ navigation }: any) => {
               <TextInput
                 style={styles.input}
                 placeholder="Masukkan password baru"
+                placeholderTextColor="#94a3b8"
                 secureTextEntry
                 value={newPassword}
                 onChangeText={setNewPassword}
