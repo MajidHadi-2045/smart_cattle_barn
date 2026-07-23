@@ -1335,9 +1335,11 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                                             ) : (
                                                 <>
                                                     <div>{sum.endWeight}</div>
-                                                    <span className="block text-[10px] text-slate-400 font-normal -mt-0.5">
-                                                        ~{sum.estimatedWeight || sum.endWeight} <span className="text-[9px] text-amber-500/80 font-medium">(estimasi)</span>
-                                                    </span>
+                                                    {sum.estimatedWeight && Math.abs(sum.estimatedWeight - sum.endWeight) >= 0.5 && (
+                                                        <span className="block text-[10px] text-slate-400 font-normal -mt-0.5">
+                                                            ~{sum.estimatedWeight} <span className="text-[9px] text-amber-500/80 font-medium">(estimasi)</span>
+                                                        </span>
+                                                    )}
                                                 </>
                                             )}
                                         </td>

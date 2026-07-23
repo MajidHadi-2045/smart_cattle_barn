@@ -883,9 +883,11 @@ const DashboardScreen = ({ navigation }: any) => {
                         {sum.isEstimated ? (
                           <Text style={{ fontSize: 8, color: '#f59e0b', marginTop: -2 }}>~estimasi</Text>
                         ) : (
-                          <Text style={{ fontSize: 8, color: '#64748b', marginTop: -2 }}>
-                            ~{sum.estimatedWeight || sum.endWeight} <Text style={{ color: '#f59e0b', fontSize: 7 }}>(est)</Text>
-                          </Text>
+                          sum.estimatedWeight && Math.abs(sum.estimatedWeight - sum.endWeight) >= 0.5 && (
+                            <Text style={{ fontSize: 8, color: '#64748b', marginTop: -2 }}>
+                              ~{sum.estimatedWeight} <Text style={{ color: '#f59e0b', fontSize: 7 }}>(est)</Text>
+                            </Text>
+                          )
                         )}
                       </View>
                       <Text style={[styles.tableRowText, { width: 60, textAlign: 'center', color: COLORS.success, fontWeight: 'bold' }]}>{sum.adg}</Text>
