@@ -285,15 +285,19 @@ const LivestockScreen = ({ navigation }: any) => {
       const forageDM = cow.forageDM ?? 20;
       const concentrateDM = cow.concentrateDM ?? 86;
 
-      if (concentrateRatio === 999) {
-        totalTmrAsFed += bkReq / (forageDM / 100);
-      } else {
+      // Selalu hitung semua kemungkinan agar UI dinamis jika pengguna mengubah tipe pakan
+      const tmrDM = forageDM ?? 50; 
+      totalTmrAsFed += bkReq / (tmrDM / 100);
+
+      if (concentrateRatio !== 999) {
         if (forageRatio > 0) {
           totalForageAsFed += (bkReq * (forageRatio / 100)) / (forageDM / 100);
         }
         if (concentrateRatio > 0) {
           totalConcentrateAsFed += (bkReq * (concentrateRatio / 100)) / (concentrateDM / 100);
         }
+      } else {
+        totalForageAsFed += bkReq / (tmrDM / 100);
       }
     });
 

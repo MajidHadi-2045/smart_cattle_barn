@@ -54,6 +54,31 @@ import {
 import { Dimensions } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 
+const formatNotificationTime = (timestamp?: string | number | Date) => {
+  if (!timestamp) return '';
+  const date = new Date(timestamp);
+  const now = new Date();
+  
+  const dDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const dNow = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  
+  const diffTime = dNow.getTime() - dDate.getTime();
+  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+  
+  const timeStr = date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace('.', ':');
+  
+  if (diffDays === 0) {
+    return `Hari ini, ${timeStr}`;
+  } else if (diffDays === 1) {
+    return `Kemarin, ${timeStr}`;
+  } else {
+    const day = date.getDate();
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+    const month = months[date.getMonth()];
+    return `${day} ${month}, ${timeStr}`;
+  }
+};
+
 const DashboardScreen = ({ navigation }: any) => {
   const insets = useSafeAreaInsets();
   const [refreshing, setRefreshing] = useState(false);
@@ -124,7 +149,7 @@ const DashboardScreen = ({ navigation }: any) => {
         id: Date.now(),
         title: payload.title,
         body: payload.body,
-        time: new Date(payload.timestamp || Date.now()).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'})
+        time: formatNotificationTime(payload.timestamp || Date.now())
       };
       setNotifications(prev => [newNotif, ...prev].slice(0, 10));
       setUnreadNotifCount(prev => prev + 1);
@@ -460,7 +485,7 @@ const DashboardScreen = ({ navigation }: any) => {
           id: item.id || Date.now() + idx,
           title: item.title,
           body: item.body,
-          time: item.time || new Date(item.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+          time: formatNotificationTime(item.timestamp)
         }));
         setNotifications(formatted);
       }

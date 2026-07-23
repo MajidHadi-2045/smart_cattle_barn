@@ -32,6 +32,31 @@ const playAlarmSound = () => {
   }
 };
 
+const formatNotificationTime = (timestamp) => {
+  if (!timestamp) return '';
+  const date = new Date(timestamp);
+  const now = new Date();
+  
+  const dDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const dNow = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  
+  const diffTime = dNow.getTime() - dDate.getTime();
+  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+  
+  const timeStr = date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace('.', ':');
+  
+  if (diffDays === 0) {
+    return `Hari ini, ${timeStr}`;
+  } else if (diffDays === 1) {
+    return `Kemarin, ${timeStr}`;
+  } else {
+    const day = date.getDate();
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+    const month = months[date.getMonth()];
+    return `${day} ${month}, ${timeStr}`;
+  }
+};
+
 const NotificationBell = () => {
   const [notifications, setNotifications] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -55,7 +80,7 @@ const NotificationBell = () => {
             id: item.id || Date.now() + idx,
             title: item.title,
             body: item.body,
-            time: item.time || new Date(item.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+            time: formatNotificationTime(item.timestamp)
           }));
           setNotifications(formatted);
         }
@@ -86,7 +111,7 @@ const NotificationBell = () => {
         id: Date.now(),
         title: payload.title,
         body: payload.body,
-        time: new Date(payload.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+        time: formatNotificationTime(payload.timestamp || new Date().toISOString())
       };
       
       setNotifications(prev => [newNotif, ...prev].slice(0, 10)); // Simpan 10 terakhir
