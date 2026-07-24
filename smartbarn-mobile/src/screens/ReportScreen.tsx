@@ -7,7 +7,8 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Dimensions,
-  Linking
+  Linking,
+  Modal
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, SPACING, SHADOWS } from '../theme';
@@ -31,12 +32,58 @@ const ReportScreen = ({ navigation }: any) => {
   const [isDownloading, setIsDownloading] = useState(false);
   const { showToast } = useToast();
 
+  // Custom Date Picker States & Helpers
+  const [pickerVisible, setPickerVisible] = useState(false);
+  const [pickerMode, setPickerMode] = useState<'start' | 'end'>('start');
+  const [navDate, setNavDate] = useState(new Date());
+
+  const getDaysInMonth = (y: number, m: number) => new Date(y, m + 1, 0).getDate();
+  const getFirstDayOfMonth = (y: number, m: number) => new Date(y, m, 1).getDay();
+
+  const handleOpenPicker = (mode: 'start' | 'end') => {
+    setPickerMode(mode);
+    const initialDate = new Date(mode === 'start' ? startDate : endDate);
+    setNavDate(isNaN(initialDate.getTime()) ? new Date() : initialDate);
+    setPickerVisible(true);
+  };
+
+  const handlePrevMonth = () => {
+    setNavDate(new Date(navDate.getFullYear(), navDate.getMonth() - 1, 1));
+  };
+
+  const handleNextMonth = () => {
+    setNavDate(new Date(navDate.getFullYear(), navDate.getMonth() + 1, 1));
+  };
+
+  const handleSelectDay = (day: number) => {
+    const selected = new Date(navDate.getFullYear(), navDate.getMonth(), day);
+    const year = selected.getFullYear();
+    const month = String(selected.getMonth() + 1).padStart(2, '0');
+    const dateStr = String(selected.getDate()).padStart(2, '0');
+    const formatted = `${year}-${month}-${dateStr}`;
+
+    if (pickerMode === 'start') {
+      if (new Date(formatted) > new Date(endDate)) {
+        showToast('Tanggal mulai tidak boleh melebihi tanggal selesai', 'error');
+        return;
+      }
+      setStartDate(formatted);
+    } else {
+      if (new Date(formatted) < new Date(startDate)) {
+        showToast('Tanggal selesai tidak boleh kurang dari tanggal mulai', 'error');
+        return;
+      }
+      setEndDate(formatted);
+    }
+    setPickerVisible(false);
+  };
+
   const REPORT_TYPES = [
-    { id: 'Lingkungan', title: 'Lingkungan Kandang' },
-    { id: 'Kesehatan', title: 'Kesehatan Ternak' },
-    { id: 'Populasi', title: 'Total Populasi' },
-    { id: 'Pakan', title: 'Konsumsi Pakan' },
-    { id: 'Limbah', title: 'Manajemen Limbah' }
+    { id: 'Lingkungan', title: 'Laporan Lingkungan Kandang (Sensor)' },
+    { id: 'Kesehatan', title: 'Laporan Kesehatan & Medis Ternak' },
+    { id: 'Populasi', title: 'Laporan Total Populasi Ternak' },
+    { id: 'Pakan', title: 'Laporan Konsumsi Pakan (As-Fed & BK)' },
+    { id: 'Limbah', title: 'Laporan Manajemen Limbah (Feses & Urine)' }
   ];
 
   const fetchReports = async () => {
@@ -103,27 +150,38 @@ const ReportScreen = ({ navigation }: any) => {
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.scrollContent}>
-          <View style={styles.summaryBox}>
-            <TrendingUp size={24} color={COLORS.white} />
-            <View style={styles.summaryText}>
-              <Text style={styles.summaryLabel}>Total Produksi Hari Ini</Text>
-              <Text style={styles.summaryValue}>Optimal</Text>
-            </View>
-          </View>
-
           <Text style={styles.sectionTitle}>Generator Laporan (PDF)</Text>
           
           <View style={styles.formContainer}>
             <Text style={styles.label}>Pilih Kategori Laporan</Text>
-            <View style={styles.optionsGrid}>
+            <View style={{ marginBottom: SPACING.lg }}>
               {REPORT_TYPES.map((type) => (
                 <TouchableOpacity 
                   key={type.id} 
-                  style={[styles.optionBtn, jenisLaporan === type.id && styles.optionBtnActive]}
+                  style={[styles.optionBtn, jenisLaporan === type.id && styles.optionBtnActive, { width: '100%', marginBottom: 10, paddingVertical: 12 }]}
                   onPress={() => setJenisLaporan(type.id)}
                 >
-                  {jenisLaporan === type.id && <CheckCircle size={14} color={COLORS.primary} style={{marginRight: 4}}/>}
-                  <Text style={[styles.optionText, jenisLaporan === type.id && styles.optionTextActive]}>{type.title}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      {jenisLaporan === type.id && <CheckCircle size={16} color={COLORS.primary} />}
+                      <Text style={[styles.optionText, jenisLaporan === type.id && styles.optionTextActive, { fontSize: 13, fontWeight: 'bold' }]}>
+                        {type.title}
+                      </Text>
+                    </View>
+                    <View style={{ 
+                      width: 20, 
+                      height: 20, 
+                      borderRadius: 10, 
+                      borderWidth: 2, 
+                      borderColor: jenisLaporan === type.id ? COLORS.primary : '#cbd5e1', 
+                      justifyContent: 'center', 
+                      alignItems: 'center' 
+                    }}>
+                      {jenisLaporan === type.id && (
+                        <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: COLORS.primary }} />
+                      )}
+                    </View>
+                  </View>
                 </TouchableOpacity>
               ))}
             </View>
@@ -131,17 +189,17 @@ const ReportScreen = ({ navigation }: any) => {
             <View style={styles.dateRow}>
               <View style={styles.dateInputContainer}>
                 <Text style={styles.label}>Dari Tanggal</Text>
-                <View style={styles.dateBox}>
+                <TouchableOpacity onPress={() => handleOpenPicker('start')} style={styles.dateBox}>
                   <Calendar size={18} color={COLORS.textLight} />
                   <Text style={styles.dateText}>{startDate}</Text>
-                </View>
+                </TouchableOpacity>
               </View>
               <View style={styles.dateInputContainer}>
                 <Text style={styles.label}>Sampai Tanggal</Text>
-                <View style={styles.dateBox}>
+                <TouchableOpacity onPress={() => handleOpenPicker('end')} style={styles.dateBox}>
                   <Calendar size={18} color={COLORS.textLight} />
                   <Text style={styles.dateText}>{endDate}</Text>
-                </View>
+                </TouchableOpacity>
               </View>
             </View>
           </View>
@@ -163,6 +221,91 @@ const ReportScreen = ({ navigation }: any) => {
           </TouchableOpacity>
         </ScrollView>
       )}
+
+      {/* ========================================== */}
+      {/* MODAL DATE PICKER */}
+      {/* ========================================== */}
+      <Modal
+        visible={pickerVisible}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setPickerVisible(false)}
+      >
+        <View style={styles.pickerOverlay}>
+          <View style={styles.pickerContent}>
+            <View style={styles.pickerHeader}>
+              <Text style={styles.pickerTitle}>
+                {pickerMode === 'start' ? 'Pilih Tanggal Mulai' : 'Pilih Tanggal Selesai'}
+              </Text>
+              <TouchableOpacity onPress={() => setPickerVisible(false)}>
+                <Text style={styles.pickerCloseBtn}>Batal</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Month Navigator */}
+            <View style={styles.monthNav}>
+              <TouchableOpacity onPress={handlePrevMonth} style={styles.navBtn}>
+                <ChevronLeft size={20} color={COLORS.text} />
+              </TouchableOpacity>
+              <Text style={styles.monthLabel}>
+                {navDate.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}
+              </Text>
+              <TouchableOpacity onPress={handleNextMonth} style={styles.navBtn}>
+                <ChevronLeft size={20} color={COLORS.text} style={{ transform: [{ rotate: '180deg' }] }} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Days of Week Header */}
+            <View style={styles.weekHeader}>
+              {['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'].map((w) => (
+                <Text key={w} style={styles.weekDayText}>{w}</Text>
+              ))}
+            </View>
+
+            {/* Days Grid */}
+            <View style={styles.daysGrid}>
+              {(() => {
+                const daysInMonth = getDaysInMonth(navDate.getFullYear(), navDate.getMonth());
+                const firstDay = getFirstDayOfMonth(navDate.getFullYear(), navDate.getMonth());
+                const cells = [];
+                
+                for (let i = 0; i < firstDay; i++) {
+                  cells.push({ key: `empty-${i}`, day: null });
+                }
+                for (let d = 1; d <= daysInMonth; d++) {
+                  cells.push({ key: `day-${d}`, day: d });
+                }
+
+                return cells.map((cell) => {
+                  if (cell.day === null) {
+                    return <View key={cell.key} style={styles.dayCell} />;
+                  }
+
+                  const cellDate = new Date(navDate.getFullYear(), navDate.getMonth(), cell.day);
+                  const year = cellDate.getFullYear();
+                  const month = String(cellDate.getMonth() + 1).padStart(2, '0');
+                  const dateStr = String(cellDate.getDate()).padStart(2, '0');
+                  const formatted = `${year}-${month}-${dateStr}`;
+
+                  const isSelected = pickerMode === 'start' ? startDate === formatted : endDate === formatted;
+
+                  return (
+                    <TouchableOpacity
+                      key={cell.key}
+                      style={[styles.dayCell, isSelected && styles.dayCellSelected]}
+                      onPress={() => handleSelectDay(cell.day)}
+                    >
+                      <Text style={[styles.dayCellText, isSelected && styles.dayCellTextSelected]}>
+                        {cell.day}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                });
+              })()}
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -180,19 +323,6 @@ const styles = StyleSheet.create({
   backButton: { padding: 4 },
   headerTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.text },
   scrollContent: { padding: SPACING.lg },
-  summaryBox: { 
-    backgroundColor: COLORS.primary, 
-    borderRadius: 20, 
-    padding: SPACING.lg, 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    gap: 15,
-    marginBottom: SPACING.xl,
-    ...SHADOWS.md
-  },
-  summaryText: { flex: 1 },
-  summaryLabel: { color: 'rgba(255,255,255,0.8)', fontSize: 14 },
-  summaryValue: { color: COLORS.white, fontSize: 22, fontWeight: 'bold' },
   sectionTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.text, marginBottom: SPACING.md },
   grid: { flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap' },
   card: { 
@@ -241,12 +371,6 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md
   },
   label: { fontSize: 14, fontWeight: 'bold', color: COLORS.text, marginBottom: 10 },
-  optionsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: SPACING.lg
-  },
   optionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -258,8 +382,8 @@ const styles = StyleSheet.create({
     borderColor: '#e2e8f0',
   },
   optionBtnActive: {
-    backgroundColor: '#eff6ff',
-    borderColor: '#bfdbfe',
+    backgroundColor: '#ecfdf5',
+    borderColor: '#a7f3d0',
   },
   optionText: {
     fontSize: 12,
@@ -290,6 +414,96 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: 14,
     color: COLORS.text,
+  },
+  // Custom Date Picker styles
+  pickerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: SPACING.lg
+  },
+  pickerContent: {
+    width: '100%',
+    backgroundColor: COLORS.white,
+    borderRadius: 20,
+    padding: SPACING.lg,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84
+  },
+  pickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+    paddingBottom: 12,
+    marginBottom: 16
+  },
+  pickerTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: COLORS.text
+  },
+  pickerCloseBtn: {
+    fontSize: 14,
+    color: COLORS.textLight,
+    fontWeight: '600'
+  },
+  monthNav: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16
+  },
+  navBtn: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#f1f5f9'
+  },
+  monthLabel: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: COLORS.text
+  },
+  weekHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8
+  },
+  weekDayText: {
+    width: '14.28%',
+    textAlign: 'center',
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.textLight
+  },
+  daysGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap'
+  },
+  dayCell: {
+    width: '14.28%',
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 8,
+    marginVertical: 2
+  },
+  dayCellSelected: {
+    backgroundColor: COLORS.primary
+  },
+  dayCellText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: COLORS.text
+  },
+  dayCellTextSelected: {
+    color: COLORS.white,
+    fontWeight: 'bold'
   }
 });
 
