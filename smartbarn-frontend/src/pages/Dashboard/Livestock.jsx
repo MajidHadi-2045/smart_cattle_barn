@@ -2502,8 +2502,8 @@ const Livestock = () => {
                                             <input type="number" step="0.1" value={nutritionPrefsForm.forageDM} onChange={e => setNutritionPrefsForm({...nutritionPrefsForm, forageDM: parseFloat(e.target.value)})} className="w-full p-2 border rounded-lg text-sm dark:bg-slate-800 dark:border-slate-600 bg-transparent" />
                                         </div>
                                     )}
-                                    {feedingMethod === 'CAMPURAN' && (
-                                        <div>
+                                    {feedingMethod !== 'HIJAUAN_SAJA' && feedingMethod !== 'TMR' && (
+                                        <div className={feedingMethod !== 'CAMPURAN' ? 'col-span-2' : ''}>
                                             <label className="block text-xs font-semibold text-slate-600 mb-1">Kandungan BK Konsentrat (%)</label>
                                             <input type="number" step="0.1" value={nutritionPrefsForm.concentrateDM} onChange={e => setNutritionPrefsForm({...nutritionPrefsForm, concentrateDM: parseFloat(e.target.value)})} className="w-full p-2 border rounded-lg text-sm dark:bg-slate-800 dark:border-slate-600 bg-transparent" />
                                         </div>
