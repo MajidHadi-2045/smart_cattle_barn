@@ -276,7 +276,7 @@ export class LivestockController {
   @Roles('STAFF')
   update(@Param('id') id: string, @Body() data: any, @Req() req: any) {
     const author = req.user?.name ? `${req.user.name} (${req.user.role})` : req.user?.email || 'Admin';
-    return this.livestockService.update(+id, data, author);
+    return this.livestockService.update(id, data, author);
   }
 
   @Delete(':cattleId')

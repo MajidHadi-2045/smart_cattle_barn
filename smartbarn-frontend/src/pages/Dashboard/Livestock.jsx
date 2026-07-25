@@ -398,7 +398,7 @@ const Livestock = () => {
         }
 
         setCowFormData({
-            id: cow.dbId,
+            id: cow.dbId || cow.id,
             cattleId: cow.id,
             breed: cow.breed,
             gender: cow.gender,
@@ -873,7 +873,7 @@ const Livestock = () => {
         }
 
         toast.promise(
-            fetchApi(`/livestock/${selectedCow.dbId}`, {
+            fetchApi(`/livestock/${selectedCow.dbId || selectedCow.id}`, {
                 method: 'PATCH',
                 body: JSON.stringify(finalPrefs)
             }).then(res => { if(!res.ok) throw new Error(); return res.json(); }),
@@ -1159,7 +1159,7 @@ const Livestock = () => {
                         </div>
 
                         {/* Always Visible Actions */}
-                        {userRole !== 'VETERINER' && userRole !== 'SUPER_ADMIN' && (
+                        {userRole === 'STAFF' && (
                             <div className="mb-2">
                                 <button onClick={() => openNutritionConfig(cow)} className="w-full bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 dark:border-slate-600 transition flex items-center justify-center gap-1 shadow-sm">
                                     ⚙️ Parameter Target Nutrisi
@@ -1536,7 +1536,7 @@ const Livestock = () => {
                                 <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">
                                     <div className="flex justify-between items-center mb-1">
                                         <p className="text-[10px] text-slate-400 font-bold uppercase">Kebutuhan Nutrisi</p>
-                                        {userRole !== 'VETERINER' && (
+                                        {userRole === 'STAFF' && (
                                             <button onClick={() => setShowNutritionConfig(!showNutritionConfig)} className="text-[10px] text-primary-600 font-bold hover:underline">
                                                 {showNutritionConfig ? 'Batal' : 'Pengaturan Manual'}
                                             </button>

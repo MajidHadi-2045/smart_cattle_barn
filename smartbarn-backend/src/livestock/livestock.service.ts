@@ -280,12 +280,12 @@ export class LivestockService {
     const updated = await (this.prisma.livestock as any).updateMany({
       where: { cattleId: { in: cattleIds } },
       data: {
-        targetBkPercent: data.targetBkPercent !== undefined ? parseFloat(data.targetBkPercent as any) : undefined,
-        forageRatio: data.forageRatio !== undefined ? parseFloat(data.forageRatio as any) : undefined,
-        concentrateRatio: data.concentrateRatio !== undefined ? parseFloat(data.concentrateRatio as any) : undefined,
-        forageDM: data.forageDM !== undefined ? parseFloat(data.forageDM as any) : undefined,
-        concentrateDM: data.concentrateDM !== undefined ? parseFloat(data.concentrateDM as any) : undefined,
-        feedingFrequency: data.feedingFrequency !== undefined ? parseInt(data.feedingFrequency as any) : undefined,
+        targetBkPercent: (data.targetBkPercent !== undefined && data.targetBkPercent !== null && (data as any).targetBkPercent !== '' && !isNaN(parseFloat(data.targetBkPercent as any))) ? parseFloat(data.targetBkPercent as any) : undefined,
+        forageRatio: (data.forageRatio !== undefined && data.forageRatio !== null && (data as any).forageRatio !== '' && !isNaN(parseFloat(data.forageRatio as any))) ? parseFloat(data.forageRatio as any) : undefined,
+        concentrateRatio: (data.concentrateRatio !== undefined && data.concentrateRatio !== null && (data as any).concentrateRatio !== '' && !isNaN(parseFloat(data.concentrateRatio as any))) ? parseFloat(data.concentrateRatio as any) : undefined,
+        forageDM: (data.forageDM !== undefined && data.forageDM !== null && (data as any).forageDM !== '' && !isNaN(parseFloat(data.forageDM as any))) ? parseFloat(data.forageDM as any) : undefined,
+        concentrateDM: (data.concentrateDM !== undefined && data.concentrateDM !== null && (data as any).concentrateDM !== '' && !isNaN(parseFloat(data.concentrateDM as any))) ? parseFloat(data.concentrateDM as any) : undefined,
+        feedingFrequency: (data.feedingFrequency !== undefined && data.feedingFrequency !== null && (data as any).feedingFrequency !== '' && !isNaN(parseInt(data.feedingFrequency as any))) ? parseInt(data.feedingFrequency as any) : undefined,
       }
     });
 
@@ -294,9 +294,14 @@ export class LivestockService {
     return { success: true, count: updated.count };
   }
 
-  async update(id: number, data: any, author: string = 'Admin') {
+  async update(idOrCattleId: string | number, data: any, author: string = 'Admin') {
+    const isNumeric = !isNaN(Number(idOrCattleId)) && String(idOrCattleId).trim() !== '';
+    const whereClause = isNumeric
+      ? { id: Number(idOrCattleId) }
+      : { cattleId: String(idOrCattleId) };
+
     const updated = await (this.prisma.livestock as any).update({
-      where: { id: parseInt(id as any) },
+      where: whereClause,
       data: {
         cattleId: data.cattleId,
         breed: data.breed,
@@ -307,12 +312,12 @@ export class LivestockService {
         currentWeight: data.currentWeight
           ? parseFloat(data.currentWeight)
           : undefined,
-        targetBkPercent: data.targetBkPercent !== undefined ? parseFloat(data.targetBkPercent) : undefined,
-        forageRatio: data.forageRatio !== undefined ? parseFloat(data.forageRatio) : undefined,
-        concentrateRatio: data.concentrateRatio !== undefined ? parseFloat(data.concentrateRatio) : undefined,
-        forageDM: data.forageDM !== undefined ? parseFloat(data.forageDM) : undefined,
-        concentrateDM: data.concentrateDM !== undefined ? parseFloat(data.concentrateDM) : undefined,
-        feedingFrequency: data.feedingFrequency !== undefined ? parseInt(data.feedingFrequency) : undefined,
+        targetBkPercent: (data.targetBkPercent !== undefined && data.targetBkPercent !== null && data.targetBkPercent !== '' && !isNaN(parseFloat(data.targetBkPercent))) ? parseFloat(data.targetBkPercent) : undefined,
+        forageRatio: (data.forageRatio !== undefined && data.forageRatio !== null && data.forageRatio !== '' && !isNaN(parseFloat(data.forageRatio))) ? parseFloat(data.forageRatio) : undefined,
+        concentrateRatio: (data.concentrateRatio !== undefined && data.concentrateRatio !== null && data.concentrateRatio !== '' && !isNaN(parseFloat(data.concentrateRatio))) ? parseFloat(data.concentrateRatio) : undefined,
+        forageDM: (data.forageDM !== undefined && data.forageDM !== null && data.forageDM !== '' && !isNaN(parseFloat(data.forageDM))) ? parseFloat(data.forageDM) : undefined,
+        concentrateDM: (data.concentrateDM !== undefined && data.concentrateDM !== null && data.concentrateDM !== '' && !isNaN(parseFloat(data.concentrateDM))) ? parseFloat(data.concentrateDM) : undefined,
+        feedingFrequency: (data.feedingFrequency !== undefined && data.feedingFrequency !== null && data.feedingFrequency !== '' && !isNaN(parseInt(data.feedingFrequency))) ? parseInt(data.feedingFrequency) : undefined,
       },
     });
 

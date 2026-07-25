@@ -317,7 +317,7 @@ const LivestockDetailScreen = ({ route, navigation }: any) => {
 
     setLoading(true);
     try {
-      await apiClient.patch(`/livestock/${item.id}`, finalPrefs);
+      await apiClient.patch(`/livestock/${item.dbId || item.id}`, finalPrefs);
       setNutritionModalVisible(false);
       
       setModalConfig({
