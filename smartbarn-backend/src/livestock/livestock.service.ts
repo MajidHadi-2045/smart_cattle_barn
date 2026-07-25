@@ -537,12 +537,20 @@ export class LivestockService {
   private async autoUpdateScheduleStatus(feedType: string, zoneId?: number) {
     try {
       const now = new Date();
-      const currentHour = now.getHours();
-      const currentMinute = now.getMinutes();
+      // Konversi ke Waktu Indonesia Barat (WIB) / GMT+7
+      const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
+      const wibDate = new Date(utcTime + (3600000 * 7));
+      const currentHour = wibDate.getHours();
+      const currentMinute = wibDate.getMinutes();
       const currentTimeInMinutes = currentHour * 60 + currentMinute;
       
-      const todayStart = new Date();
-      todayStart.setHours(0, 0, 0, 0);
+      const getWibDateString = (dObj: Date) => {
+          const u = dObj.getTime() + (dObj.getTimezoneOffset() * 60000);
+          const w = new Date(u + (3600000 * 7));
+          return `${w.getFullYear()}-${w.getMonth() + 1}-${w.getDate()}`;
+      };
+
+      const todayStr = getWibDateString(now);
 
       const keyword = feedType.toLowerCase().includes('konsentrat+hijauan') || feedType.toLowerCase() === 'tmr' 
           ? '' 
@@ -557,7 +565,7 @@ export class LivestockService {
       });
 
       matchedSchedules = matchedSchedules.filter(s => {
-          const isUpdatedToday = s.updatedAt && new Date(s.updatedAt) >= todayStart;
+          const isUpdatedToday = s.updatedAt && getWibDateString(new Date(s.updatedAt)) === todayStr;
           return !isUpdatedToday || s.status === 'BELUM';
       });
 

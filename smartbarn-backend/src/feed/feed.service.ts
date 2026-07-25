@@ -172,12 +172,17 @@ export class FeedService {
         orderBy: { time: 'asc' },
       });
 
-      const todayStart = new Date();
-      todayStart.setHours(0, 0, 0, 0);
+      const getWibDateString = (dObj: Date) => {
+          const u = dObj.getTime() + (dObj.getTimezoneOffset() * 60000);
+          const w = new Date(u + (3600000 * 7));
+          return `${w.getFullYear()}-${w.getMonth() + 1}-${w.getDate()}`;
+      };
+
+      const todayStr = getWibDateString(new Date());
 
       schedules = rawSchedules.map(schedule => {
         // @ts-ignore
-        const isUpdatedToday = schedule.updatedAt && new Date(schedule.updatedAt) >= todayStart;
+        const isUpdatedToday = schedule.updatedAt && getWibDateString(new Date(schedule.updatedAt)) === todayStr;
         
         let status: string = isUpdatedToday ? schedule.status : 'BELUM';
         // @ts-ignore
@@ -186,8 +191,11 @@ export class FeedService {
         // Evaluasi TELAT hanya saat status masih BELUM
         if (status === 'BELUM' && schedule.time) {
           const now = new Date();
-          const currentHour = now.getHours();
-          const currentMinute = now.getMinutes();
+          // Konversi ke Waktu Indonesia Barat (WIB) / GMT+7
+          const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
+          const wibDate = new Date(utcTime + (3600000 * 7));
+          const currentHour = wibDate.getHours();
+          const currentMinute = wibDate.getMinutes();
           const currentTimeInMinutes = currentHour * 60 + currentMinute;
           
           const timeParts = schedule.time.split('-');
@@ -271,8 +279,11 @@ export class FeedService {
        const schedule = await this.prisma.feedingSchedule.findUnique({ where: { id: parseInt(id as any) } });
        if (schedule && schedule.time) {
           const now = new Date();
-          const currentHour = now.getHours();
-          const currentMinute = now.getMinutes();
+          // Konversi ke Waktu Indonesia Barat (WIB) / GMT+7
+          const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
+          const wibDate = new Date(utcTime + (3600000 * 7));
+          const currentHour = wibDate.getHours();
+          const currentMinute = wibDate.getMinutes();
           const currentTimeInMinutes = currentHour * 60 + currentMinute;
           
           const timeParts = schedule.time.split('-');
