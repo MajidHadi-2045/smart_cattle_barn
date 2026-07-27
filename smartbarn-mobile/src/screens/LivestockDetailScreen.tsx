@@ -127,10 +127,10 @@ const LivestockDetailScreen = ({ route, navigation }: any) => {
     }
   }, [socketData]);
 
-  // Efek interval untuk mendeteksi data sensor mati (stale) setelah 15 detik
+  // Efek interval untuk mendeteksi data sensor mati (stale) setelah 5 menit (300.000 ms)
   useEffect(() => {
     const checkStale = setInterval(() => {
-      if (Date.now() - lastVitalTimestamp > 15000) {
+      if (Date.now() - lastVitalTimestamp > 300000) {
         setItem((prev: any) => {
           if (!prev) return prev;
           // Hanya hapus jika nilainya saat ini bukan null untuk mencegah looping render yang tidak perlu
@@ -142,7 +142,7 @@ const LivestockDetailScreen = ({ route, navigation }: any) => {
           };
         });
       }
-    }, 5000);
+    }, 10000);
 
     return () => clearInterval(checkStale);
   }, [lastVitalTimestamp]);

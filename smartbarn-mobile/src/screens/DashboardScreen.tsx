@@ -211,12 +211,12 @@ const DashboardScreen = ({ navigation }: any) => {
         let nextWindSpeed = prev.windSpeed;
         let nextThi = prev.thi;
 
-        if (now - lastEnvTimestamp > 70000) {
+        if (now - lastEnvTimestamp > 300000) {
           nextAvgTemp = null;
           nextAvgHumidity = null;
           nextThi = null;
         }
-        if (now - lastWindTimestamp > 70000) {
+        if (now - lastWindTimestamp > 300000) {
           nextWindSpeed = null;
         }
 

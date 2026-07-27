@@ -141,7 +141,7 @@ function simulateHighVelocity() {
         client.publish(topic, JSON.stringify(payload), { qos: 1 });
         console.log(`[High Velocity] Published to ${topic}: ${payload.heartRate} BPM, ${payload.temp}C | RSSI: ${rssi} dBm, Batt: ${payload.batteryVoltage}V`);
 
-    }, 1000); // Kirim data setiap 1 detik
+    }, 10000); // Kirim data setiap 10 detik (Sampling Window 10s)
 }
 
 // Alur 2: Low Velocity Data (Suhu Lingkungan Barn & Kecepatan Angin)

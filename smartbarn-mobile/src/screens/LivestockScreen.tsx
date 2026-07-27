@@ -39,6 +39,7 @@ import CustomModal from '../components/CustomModal';
 import { useToast } from '../context/ToastContext';
 import Skeleton from '../components/Skeleton';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useSocket } from '../hooks/useSocket';
 
 const fetcherMulti = async () => {
   const [liveRes, checklistRes, zonesRes, siloRes] = await Promise.all([
@@ -107,9 +108,16 @@ const LivestockScreen = ({ navigation }: any) => {
     fetchUser();
   }, []);
 
+  const { data: socketData } = useSocket(['websocket:vital-update']);
+
   useEffect(() => {
     if (swrData) {
-      setLivestock(swrData.livestock);
+      const now = Date.now();
+      const mappedLivestock = (swrData.livestock || []).map((item: any) => ({
+        ...item,
+        lastVitalTimestamp: item.lastHeartRate || item.lastTemp ? now : null
+      }));
+      setLivestock(mappedLivestock);
       setZones(swrData.zones);
       setSilos(swrData.silos);
       if (swrData.checklist) {
@@ -119,6 +127,51 @@ const LivestockScreen = ({ navigation }: any) => {
       setRefreshing(false);
     }
   }, [swrData]);
+
+  // Listener data vitals real-time via WebSocket
+  useEffect(() => {
+    const vitalPayload = socketData['websocket:vital-update'] || socketData['vital-update'];
+    if (vitalPayload && vitalPayload.cattleId) {
+      const now = Date.now();
+      setLivestock((prev: any[]) => prev.map((item: any) => {
+        if (item.cattleId === vitalPayload.cattleId) {
+          return {
+            ...item,
+            lastHeartRate: vitalPayload.heartRate !== undefined && vitalPayload.heartRate > 0 ? vitalPayload.heartRate : item.lastHeartRate,
+            lastTemp: vitalPayload.temp !== undefined && vitalPayload.temp > 0 ? vitalPayload.temp : item.lastTemp,
+            lastVitalTimestamp: now,
+          };
+        }
+        return item;
+      }));
+    }
+  }, [socketData]);
+
+  // Efek staleness check: jika sensor mati > 5 menit (300.000 ms), reset nilai ke null agar otomatis tampil '--'
+  useEffect(() => {
+    const stalenessInterval = setInterval(() => {
+      const now = Date.now();
+      setLivestock((prev: any[]) => {
+        let hasChanged = false;
+        const nextList = prev.map((item: any) => {
+          if (item.lastVitalTimestamp && now - item.lastVitalTimestamp > 300000) {
+            if (item.lastHeartRate !== null || item.lastTemp !== null) {
+              hasChanged = true;
+              return {
+                ...item,
+                lastHeartRate: null,
+                lastTemp: null,
+              };
+            }
+          }
+          return item;
+        });
+        return hasChanged ? nextList : prev;
+      });
+    }, 5000);
+
+    return () => clearInterval(stalenessInterval);
+  }, []);
 
   useEffect(() => {
     setLoading(swrLoading);

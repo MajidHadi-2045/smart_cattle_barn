@@ -248,14 +248,14 @@ const Livestock = () => {
                     let newCow = { ...cow };
                     let cowChanged = false;
                     
-                    // Cek Detak Jantung (2 detik)
-                    if (cow.heartRate > 0 && now - cow.heartRateLastUpdate > 2000) {
+                    // Cek Detak Jantung (5 menit toleransi agar nilai terakhir tetap tampil di card)
+                    if (cow.heartRate > 0 && now - cow.heartRateLastUpdate > 300000) {
                         newCow.heartRate = 0;
                         cowChanged = true;
                     }
                     
-                    // Cek Suhu (1 menit)
-                    if (cow.temp > 0 && now - cow.tempLastUpdate > 60000) {
+                    // Cek Suhu (5 menit toleransi agar nilai terakhir tetap tampil di card)
+                    if (cow.temp > 0 && now - cow.tempLastUpdate > 300000) {
                         newCow.temp = 0;
                         cowChanged = true;
                     }
