@@ -1,6 +1,6 @@
 module.exports = {
   "name": "smartbarn-mobile",
-  "slug": "smartbarn-mobile",
+  "slug": "smartbarn-mobile-v2",
   "version": "1.0.0",
   "orientation": "portrait",
   "icon": "./assets/icon.png",
@@ -29,7 +29,7 @@ module.exports = {
   },
   "extra": {
     "eas": {
-      "projectId": "4c654e60-6b3b-4da3-a56f-efcc72966705"
+      "projectId": "726d14a4-be20-4b36-9639-de47f4cb96c8"
     }
   }
 };

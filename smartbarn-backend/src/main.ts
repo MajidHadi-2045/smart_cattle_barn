@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import * as fs from 'fs';
+import { PrismaClientExceptionFilter } from './prisma/prisma-client-exception.filter';
 
 import { json, urlencoded } from 'express';
 
@@ -25,6 +26,9 @@ async function bootstrap() {
 
   // 3. AKTIFKAN GLOBAL PIPES: Agar input data otomatis divalidasi
   app.useGlobalPipes(new ValidationPipe());
+
+  // 3b. AKTIFKAN GLOBAL FILTERS: Agar error Prisma ditangani secara elegan
+  app.useGlobalFilters(new PrismaClientExceptionFilter());
 
   // 4. KONFIGURASI SWAGGER
   const config = new DocumentBuilder()
