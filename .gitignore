@@ -42,6 +42,7 @@ lerna-debug.log*
 Thumbs.db
 
 # Google API Configs
+google-services.json
 google.json
 
 # Temporary testing scripts
