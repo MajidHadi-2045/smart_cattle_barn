@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "391503747492",
+    "project_id": "smartcattlebarn",
+    "storage_bucket": "smartcattlebarn.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:391503747492:android:648a1180b9b78b603b0931",
+        "android_client_info": {
+          "package_name": "com.goodakun42.smartbarnmobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB1IfVRqLhppPsgP-alXU_PZwaloFDRzHQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
