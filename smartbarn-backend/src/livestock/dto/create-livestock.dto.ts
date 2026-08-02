@@ -6,8 +6,8 @@ export class CreateLivestockDto {
   cattleId: string;
 
   @IsString()
-  @IsNotEmpty()
-  name: string;
+  @IsOptional()
+  name?: string;
 
   @IsString()
   @IsNotEmpty()
