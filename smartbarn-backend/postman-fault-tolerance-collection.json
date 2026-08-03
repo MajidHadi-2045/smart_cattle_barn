@@ -1,0 +1,217 @@
+{
+  "info": {
+    "_postman_id": "smartbarn-fault-tolerance-collection",
+    "name": "Smart Cattle Barn - Pengujian Fault Tolerance",
+    "description": "Collection khusus pengujian resiliensi dan toleransi kegagalan sistem (Fault Tolerance Testing).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Redis Failover Test (Graceful Degradation)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code 200 OK meskipun Redis Offline/Fallback ke Database', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Response berisi data statistik populasi', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('total');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/livestock/stats/1",
+          "host": ["{{baseUrl}}"],
+          "path": ["livestock", "stats", "1"]
+        },
+        "description": "Menguji respon API saat Redis dimatikan/flush. Backend harus tetap mengembalikan HTTP 200 OK dari DB."
+      }
+    },
+    {
+      "name": "2. Stale Data Filter Test (MQTT/IoT Timestamp > 2 Min)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Respon API 201 Created (Data Usang Diterima & Disaring)', function () {",
+              "    pm.response.to.have.status(201);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"cattleId\": \"C-302\",\n  \"heartRate\": 85,\n  \"bodyTemperature\": 38.5,\n  \"timestamp\": \"2020-01-01T00:00:00.000Z\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/livestock/vital",
+          "host": ["{{baseUrl}}"],
+          "path": ["livestock", "vital"]
+        },
+        "description": "Mengirimkan timestamp usang (tahun 2020). Backend harus mengabaikan data dari live cache & grafik."
+      }
+    },
+    {
+      "name": "3. BullMQ Unregistered Cattle FK Exception Test",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('API tetap merespon 201 Created tanpa memblokir HTTP Response', function () {",
+              "    pm.response.to.have.status(201);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"cattleId\": \"UNKNOWN-COW-9999\",\n  \"heartRate\": 90,\n  \"bodyTemperature\": 39.0\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/livestock/vital",
+          "host": ["{{baseUrl}}"],
+          "path": ["livestock", "vital"]
+        },
+        "description": "Mengirimkan data sapi yang tidak ada di DB. Worker BullMQ menangkap P2003 FK Violation tanpa memicu server crash."
+      }
+    },
+    {
+      "name": "4. Anti-Flooding Debouncing Lock Test (THI > 75 / Critical Vitals)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Pemberitahuan darurat dikirim & lock 30 menit di-set di Redis', function () {",
+              "    pm.response.to.have.status(201);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"cattleId\": \"C-302\",\n  \"heartRate\": 140,\n  \"bodyTemperature\": 41.5\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/livestock/vital",
+          "host": ["{{baseUrl}}"],
+          "path": ["livestock", "vital"]
+        },
+        "description": "Mengirimkan detak jantung & suhu kritis (140 BPM, 41.5°C). Backend mengirim notifikasi sekali dan mengunci (debouncing) selama 30 menit."
+      }
+    },
+    {
+      "name": "5. System Health Check & Summary Resilience",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Layanan kesehatan medis sistem merespon 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/health/summary",
+          "host": ["{{baseUrl}}"],
+          "path": ["health", "summary"]
+        },
+        "description": "Menguji respon modul kesehatan di bawah beban sistem."
+      }
+    },
+    {
+      "name": "6. DTO Validation Pipe Test (Malformed Payload Handling)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('API menolak payload invalid dengan status 400 Bad Request', function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "pm.test('Response berisi daftar pesan validasi DTO', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('message');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"breed\": \"Brahman\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/livestock",
+          "host": ["{{baseUrl}}"],
+          "path": ["livestock"]
+        },
+        "description": "Mengirimkan payload tidak lengkap (tanpa cattleId, gender, initialWeight). DTO ValidationPipe menapis request dan merespon 400 Bad Request tanpa crash server."
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://smartcattlebarn.site/api",
+      "type": "string"
+    }
+  ]
+}

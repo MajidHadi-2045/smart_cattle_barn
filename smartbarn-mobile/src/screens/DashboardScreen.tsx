@@ -49,7 +49,10 @@ import {
   ClipboardList,
   Moon,
   Sun,
-  Download
+  Download,
+  ChevronDown,
+  Filter,
+  Info
 } from 'lucide-react-native';
 import { Dimensions } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
@@ -504,23 +507,32 @@ const DashboardScreen = ({ navigation }: any) => {
     fetchData().then(() => setRefreshing(false));
   }, []);
 
+  const [infoModalContent, setInfoModalContent] = useState<{ title: string; desc: string; target?: string } | null>(null);
+
   const handleLogout = async () => {
     await AsyncStorage.removeItem('token');
     await AsyncStorage.removeItem('user');
     navigation.replace('Login');
   };
 
-  const StatCard = ({ title, value, icon: Icon, color, target }: any) => (
-    <View style={[styles.statCard, { borderLeftColor: color }]}>
+  const StatCard = ({ title, value, icon: Icon, color, target, infoDesc }: any) => (
+    <TouchableOpacity 
+      style={[styles.statCard, { borderLeftColor: color }]}
+      onPress={() => infoDesc && setInfoModalContent({ title, desc: infoDesc, target })}
+      activeOpacity={0.7}
+    >
       <View style={styles.statInfo}>
-        <Text style={styles.statLabel}>{title}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+          <Text style={styles.statLabel}>{title}</Text>
+          {infoDesc && <Info size={11} color={COLORS.textLight} />}
+        </View>
         <Text style={styles.statValue}>{value}</Text>
         {target && <Text style={{ fontSize: 10, color: COLORS.textLight, marginTop: 4 }}>{target}</Text>}
       </View>
       <View style={[styles.statIconContainer, { backgroundColor: color + '20' }]}>
         <Icon size={24} color={color} />
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   return (
@@ -570,22 +582,25 @@ const DashboardScreen = ({ navigation }: any) => {
             value={stats.totalCattle} 
             icon={Beef} 
             color="#3b82f6" 
+            infoDesc="Jumlah keseluruhan ekor sapi yang terdaftar dalam sistem peternakan saat ini."
           />
           <StatCard 
             title="Kondisi Sehat" 
             value={stats.totalCattle - stats.activeAlerts} 
             icon={HeartPulse} 
             color="#10b981" 
+            infoDesc="Jumlah sapi yang dalam kondisi sehat dan tidak memiliki catatan medis aktif."
           />
           <StatCard 
             title="Kondisi Sakit" 
             value={stats.activeAlerts} 
             icon={Activity} 
             color="#ef4444" 
+            infoDesc="Jumlah sapi yang sedang mengalami gangguan kesehatan / dalam penanganan medis dokter hewan."
           />
         </View>
 
-        <Text style={[styles.sectionTitle, { marginTop: SPACING.md }]}>Monitoring Lingkungan</Text>
+        <Text style={[styles.sectionTitle, { marginTop: SPACING.md }]}>Monitoring Lingkungan (Tekan untuk Info)</Text>
         <View style={styles.statsGrid}>
           <StatCard 
             title="Suhu Ruangan" 
@@ -593,6 +608,7 @@ const DashboardScreen = ({ navigation }: any) => {
             target="Target: 25-28°C"
             icon={Thermometer} 
             color="#f97316" 
+            infoDesc="Suhu ambient udara sekitar area kandang. Target ideal: 25 - 28°C. Suhu udara tinggi dapat memicu stres panas pada sapi."
           />
           <StatCard 
             title="Kelembapan" 
@@ -600,6 +616,7 @@ const DashboardScreen = ({ navigation }: any) => {
             target="Target: 60-80%"
             icon={Droplets} 
             color="#3b82f6" 
+            infoDesc="Persentase kelembapan relatif udara (RH) kandang. Target ideal: 60 - 80%. Kelembapan tinggi berisiko memicu pertumbuhan jamur & bakteri."
           />
           <StatCard 
             title="Sirkulasi Angin" 
@@ -607,6 +624,7 @@ const DashboardScreen = ({ navigation }: any) => {
             target="Target: > 1 m/s"
             icon={Wind} 
             color="#0d9488" 
+            infoDesc="Kecepatan aliran udara kandang. Target ideal: > 1 m/s. Sirkulasi baik membantu menetralkan hawa panas & membuang amonia racun."
           />
           <StatCard 
             title="Amonia (NH3)" 
@@ -614,6 +632,7 @@ const DashboardScreen = ({ navigation }: any) => {
             target="Batas: < 20 ppm"
             icon={Leaf} 
             color="#ef4444" 
+            infoDesc="Gas racun hasil penguraian feses & urine sapi. Batas aman: < 20 ppm. Amonia > 20 ppm mengiritasi mata & saluran pernapasan sapi."
           />
           <StatCard 
             title="Heat Stress (THI)" 
@@ -621,6 +640,7 @@ const DashboardScreen = ({ navigation }: any) => {
             target="Target: < 72"
             icon={CheckCircle} 
             color="#ec4899" 
+            infoDesc="Temperature Humidity Index (THI): Indeks kenyamanan termal sapi. <72 Aman, 72-78 Stres Ringan, >79 Stres Berat."
           />
         </View>
 
@@ -1477,6 +1497,55 @@ const DashboardScreen = ({ navigation }: any) => {
             )}
           </View>
         </View>
+      </Modal>
+
+      {/* ========================================== */}
+      {/* MODAL KETERANGAN PENJELASAN ISTILAH (INFO) */}
+      {/* ========================================== */}
+      <Modal
+        visible={!!infoModalContent}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setInfoModalContent(null)}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay} 
+          activeOpacity={1} 
+          onPress={() => setInfoModalContent(null)}
+        >
+          <View style={[styles.editModalContent, { padding: SPACING.lg, borderRadius: 20 }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+              <View style={{ padding: 8, borderRadius: 10, backgroundColor: '#ecfdf5' }}>
+                <Info size={22} color={COLORS.primary} />
+              </View>
+              <Text style={{ fontSize: 16, fontWeight: 'bold', color: COLORS.text, flex: 1 }}>
+                {infoModalContent?.title}
+              </Text>
+              <TouchableOpacity onPress={() => setInfoModalContent(null)}>
+                <X size={20} color={COLORS.textLight} />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={{ fontSize: 13, color: COLORS.text, lineHeight: 20, marginBottom: 14 }}>
+              {infoModalContent?.desc}
+            </Text>
+
+            {infoModalContent?.target && (
+              <View style={{ backgroundColor: '#f1f5f9', padding: 10, borderRadius: 8, marginBottom: 16 }}>
+                <Text style={{ fontSize: 11, fontWeight: 'bold', color: COLORS.primary }}>
+                  {infoModalContent.target}
+                </Text>
+              </View>
+            )}
+
+            <TouchableOpacity 
+              style={{ backgroundColor: COLORS.primary, paddingVertical: 12, borderRadius: 12, alignItems: 'center' }}
+              onPress={() => setInfoModalContent(null)}
+            >
+              <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 14 }}>Mengerti</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
       </Modal>
 
       </ScrollView>

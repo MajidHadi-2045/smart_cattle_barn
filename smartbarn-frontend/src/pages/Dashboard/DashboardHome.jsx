@@ -992,12 +992,20 @@ const DashboardHome = ({ isPublicRoute = false }) => {
 
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
                     {/* Kartu Kecepatan Angin */}
-                    <div className="bg-teal-50 dark:bg-teal-900/20 p-4 rounded-xl border border-teal-100 dark:border-teal-800/30">
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-teal-100 dark:bg-teal-800/50 text-teal-600 dark:text-teal-400 rounded-lg">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"></path></svg>
+                    <div 
+                        className="bg-teal-50 dark:bg-teal-900/20 p-4 rounded-xl border border-teal-100 dark:border-teal-800/30 cursor-help transition-all hover:shadow-md"
+                        title="Sirkulasi Angin: Kecepatan aliran udara kandang untuk menetralkan suhu panas & membuang gas racun amonia. Target: > 1 m/s"
+                    >
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-teal-100 dark:bg-teal-800/50 text-teal-600 dark:text-teal-400 rounded-lg">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"></path></svg>
+                                </div>
+                                <span className="font-semibold text-teal-900 dark:text-teal-100 flex items-center gap-1">
+                                    Sirkulasi Angin
+                                </span>
                             </div>
-                            <span className="font-semibold text-teal-900 dark:text-teal-100">Sirkulasi Angin</span>
+                            <span className="text-[10px] bg-teal-100 dark:bg-teal-800 text-teal-700 dark:text-teal-300 font-bold px-1.5 py-0.5 rounded" title="Arahkan kursor untuk info">ℹ️ Info</span>
                         </div>
                         <div className="flex items-end gap-2">
                             <span className="text-3xl font-bold text-teal-600 dark:text-teal-400">
@@ -1009,12 +1017,18 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                     </div>
 
                     {/* Kartu Suhu */}
-                    <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-xl border border-orange-100 dark:border-orange-800/30">
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-orange-100 dark:bg-orange-800/50 text-orange-600 dark:text-orange-400 rounded-lg">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"></path></svg>
+                    <div 
+                        className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-xl border border-orange-100 dark:border-orange-800/30 cursor-help transition-all hover:shadow-md"
+                        title="Suhu Ruangan: Suhu ambient udara sekitar kandang. Target ideal: 25 - 28 °C"
+                    >
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-orange-100 dark:bg-orange-800/50 text-orange-600 dark:text-orange-400 rounded-lg">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"></path></svg>
+                                </div>
+                                <span className="font-semibold text-orange-900 dark:text-orange-100">Suhu Ruangan</span>
                             </div>
-                            <span className="font-semibold text-orange-900 dark:text-orange-100">Suhu Ruangan</span>
+                            <span className="text-[10px] bg-orange-100 dark:bg-orange-800 text-orange-700 dark:text-orange-300 font-bold px-1.5 py-0.5 rounded" title="Arahkan kursor untuk info">ℹ️ Info</span>
                         </div>
                         <div className="flex items-end gap-2">
                             <span className="text-3xl font-bold text-orange-600 dark:text-orange-400">
@@ -1026,12 +1040,18 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                     </div>
 
                     {/* Kartu Kelembapan */}
-                    <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-800/30">
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-blue-100 dark:bg-blue-800/50 text-blue-600 dark:text-blue-400 rounded-lg">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22a5 5 0 0 0 5-5c0-2-2.5-7-5-12-2.5 5-5 10-5 12a5 5 0 0 0 5 5Z"></path></svg>
+                    <div 
+                        className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-800/30 cursor-help transition-all hover:shadow-md"
+                        title="Kelembapan Relatif (RH): Persentase kadar uap air udara di kandang. Target ideal: 60 - 80%"
+                    >
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-blue-100 dark:bg-blue-800/50 text-blue-600 dark:text-blue-400 rounded-lg">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22a5 5 0 0 0 5-5c0-2-2.5-7-5-12-2.5 5-5 10-5 12a5 5 0 0 0 5 5Z"></path></svg>
+                                </div>
+                                <span className="font-semibold text-blue-900 dark:text-blue-100">Kelembapan</span>
                             </div>
-                            <span className="font-semibold text-blue-900 dark:text-blue-100">Kelembapan</span>
+                            <span className="text-[10px] bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-300 font-bold px-1.5 py-0.5 rounded" title="Arahkan kursor untuk info">ℹ️ Info</span>
                         </div>
                         <div className="flex items-end gap-2">
                             <span className="text-3xl font-bold text-blue-600 dark:text-blue-400">
@@ -1043,12 +1063,18 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                     </div>
 
                     {/* Kartu Amonia */}
-                    <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-xl border border-red-100 dark:border-red-800/30">
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-red-100 dark:bg-red-800/50 text-red-600 dark:text-red-400 rounded-lg">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path></svg>
+                    <div 
+                        className="bg-red-50 dark:bg-red-900/20 p-4 rounded-xl border border-red-100 dark:border-red-800/30 cursor-help transition-all hover:shadow-md"
+                        title="Gas Amonia (NH3): Gas hasil penguraian urine & feses sapi. Batas aman < 20 PPM. Bahaya jika > 20 PPM!"
+                    >
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-red-100 dark:bg-red-800/50 text-red-600 dark:text-red-400 rounded-lg">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path></svg>
+                                </div>
+                                <span className="font-semibold text-red-900 dark:text-red-100">Amonia (NH3)</span>
                             </div>
-                            <span className="font-semibold text-red-900 dark:text-red-100">Amonia (NH3)</span>
+                            <span className="text-[10px] bg-red-100 dark:bg-red-800 text-red-700 dark:text-red-300 font-bold px-1.5 py-0.5 rounded" title="Arahkan kursor untuk info">ℹ️ Info</span>
                         </div>
                         <div className="flex items-end gap-2">
                             <span className="text-3xl font-bold text-red-600 dark:text-red-400">
@@ -1060,27 +1086,33 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                     </div>
 
                     {/* Kartu Stress Level (THI) */}
-                    <div className={`p-4 rounded-xl border transition-all duration-500 ${
-                        !liveSensorData.thi ? 'bg-slate-50 dark:bg-slate-900/20 border-slate-100' :
-                        liveSensorData.thi < 72 ? 'bg-green-50 dark:bg-green-900/20 border-green-100' :
-                        liveSensorData.thi < 79 ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-100' :
-                        'bg-red-50 dark:bg-red-900/20 border-red-100'
-                    }`}>
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className={`p-2 rounded-lg ${
-                                !liveSensorData.thi ? 'bg-slate-100 text-slate-600' :
-                                liveSensorData.thi < 72 ? 'bg-green-100 text-green-600' :
-                                liveSensorData.thi < 79 ? 'bg-yellow-100 text-yellow-600' :
-                                'bg-red-100 text-red-600'
-                            }`}>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="M20 12h2"/><path d="m19.07 4.93-1.41 1.41"/><path d="M15.947 12.65a4 4 0 0 0-7.925 0"/><path d="M3 21h18"/><path d="M12 21v-4"/><path d="m4.93 19.07 1.41-1.41"/><path d="m19.07 19.07-1.41-1.41"/></svg>
+                    <div 
+                        className={`p-4 rounded-xl border transition-all duration-500 cursor-help hover:shadow-md ${
+                            !liveSensorData.thi ? 'bg-slate-50 dark:bg-slate-900/20 border-slate-100' :
+                            liveSensorData.thi < 72 ? 'bg-green-50 dark:bg-green-900/20 border-green-100' :
+                            liveSensorData.thi < 79 ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-100' :
+                            'bg-red-50 dark:bg-red-900/20 border-red-100'
+                        }`}
+                        title="Temperature Humidity Index (THI): Indeks kenyamanan termal sapi. <72 Aman, 72-78 Stres Ringan, >79 Stres Berat"
+                    >
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-3">
+                                <div className={`p-2 rounded-lg ${
+                                    !liveSensorData.thi ? 'bg-slate-100 text-slate-600' :
+                                    liveSensorData.thi < 72 ? 'bg-green-100 text-green-600' :
+                                    liveSensorData.thi < 79 ? 'bg-yellow-100 text-yellow-600' :
+                                    'bg-red-100 text-red-600'
+                                }`}>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="M20 12h2"/><path d="m19.07 4.93-1.41 1.41"/><path d="M15.947 12.65a4 4 0 0 0-7.925 0"/><path d="M3 21h18"/><path d="M12 21v-4"/><path d="m4.93 19.07 1.41-1.41"/><path d="m19.07 19.07-1.41-1.41"/></svg>
+                                </div>
+                                <span className={`font-semibold ${
+                                    !liveSensorData.thi ? 'text-slate-900' :
+                                    liveSensorData.thi < 72 ? 'text-green-900' :
+                                    liveSensorData.thi < 79 ? 'text-yellow-900' :
+                                    'text-red-900'
+                                }`}>Heat Stress (THI)</span>
                             </div>
-                            <span className={`font-semibold ${
-                                !liveSensorData.thi ? 'text-slate-900' :
-                                liveSensorData.thi < 72 ? 'text-green-900' :
-                                liveSensorData.thi < 79 ? 'text-yellow-900' :
-                                'text-red-900'
-                            }`}>Heat Stress (THI)</span>
+                            <span className="text-[10px] bg-slate-200/60 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold px-1.5 py-0.5 rounded" title="Arahkan kursor untuk info">ℹ️ Info</span>
                         </div>
                         <div className="flex flex-col">
                             <div className="flex items-end gap-2">
@@ -1309,12 +1341,12 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                         <table className="w-full text-sm text-left">
                             <thead className="bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs uppercase font-bold tracking-wider">
                                 <tr>
-                                    <th className="px-4 py-3 border-b border-slate-200 dark:border-slate-700">ID Sapi</th>
-                                    <th className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 text-center">Total DMI (Kg BK)</th>
-                                    <th className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 text-center">Bobot Awal</th>
-                                    <th className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 text-center">Bobot Akhir</th>
-                                    <th className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 text-center">ADG (Kg/hari)</th>
-                                    <th className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 text-center">FCR</th>
+                                    <th className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 cursor-help" title="ID identifikasi unik untuk setiap ternak sapi">ID Sapi ℹ️</th>
+                                    <th className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 text-center cursor-help" title="Dry Matter Intake (DMI): Akumulasi bahan kering pakan murni yang dikonsumsi sapi (Kg BK)">Total DMI (Kg BK) ℹ️</th>
+                                    <th className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 text-center cursor-help" title="Bobot awal sapi pada awal periode pengamatan (Kg)">Bobot Awal ℹ️</th>
+                                    <th className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 text-center cursor-help" title="Bobot sapi saat ini. Jika belum ditimbang ulang, nilai dihitung otomatis berdasarkan estimasi pertambahan bobot harian (ADG)">Bobot Akhir ℹ️</th>
+                                    <th className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 text-center cursor-help" title="Average Daily Gain (ADG): Rata-rata pertambahan bobot badan sapi per hari (Kg/hari)">ADG (Kg/hari) ℹ️</th>
+                                    <th className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 text-center cursor-help" title="Feed Conversion Ratio (FCR): Rasio efisiensi pakan terhadap kenaikan bobot (semakin kecil nilai FCR, semakin efisien pakan)">FCR ℹ️</th>
                                 </tr>
                             </thead>
                             <tbody className="bg-white dark:bg-slate-900/50 divide-y divide-slate-100 dark:divide-slate-800/50">

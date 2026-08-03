@@ -150,37 +150,27 @@ const ReportScreen = ({ navigation }: any) => {
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.scrollContent}>
-          <Text style={styles.sectionTitle}>Generator Laporan (PDF)</Text>
+          <Text style={styles.sectionTitle}>Download Laporan (PDF)</Text>
+
+          <View style={styles.topInfoBox}>
+            <Info size={18} color={COLORS.primary} />
+            <Text style={styles.topInfoText}>Laporan otomatis digenerate secara real-time berdasarkan data server pusat.</Text>
+          </View>
           
           <View style={styles.formContainer}>
             <Text style={styles.label}>Pilih Kategori Laporan</Text>
-            <View style={{ marginBottom: SPACING.lg }}>
+            <View style={{ marginBottom: SPACING.md }}>
               {REPORT_TYPES.map((type) => (
                 <TouchableOpacity 
                   key={type.id} 
-                  style={[styles.optionBtn, jenisLaporan === type.id && styles.optionBtnActive, { width: '100%', marginBottom: 10, paddingVertical: 12 }]}
+                  style={[styles.optionBtn, jenisLaporan === type.id && styles.optionBtnActive]}
                   onPress={() => setJenisLaporan(type.id)}
                 >
-                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                      {jenisLaporan === type.id && <CheckCircle size={16} color={COLORS.primary} />}
-                      <Text style={[styles.optionText, jenisLaporan === type.id && styles.optionTextActive, { fontSize: 13, fontWeight: 'bold' }]}>
-                        {type.title}
-                      </Text>
-                    </View>
-                    <View style={{ 
-                      width: 20, 
-                      height: 20, 
-                      borderRadius: 10, 
-                      borderWidth: 2, 
-                      borderColor: jenisLaporan === type.id ? COLORS.primary : '#cbd5e1', 
-                      justifyContent: 'center', 
-                      alignItems: 'center' 
-                    }}>
-                      {jenisLaporan === type.id && (
-                        <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: COLORS.primary }} />
-                      )}
-                    </View>
+                  <Text style={[styles.optionText, jenisLaporan === type.id && styles.optionTextActive]}>
+                    {type.title}
+                  </Text>
+                  <View style={[styles.radioCircle, jenisLaporan === type.id && styles.radioCircleActive]}>
+                    {jenisLaporan === type.id && <View style={styles.radioDot} />}
                   </View>
                 </TouchableOpacity>
               ))}
@@ -202,11 +192,6 @@ const ReportScreen = ({ navigation }: any) => {
                 </TouchableOpacity>
               </View>
             </View>
-          </View>
-
-          <View style={styles.infoBox}>
-            <Info size={20} color={COLORS.textLight} />
-            <Text style={styles.infoText}>Laporan otomatis digenerate secara real-time berdasarkan data server pusat.</Text>
           </View>
 
           <TouchableOpacity style={styles.downloadButton} onPress={handleDownload} disabled={isDownloading}>
@@ -323,7 +308,7 @@ const styles = StyleSheet.create({
   backButton: { padding: 4 },
   headerTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.text },
   scrollContent: { padding: SPACING.lg },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.text, marginBottom: SPACING.md },
+  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.text, marginBottom: SPACING.sm },
   grid: { flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap' },
   card: { 
     width: '48%', 
@@ -340,25 +325,27 @@ const styles = StyleSheet.create({
   valueText: { fontSize: 24, fontWeight: 'black', color: COLORS.text },
   unitText: { fontSize: 14, fontWeight: 'normal', color: COLORS.textLight },
   descText: { fontSize: 10, color: COLORS.textLight, marginTop: 4 },
-  infoBox: { 
+  topInfoBox: { 
     flexDirection: 'row', 
     alignItems: 'center', 
     gap: 10, 
-    backgroundColor: '#f1f5f9', 
+    backgroundColor: '#ecfdf5', 
+    borderWidth: 1,
+    borderColor: '#a7f3d0',
     padding: SPACING.md, 
     borderRadius: 12,
-    marginTop: SPACING.lg
+    marginBottom: SPACING.md
   },
-  infoText: { flex: 1, fontSize: 12, color: COLORS.textLight },
+  topInfoText: { flex: 1, fontSize: 12, color: COLORS.primary, fontWeight: '600' },
   downloadButton: { 
-    backgroundColor: COLORS.text, 
+    backgroundColor: COLORS.primary, 
     flexDirection: 'row', 
     alignItems: 'center', 
     justifyContent: 'center', 
     gap: 10, 
     height: 55, 
     borderRadius: 16, 
-    marginTop: SPACING.xl,
+    marginTop: SPACING.sm,
     ...SHADOWS.md
   },
   downloadText: { color: COLORS.white, fontSize: 16, fontWeight: 'bold' },
@@ -368,30 +355,54 @@ const styles = StyleSheet.create({
     padding: SPACING.lg,
     borderRadius: 16,
     ...SHADOWS.sm,
-    marginBottom: SPACING.md
+    marginBottom: SPACING.sm
   },
   label: { fontSize: 14, fontWeight: 'bold', color: COLORS.text, marginBottom: 10 },
   optionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: '#f1f5f9',
-    borderWidth: 1,
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    borderRadius: 10,
+    backgroundColor: '#f8fafc',
+    borderWidth: 1.5,
     borderColor: '#e2e8f0',
+    marginBottom: 8,
   },
   optionBtnActive: {
     backgroundColor: '#ecfdf5',
-    borderColor: '#a7f3d0',
+    borderColor: COLORS.primary,
   },
   optionText: {
-    fontSize: 12,
+    flex: 1,
+    fontSize: 13,
     fontWeight: '600',
     color: COLORS.textLight,
+    marginRight: 8,
   },
   optionTextActive: {
     color: COLORS.primary,
+    fontWeight: 'bold',
+  },
+  radioCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: '#cbd5e1',
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexShrink: 0,
+  },
+  radioCircleActive: {
+    borderColor: COLORS.primary,
+  },
+  radioDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: COLORS.primary,
   },
   dateRow: {
     flexDirection: 'row',

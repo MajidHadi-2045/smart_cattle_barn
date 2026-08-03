@@ -118,10 +118,11 @@ export class IotService implements OnModuleInit, OnModuleDestroy {
         return;
       }
 
-      // HITUNG THI (Temperature Humidity Index)
+      // HITUNG THI (Temperature Humidity Index) DAN AMONIA
       const T = parseFloat(data.temperature);
       const RH = parseFloat(data.humidity) / 100;
       const thi = (0.8 * T) + (RH * (T - 14.4)) + 46.4;
+      const ammonia = data.ammonia !== undefined ? parseFloat(data.ammonia) : null;
 
       // ==============================================================
       // IMPLEMENTASI UNTUK SKRIPSI: SMART PUSH NOTIFICATION (DEBOUNCING)
@@ -167,6 +168,47 @@ export class IotService implements OnModuleInit, OnModuleDestroy {
            await this.redisPub.ltrim('system:notifications', 0, 49);
 
            this.logger.warn(`Push Notification dikirim ke ${targets.length} pegawai untuk bahaya THI Kandang ${zoneId}.`);
+        }
+      }
+
+      // --------------------------------------------------------------
+      // NOTIFIKASI BAHAYA GAS AMONIA TINGGI (NH3 > 20 PPM)
+      // --------------------------------------------------------------
+      if (ammonia !== null && ammonia > 20) { // 20 ppm = batas aman ambang kualitas udara kandang
+        const alertKey = `alert:ammonia:zone:${zoneId}`;
+        const hasAlerted = await this.redisPub.get(alertKey);
+
+        if (!hasAlerted) {
+           await this.redisPub.set(alertKey, '1', 'EX', 1800); // Kunci 30 Menit
+
+           const targets = await this.prisma.user.findMany({
+             where: { 
+               role: { in: ['MANAGER', 'STAFF'] }, 
+               pushToken: { not: null } 
+             }
+           });
+
+           const { sendPushNotification } = require('../utils/expoPush');
+           const title = "⚠️ BAHAYA GAS AMONIA TINGGI!";
+           const body = `Kandang ${zoneId} kadar Amonia tinggi (${ammonia.toFixed(1)} ppm). Segera bersihkan kotoran & tingkatkan ventilasi!`;
+
+           targets.forEach(user => {
+              sendPushNotification(user.pushToken, title, body);
+           });
+
+           const notifPayload = {
+             id: Date.now(),
+             title,
+             body,
+             timestamp: new Date().toISOString()
+           };
+
+           this.redisPub.publish('websocket:alert', JSON.stringify(notifPayload));
+           
+           await this.redisPub.lpush('system:notifications', JSON.stringify(notifPayload));
+           await this.redisPub.ltrim('system:notifications', 0, 49);
+
+           this.logger.warn(`Push Notification dikirim ke ${targets.length} pegawai untuk bahaya Amonia Kandang ${zoneId}.`);
         }
       }
       // ==============================================================
