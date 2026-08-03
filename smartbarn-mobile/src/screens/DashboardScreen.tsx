@@ -328,6 +328,23 @@ const DashboardScreen = ({ navigation }: any) => {
       }
     } catch (e) {}
 
+    // Fetch Notifications History
+    try {
+      const notifRes = await apiClient.get('/dashboard/notifications');
+      if (notifRes.data && Array.isArray(notifRes.data)) {
+        const formattedNotifs = notifRes.data.map((n: any) => ({
+          id: n.id || Date.now(),
+          title: n.title,
+          body: n.body,
+          time: formatNotificationTime(n.timestamp || Date.now())
+        }));
+        setNotifications(formattedNotifs);
+        setUnreadNotifCount(formattedNotifs.length);
+      }
+    } catch (err) {
+      console.warn('Error fetching notifications:', err);
+    }
+
     // Fetch Daily Checklist
     try {
       const checklistRes = await apiClient.get('/dashboard/daily-checklist');
