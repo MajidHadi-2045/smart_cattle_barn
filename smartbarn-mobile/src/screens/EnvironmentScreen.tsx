@@ -44,7 +44,29 @@ const EnvironmentScreen = ({ navigation }: any) => {
   }, [socketData]);
 
   useEffect(() => {
-    const fetchTrendData = async () => {
+    const fetchLiveAndTrendData = async () => {
+      try {
+        const liveEnvRes = await apiClient.get('/environment/live/1');
+        if (liveEnvRes.data) {
+          setEnvData(prev => ({
+            ...prev,
+            temperature: liveEnvRes.data.temperature !== undefined ? liveEnvRes.data.temperature : prev.temperature,
+            humidity: liveEnvRes.data.humidity !== undefined ? liveEnvRes.data.humidity : prev.humidity,
+            ammonia: liveEnvRes.data.ammonia !== undefined ? liveEnvRes.data.ammonia : prev.ammonia,
+          }));
+        }
+      } catch (e) {}
+
+      try {
+        const liveWindRes = await apiClient.get('/environment/live-wind/1');
+        if (liveWindRes.data && liveWindRes.data.windspeed !== undefined) {
+          setEnvData(prev => ({
+            ...prev,
+            windSpeed: liveWindRes.data.windspeed
+          }));
+        }
+      } catch (e) {}
+
       try {
         const trendRes = await apiClient.get(`/environment/trend/1?range=${sensorTrendRange}`);
         if (trendRes.data && Array.isArray(trendRes.data)) {
@@ -61,7 +83,7 @@ const EnvironmentScreen = ({ navigation }: any) => {
         }
       } catch (e) {}
     };
-    fetchTrendData();
+    fetchLiveAndTrendData();
   }, [sensorTrendRange]);
 
   const SensorCard = ({ title, value, unit, icon: Icon, color, subValue }: any) => (

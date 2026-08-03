@@ -283,6 +283,17 @@ const DashboardScreen = ({ navigation }: any) => {
       // Abaikan error jika data tidak tersedia (misal 404 saat awal mula)
     }
 
+    try {
+      const liveWindRes = await apiClient.get('/environment/live-wind/1');
+      if (liveWindRes.data && liveWindRes.data.windspeed !== undefined) {
+        setStats(prev => ({
+          ...prev,
+          windSpeed: liveWindRes.data.windspeed
+        }));
+        setLastWindTimestamp(Date.now());
+      }
+    } catch (err) {}
+
     // Fetch Waste
     try {
       const wasteRes = await apiClient.get(`/dashboard/waste?filter=${wasteFilter}`);
