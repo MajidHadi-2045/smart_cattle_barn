@@ -1089,26 +1089,29 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                     <div 
                         className={`p-4 rounded-xl border transition-all duration-500 cursor-help hover:shadow-md ${
                             !liveSensorData.thi ? 'bg-slate-50 dark:bg-slate-900/20 border-slate-100' :
-                            liveSensorData.thi < 72 ? 'bg-green-50 dark:bg-green-900/20 border-green-100' :
-                            liveSensorData.thi < 79 ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-100' :
+                            liveSensorData.thi <= 74 ? 'bg-green-50 dark:bg-green-900/20 border-green-100' :
+                            liveSensorData.thi <= 78 ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-100' :
+                            liveSensorData.thi <= 83 ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-100' :
                             'bg-red-50 dark:bg-red-900/20 border-red-100'
                         }`}
-                        title="Temperature Humidity Index (THI): Indeks kenyamanan termal sapi. <72 Aman, 72-78 Stres Ringan, >79 Stres Berat"
+                        title="Temperature Humidity Index (THI) NRC (1971): Zona Nyaman (≤74), Zona Waspada (75-78), Zona Bahaya (79-83), Zona Darurat (≥84)"
                     >
                         <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-3">
                                 <div className={`p-2 rounded-lg ${
                                     !liveSensorData.thi ? 'bg-slate-100 text-slate-600' :
-                                    liveSensorData.thi < 72 ? 'bg-green-100 text-green-600' :
-                                    liveSensorData.thi < 79 ? 'bg-yellow-100 text-yellow-600' :
+                                    liveSensorData.thi <= 74 ? 'bg-green-100 text-green-600' :
+                                    liveSensorData.thi <= 78 ? 'bg-yellow-100 text-yellow-600' :
+                                    liveSensorData.thi <= 83 ? 'bg-orange-100 text-orange-600' :
                                     'bg-red-100 text-red-600'
                                 }`}>
                                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="M20 12h2"/><path d="m19.07 4.93-1.41 1.41"/><path d="M15.947 12.65a4 4 0 0 0-7.925 0"/><path d="M3 21h18"/><path d="M12 21v-4"/><path d="m4.93 19.07 1.41-1.41"/><path d="m19.07 19.07-1.41-1.41"/></svg>
                                 </div>
                                 <span className={`font-semibold ${
                                     !liveSensorData.thi ? 'text-slate-900' :
-                                    liveSensorData.thi < 72 ? 'text-green-900' :
-                                    liveSensorData.thi < 79 ? 'text-yellow-900' :
+                                    liveSensorData.thi <= 74 ? 'text-green-900' :
+                                    liveSensorData.thi <= 78 ? 'text-yellow-900' :
+                                    liveSensorData.thi <= 83 ? 'text-orange-900' :
                                     'text-red-900'
                                 }`}>Heat Stress (THI)</span>
                             </div>
@@ -1118,31 +1121,34 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                             <div className="flex items-end gap-2">
                                 <span className={`text-3xl font-bold ${
                                     !liveSensorData.thi ? 'text-slate-600' :
-                                    liveSensorData.thi < 72 ? 'text-green-600' :
-                                    liveSensorData.thi < 79 ? 'text-yellow-600' :
+                                    liveSensorData.thi <= 74 ? 'text-green-600' :
+                                    liveSensorData.thi <= 78 ? 'text-yellow-600' :
+                                    liveSensorData.thi <= 83 ? 'text-orange-600' :
                                     'text-red-600'
                                 }`}>
-                                    {liveSensorData.thi !== undefined ? liveSensorData.thi : '--'}
+                                    {liveSensorData.thi !== undefined ? (typeof liveSensorData.thi === 'number' ? liveSensorData.thi.toFixed(1) : liveSensorData.thi) : '--'}
                                 </span>
                                 <span className="text-slate-500 font-medium mb-1 text-xs">Indeks</span>
                             </div>
                             <div className={`mt-2 text-xs font-medium ${
                                 !liveSensorData.thi ? 'text-slate-500/70' :
-                                liveSensorData.thi < 72 ? 'text-green-700/70' :
-                                liveSensorData.thi < 79 ? 'text-yellow-700/70' :
+                                liveSensorData.thi <= 74 ? 'text-green-700/70' :
+                                liveSensorData.thi <= 78 ? 'text-yellow-700/70' :
+                                liveSensorData.thi <= 83 ? 'text-orange-700/70' :
                                 'text-red-700/70'
-                            }`}>Target: {'<'} 72</div>
+                            }`}>Target: ≤ 74</div>
                             <p className={`text-[10px] font-bold uppercase mt-1 ${
                                 !liveSensorData.thi ? 'text-slate-400' :
-                                liveSensorData.thi < 72 ? 'text-green-500' :
-                                liveSensorData.thi < 79 ? 'text-yellow-500' :
+                                liveSensorData.thi <= 74 ? 'text-green-500' :
+                                liveSensorData.thi <= 78 ? 'text-yellow-600' :
+                                liveSensorData.thi <= 83 ? 'text-orange-500' :
                                 'text-red-500'
                             }`}>
                                 {!liveSensorData.thi ? 'Menunggu data...' :
-                                 liveSensorData.thi < 72 ? 'Aman (Nyaman)' :
-                                 liveSensorData.thi < 79 ? 'Stres Ringan' :
-                                 liveSensorData.thi < 88 ? 'Stres Sedang-Berat' :
-                                 'Bahaya Sangat Berat'}
+                                 liveSensorData.thi <= 74 ? 'Zona Nyaman (Normal)' :
+                                 liveSensorData.thi <= 78 ? 'Zona Waspada (Alert)' :
+                                 liveSensorData.thi <= 83 ? 'Zona Bahaya (Danger)' :
+                                 'Zona Darurat (Emergency)'}
                             </p>
                         </div>
                     </div>

@@ -119,15 +119,18 @@ export class IotService implements OnModuleInit, OnModuleDestroy {
       }
 
       // HITUNG THI (Temperature Humidity Index) DAN AMONIA
+      // Persamaan Matematika Formal NRC (1971):
+      // THI = 1.8 * T + 32 - (0.55 - 0.0055 * RH) * (1.8 * T - 26)
       const T = parseFloat(data.temperature);
-      const RH = parseFloat(data.humidity) / 100;
-      const thi = (0.8 * T) + (RH * (T - 14.4)) + 46.4;
+      const RH = parseFloat(data.humidity); // RH dalam persentase (misal 70)
+      const thi = (1.8 * T + 32) - ((0.55 - 0.0055 * RH) * (1.8 * T - 26));
       const ammonia = data.ammonia !== undefined ? parseFloat(data.ammonia) : null;
 
       // ==============================================================
       // IMPLEMENTASI UNTUK SKRIPSI: SMART PUSH NOTIFICATION (DEBOUNCING)
+      // Zona Nyaman (<=74), Zona Waspada (75-78), Zona Bahaya (79-83), Zona Darurat (>=84)
       // ==============================================================
-      if (thi > 75) { // 75 = Sapi mulai stres panas
+      if (thi >= 75) { // 75 = Masuk Zona Waspada (Stres Ringan)
         const alertKey = `alert:thi:zone:${zoneId}`;
         const hasAlerted = await this.redisPub.get(alertKey);
         
@@ -144,10 +147,19 @@ export class IotService implements OnModuleInit, OnModuleDestroy {
              }
            });
            
-           // 3. Tembak Notifikasi ke masing-masing HP
+           // 3. Tembak Notifikasi ke masing-masing HP sesuai Zona Ambang Batas
            const { sendPushNotification } = require('../utils/expoPush');
-           const title = "⚠️ BAHAYA STRES PANAS SAPI!";
-           const body = `Kandang ${zoneId} sangat panas (THI: ${thi.toFixed(1)}). Segera nyalakan Blower/Kipas!`;
+           
+           let title = "⚠️ ZONA WASPADA: STRES PANAS RINGAN!";
+           let body = `Kandang ${zoneId} memasuki Zona Waspada (THI: ${thi.toFixed(1)}). Sapi mulai mengalami heat stress ringan.`;
+           
+           if (thi >= 84) {
+             title = "🚨 ZONA DARURAT: HEAT STRESS KRITIS!";
+             body = `Kandang ${zoneId} memasuki Zona Darurat (THI: ${thi.toFixed(1)}). Fase kritis! Segera aktifkan blower & pompa air pendingin!`;
+           } else if (thi >= 79) {
+             title = "⚠️ ZONA BAHAYA: STRES PANAS SEDANG-BERAT!";
+             body = `Kandang ${zoneId} memasuki Zona Bahaya (THI: ${thi.toFixed(1)}). Konsumsi pakan berisiko turun drastis!`;
+           }
 
            targets.forEach(user => {
               sendPushNotification(user.pushToken, title, body);
@@ -167,7 +179,7 @@ export class IotService implements OnModuleInit, OnModuleDestroy {
            await this.redisPub.lpush('system:notifications', JSON.stringify(notifPayload));
            await this.redisPub.ltrim('system:notifications', 0, 49);
 
-           this.logger.warn(`Push Notification dikirim ke ${targets.length} pegawai untuk bahaya THI Kandang ${zoneId}.`);
+           this.logger.warn(`Push Notification THI (${thi.toFixed(1)}) dikirim ke ${targets.length} pegawai untuk Kandang ${zoneId}.`);
         }
       }
 

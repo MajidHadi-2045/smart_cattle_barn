@@ -664,11 +664,11 @@ const DashboardScreen = ({ navigation }: any) => {
           />
           <StatCard 
             title="Heat Stress (THI)" 
-            value={stats.thi !== null ? stats.thi : '--'} 
-            target="Target: < 72"
+            value={stats.thi !== null ? (typeof stats.thi === 'number' ? stats.thi.toFixed(1) : stats.thi) : '--'} 
+            target="Target: ≤ 74"
             icon={CheckCircle} 
             color="#ec4899" 
-            infoDesc="Temperature Humidity Index (THI): Indeks kenyamanan termal sapi. <72 Aman, 72-78 Stres Ringan, >79 Stres Berat."
+            infoDesc="Temperature Humidity Index (THI) NRC (1971): Zona Nyaman (≤74), Zona Waspada (75-78), Zona Bahaya (79-83), Zona Darurat (≥84)."
           />
         </View>
 
