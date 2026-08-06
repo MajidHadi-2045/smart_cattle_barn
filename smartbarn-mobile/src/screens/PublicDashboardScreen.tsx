@@ -14,7 +14,7 @@ import {
   Alert
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { COLORS, SPACING, SHADOWS } from '../theme';
+import { COLORS, SPACING, SHADOWS, RADIUS, FONT_SIZE, FONT_WEIGHT, TYPOGRAPHY } from '../theme';
 import apiClient from '../api/client';
 import { useSocket } from '../hooks/useSocket';
 import { 
@@ -29,7 +29,8 @@ import {
   Trash2,
   Leaf,
   CheckCircle,
-  AlertTriangle
+  AlertTriangle,
+  Info
 } from 'lucide-react-native';
 import { LineChart } from 'react-native-chart-kit';
 
@@ -588,7 +589,10 @@ const PublicDashboardScreen = ({ navigation }: any) => {
                     >
                       <View style={{ width: 90 }}>
                         <Text style={[styles.tableRowText, { fontWeight: 'bold' }]}>{sum.cowId === 'ALL' ? 'Rata-rata' : sum.cowId}</Text>
-                        <Text style={{ fontSize: 8, color: COLORS.primary, marginTop: 1 }}>Tekan info ℹ️</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 2 }}>
+                          <Info size={11} color={COLORS.primary} />
+                          <Text style={{ fontSize: 9, color: COLORS.primary, fontWeight: '600' }}>Info</Text>
+                        </View>
                       </View>
                       <Text style={[styles.tableRowText, { width: 75, textAlign: 'center' }]}>{sum.totalBk}</Text>
                       <Text style={[styles.tableRowText, { width: 60, textAlign: 'center' }]}>{sum.startWeight}</Text>

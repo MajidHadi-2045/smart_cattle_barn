@@ -1062,21 +1062,7 @@ const Livestock = () => {
                 </div>
             </div>
 
-            {/* Banner Limbah Harian */}
-            <div className="bg-gradient-to-r from-amber-500 to-orange-400 rounded-xl p-5 text-white shadow-lg flex justify-between items-center">
-                <div>
-                    <h3 className="font-bold text-lg">Total Limbah Terkumpul Hari Ini</h3>
-                    <p className="text-amber-100 text-sm">Berdasarkan {wasteSummary.cowCount} sapi yang telah dicatat</p>
-                </div>
-                <div className="flex gap-6 text-right">
-                    <div>
-                        <p className="text-3xl font-black">{wasteSummary.totalFeces} <span className="text-sm font-normal">kg Feses</span></p>
-                    </div>
-                    <div>
-                        <p className="text-3xl font-black">{wasteSummary.totalUrine} <span className="text-sm font-normal">L Urine</span></p>
-                    </div>
-                </div>
-            </div>
+
 
             {error && <div className="p-4 bg-red-50 text-red-700 rounded-lg">Error: {error}</div>}
             
@@ -1491,14 +1477,14 @@ const Livestock = () => {
             {/* --- MODAL DETAIL SAPI --- */}
             {showDetailModal && selectedCow && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setShowDetailModal(false)}>
-                    <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-md border border-slate-200 dark:border-slate-700 animate-fade-in-up max-h-[95vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-                        <div className="relative h-32 bg-gradient-to-r from-primary-600 to-indigo-600 rounded-t-3xl overflow-hidden">
-                            <button onClick={() => setShowDetailModal(false)} className="absolute top-4 right-4 z-20 text-white hover:bg-white/20 rounded-full p-1 transition">
+                    <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-md border border-slate-200 dark:border-slate-700 animate-fade-in-up max-h-[90vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+                        <div className="relative h-32 bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 shrink-0">
+                            <button onClick={() => setShowDetailModal(false)} className="absolute top-4 right-4 z-20 text-white hover:bg-white/20 rounded-full p-1.5 transition" aria-label="Tutup detail sapi">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                             </button>
                         </div>
                         
-                        <div className="px-8 pb-8 -mt-12 relative z-10">
+                        <div className="overflow-y-auto flex-1 custom-scrollbar px-8 pb-8 -mt-12 relative z-10">
                             <div className="flex flex-col items-center text-center">
                                 <div className="h-24 w-24 rounded-full bg-white dark:bg-slate-700 border-4 border-white dark:border-slate-800 flex items-center justify-center text-4xl shadow-lg mb-4 z-20 overflow-visible">
                                     <span className="block transform scale-125">🐮</span>

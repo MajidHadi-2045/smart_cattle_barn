@@ -90,6 +90,17 @@ const CustomPerformanceTooltip = ({ active, payload, label }) => {
     return null;
 };
 
+const InfoBadge = ({ label = 'Info' }) => (
+    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700/80 shadow-2xs hover:bg-amber-500/10 hover:text-amber-600 dark:hover:text-amber-400 transition-all cursor-help" title="Arahkan kursor / klik untuk info">
+        <svg className="w-3 h-3 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+            <circle cx="12" cy="12" r="9" />
+            <line x1="12" y1="16" x2="12" y2="12" />
+            <line x1="12" y1="8" x2="12.01" y2="8" />
+        </svg>
+        {label && <span>{label}</span>}
+    </span>
+);
+
 const DashboardHome = ({ isPublicRoute = false }) => {
     const userRole = isPublicRoute ? null : localStorage.getItem('userRole');
     const userName = isPublicRoute ? null : localStorage.getItem('userName');
@@ -123,6 +134,42 @@ const DashboardHome = ({ isPublicRoute = false }) => {
     const [isDummyChart, setIsDummyChart] = useState(false);
     const [lastSensorUpdate, setLastSensorUpdate] = useState(0); // Set to 0 initially so it shows offline until data arrives
     const [currentTime, setCurrentTime] = useState(Date.now());
+
+    // State & Handler untuk Hover Info Sapi Adaptif (Desktop & Mobile)
+    const [hoveredCowInfo, setHoveredCowInfo] = useState(null);
+    const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+
+    const handleShowCowInfo = (e, sum) => {
+        e.stopPropagation();
+        const rect = e.currentTarget.getBoundingClientRect();
+        const isMobile = window.innerWidth < 640;
+
+        if (isMobile) {
+            setHoveredCowInfo(sum);
+            return;
+        }
+
+        let x = rect.right + 12;
+        let y = rect.top;
+
+        // Cegah tooltip terpotong di tepi kanan layar
+        if (x + 300 > window.innerWidth) {
+            x = Math.max(10, rect.left - 300);
+        }
+        // Cegah tooltip terpotong di tepi bawah layar (geser ke atas)
+        if (y + 160 > window.innerHeight) {
+            y = Math.max(10, window.innerHeight - 170);
+        }
+
+        setTooltipPos({ x, y });
+        setHoveredCowInfo(sum);
+    };
+
+    const handleHideCowInfo = () => {
+        if (window.innerWidth >= 640) {
+            setHoveredCowInfo(null);
+        }
+    };
 
     // Daily Checklist & Input History States
     const [checklist, setChecklist] = useState({
@@ -1024,7 +1071,7 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                                     Sirkulasi Angin
                                 </span>
                             </div>
-                            <span className="text-[10px] bg-teal-100 dark:bg-teal-800 text-teal-700 dark:text-teal-300 font-bold px-1.5 py-0.5 rounded" title="Arahkan kursor untuk info">ℹ️ Info</span>
+                            <InfoBadge label="Info" />
                         </div>
                         <div className="flex items-end gap-2">
                             <span className="text-3xl font-bold text-teal-600 dark:text-teal-400">
@@ -1047,7 +1094,7 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                                 </div>
                                 <span className="font-semibold text-orange-900 dark:text-orange-100">Suhu Ruangan</span>
                             </div>
-                            <span className="text-[10px] bg-orange-100 dark:bg-orange-800 text-orange-700 dark:text-orange-300 font-bold px-1.5 py-0.5 rounded" title="Arahkan kursor untuk info">ℹ️ Info</span>
+                            <InfoBadge label="Info" />
                         </div>
                         <div className="flex items-end gap-2">
                             <span className="text-3xl font-bold text-orange-600 dark:text-orange-400">
@@ -1070,7 +1117,7 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                                 </div>
                                 <span className="font-semibold text-blue-900 dark:text-blue-100">Kelembapan</span>
                             </div>
-                            <span className="text-[10px] bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-300 font-bold px-1.5 py-0.5 rounded" title="Arahkan kursor untuk info">ℹ️ Info</span>
+                            <InfoBadge label="Info" />
                         </div>
                         <div className="flex items-end gap-2">
                             <span className="text-3xl font-bold text-blue-600 dark:text-blue-400">
@@ -1093,7 +1140,7 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                                 </div>
                                 <span className="font-semibold text-red-900 dark:text-red-100">Amonia (NH3)</span>
                             </div>
-                            <span className="text-[10px] bg-red-100 dark:bg-red-800 text-red-700 dark:text-red-300 font-bold px-1.5 py-0.5 rounded" title="Arahkan kursor untuk info">ℹ️ Info</span>
+                            <InfoBadge label="Info" />
                         </div>
                         <div className="flex items-end gap-2">
                             <span className="text-3xl font-bold text-red-600 dark:text-red-400">
@@ -1134,7 +1181,7 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                                     'text-red-900'
                                 }`}>Heat Stress (THI)</span>
                             </div>
-                            <span className="text-[10px] bg-slate-200/60 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold px-1.5 py-0.5 rounded" title="Arahkan kursor untuk info">ℹ️ Info</span>
+                            <InfoBadge label="Info" />
                         </div>
                         <div className="flex flex-col">
                             <div className="flex items-end gap-2">
@@ -1366,12 +1413,42 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                         <table className="w-full text-sm text-left">
                             <thead className="bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs uppercase font-bold tracking-wider">
                                 <tr>
-                                    <th className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 cursor-help" title="ID identifikasi unik untuk setiap ternak sapi">ID Sapi ℹ️</th>
-                                    <th className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 text-center cursor-help" title="Dry Matter Intake (DMI): Akumulasi bahan kering pakan murni yang dikonsumsi sapi (Kg BK)">Total DMI (Kg BK) ℹ️</th>
-                                    <th className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 text-center cursor-help" title="Bobot awal sapi pada awal periode pengamatan (Kg)">Bobot Awal ℹ️</th>
-                                    <th className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 text-center cursor-help" title="Bobot sapi saat ini. Jika belum ditimbang ulang, nilai dihitung otomatis berdasarkan estimasi pertambahan bobot harian (ADG)">Bobot Akhir ℹ️</th>
-                                    <th className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 text-center cursor-help" title="Average Daily Gain (ADG): Rata-rata pertambahan bobot badan sapi per hari (Kg/hari)">ADG (Kg/hari) ℹ️</th>
-                                    <th className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 text-center cursor-help" title="Feed Conversion Ratio (FCR): Rasio efisiensi pakan terhadap kenaikan bobot (semakin kecil nilai FCR, semakin efisien pakan)">FCR ℹ️</th>
+                                    <th className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 cursor-help" title="ID identifikasi unik untuk setiap ternak sapi">
+                                        <div className="flex items-center gap-1">
+                                            <span>ID Sapi</span>
+                                            <InfoBadge label="" />
+                                        </div>
+                                    </th>
+                                    <th className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 text-center cursor-help" title="Dry Matter Intake (DMI): Akumulasi bahan kering pakan murni yang dikonsumsi sapi (Kg BK)">
+                                        <div className="flex items-center justify-center gap-1">
+                                            <span>Total DMI (Kg BK)</span>
+                                            <InfoBadge label="" />
+                                        </div>
+                                    </th>
+                                    <th className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 text-center cursor-help" title="Bobot awal sapi pada awal periode pengamatan (Kg)">
+                                        <div className="flex items-center justify-center gap-1">
+                                            <span>Bobot Awal</span>
+                                            <InfoBadge label="" />
+                                        </div>
+                                    </th>
+                                    <th className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 text-center cursor-help" title="Bobot sapi saat ini. Jika belum ditimbang ulang, nilai dihitung otomatis berdasarkan estimasi pertambahan bobot harian (ADG)">
+                                        <div className="flex items-center justify-center gap-1">
+                                            <span>Bobot Akhir</span>
+                                            <InfoBadge label="" />
+                                        </div>
+                                    </th>
+                                    <th className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 text-center cursor-help" title="Average Daily Gain (ADG): Rata-rata pertambahan bobot badan sapi per hari (Kg/hari)">
+                                        <div className="flex items-center justify-center gap-1">
+                                            <span>ADG (Kg/hari)</span>
+                                            <InfoBadge label="" />
+                                        </div>
+                                    </th>
+                                    <th className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 text-center cursor-help" title="Feed Conversion Ratio (FCR): Rasio efisiensi pakan terhadap kenaikan bobot (semakin kecil nilai FCR, semakin efisien pakan)">
+                                        <div className="flex items-center justify-center gap-1">
+                                            <span>FCR</span>
+                                            <InfoBadge label="" />
+                                        </div>
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody className="bg-white dark:bg-slate-900/50 divide-y divide-slate-100 dark:divide-slate-800/50">
@@ -1383,31 +1460,15 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                                     return (
                                         <tr 
                                             key={sum.cowId} 
-                                            className="group relative hover:bg-amber-50/50 dark:hover:bg-slate-800/80 transition-colors cursor-pointer hover:z-50"
-                                            title={tooltipContent}
+                                            className="group hover:bg-amber-50/50 dark:hover:bg-slate-800/80 transition-colors cursor-pointer"
+                                            onMouseEnter={(e) => handleShowCowInfo(e, sum)}
+                                            onMouseLeave={handleHideCowInfo}
+                                            onClick={(e) => handleShowCowInfo(e, sum)}
                                         >
-                                            <td className="px-4 py-3 font-bold text-slate-800 dark:text-slate-200 relative">
+                                            <td className="px-4 py-3 font-bold text-slate-800 dark:text-slate-200">
                                                 <div className="flex items-center gap-1.5">
-                                                    <span>{sum.cowId}</span>
-                                                    <span className="text-[10px] text-slate-400 group-hover:text-amber-500 transition-colors" title="Arahkan kursor untuk info penimbangan & pembaruan">ℹ️</span>
-                                                </div>
-
-                                                {/* Floating Tooltip Card on Hover - Positioned to the right near cursor */}
-                                                <div className="pointer-events-none absolute left-full top-0 ml-3 hidden group-hover:block z-50 w-72 p-3 bg-slate-900/95 text-white text-xs rounded-xl shadow-2xl backdrop-blur-md border border-slate-700 transition-all transform scale-100">
-                                                    <div className="font-bold text-amber-400 border-b border-slate-700/80 pb-1.5 mb-2 flex items-center justify-between">
-                                                        <span>Detail Status Sapi {sum.cowId}</span>
-                                                        <span className="text-[9px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-normal">Hover Info</span>
-                                                    </div>
-                                                    <div className="space-y-1.5">
-                                                        <div className="flex justify-between items-center gap-2">
-                                                            <span className="text-slate-400 shrink-0">⚖️ Terakhir Ditimbang:</span>
-                                                            <span className="font-semibold text-emerald-300 text-right">{weighInfoStr}</span>
-                                                        </div>
-                                                        <div className="flex justify-between items-center gap-2">
-                                                            <span className="text-slate-400 shrink-0">🔄 Data Diperbaharui:</span>
-                                                            <span className="font-semibold text-sky-300 text-right">{updateInfoStr}</span>
-                                                        </div>
-                                                    </div>
+                                                    <span className="group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">{sum.cowId}</span>
+                                                    <InfoBadge label="" />
                                                 </div>
                                             </td>
                                             <td className="px-4 py-3 text-center text-slate-600 dark:text-slate-300">{sum.totalBk}</td>
@@ -1666,6 +1727,54 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Floating Adaptive Hover / Touch Modal Info Sapi (Desktop & Mobile) */}
+            {hoveredCowInfo && (
+                <>
+                    {/* Backdrop khusus Mobile */}
+                    <div 
+                        className="sm:hidden fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-[9998]"
+                        onClick={() => setHoveredCowInfo(null)}
+                    />
+
+                    <div 
+                        style={window.innerWidth >= 640 ? { left: `${tooltipPos.x}px`, top: `${tooltipPos.y}px` } : {}}
+                        className={`fixed z-[9999] bg-slate-900/95 text-white p-4 rounded-xl shadow-2xl backdrop-blur-md border border-slate-700 w-[calc(100vw-2rem)] sm:w-80 transition-all duration-150 animate-fade-in ${
+                            window.innerWidth < 640 
+                                ? 'bottom-6 left-4 right-4 mx-auto' 
+                                : 'pointer-events-none'
+                        }`}
+                    >
+                        <div className="font-bold text-amber-400 border-b border-slate-700/80 pb-2 mb-2.5 flex items-center justify-between">
+                            <span className="flex items-center gap-1.5">
+                                <span>Detail Status Sapi</span>
+                                <span className="text-white font-extrabold bg-amber-500/20 px-2 py-0.5 rounded text-xs">{hoveredCowInfo.cowId}</span>
+                            </span>
+                            <button 
+                                onClick={() => setHoveredCowInfo(null)}
+                                className="sm:hidden text-slate-400 hover:text-white text-base font-bold px-1 rounded transition-colors"
+                                aria-label="Tutup info"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                        <div className="space-y-2 text-xs">
+                            <div className="flex justify-between items-center gap-2">
+                                <span className="text-slate-400 shrink-0">⚖️ Terakhir Ditimbang:</span>
+                                <span className="font-semibold text-emerald-300 text-right">
+                                    {hoveredCowInfo.lastWeighDate ? new Date(hoveredCowInfo.lastWeighDate).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Bobot Awal (Belum Ditimbang Ulang)'}
+                                </span>
+                            </div>
+                            <div className="flex justify-between items-center gap-2">
+                                <span className="text-slate-400 shrink-0">🔄 Data Diperbaharui:</span>
+                                <span className="font-semibold text-sky-300 text-right">
+                                    {hoveredCowInfo.lastUpdatedDate ? new Date(hoveredCowInfo.lastUpdatedDate).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Baru saja'}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </>
             )}
         </div>
     );

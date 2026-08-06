@@ -17,6 +17,25 @@ const Reports = React.lazy(() => import('./pages/Dashboard/Reports'));
 const UserManagement = React.lazy(() => import('./pages/Dashboard/UserManagement'));
 const HistoryPage = React.lazy(() => import('./pages/Dashboard/HistoryPage'));
 
+// --- SKELETON PLACEHOLDER UNTUK MENCEGAH LAYOUT SHIFT (CLS) ---
+const PageSkeleton = () => (
+  <div className="space-y-6 p-4 md:p-8 animate-pulse min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div>
+        <div className="h-8 w-48 bg-slate-200 dark:bg-slate-800 rounded-lg mb-2"></div>
+        <div className="h-4 w-64 bg-slate-200 dark:bg-slate-800 rounded"></div>
+      </div>
+      <div className="h-10 w-40 bg-slate-200 dark:bg-slate-800 rounded-lg"></div>
+    </div>
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 min-h-[120px]">
+      {[1, 2, 3, 4].map(i => (
+        <div key={i} className="h-28 bg-slate-200 dark:bg-slate-800 rounded-xl"></div>
+      ))}
+    </div>
+    <div className="h-64 bg-slate-200 dark:bg-slate-800 rounded-xl"></div>
+  </div>
+);
+
 // --- KOMPONEN PENJAGA (PROTECTED ROUTE) ---
 // Komponen ini akan mengecek apakah user sudah login atau belum
 const ProtectedRoute = ({ children }) => {
@@ -43,23 +62,23 @@ function App() {
         <Route path="/reset-password" element={<ResetPasswordPage />} />
 
         {/* Rute Publik Khusus Dashboard (Tanpa Auth/Profil sama sekali) */}
-        <Route path="/public-dashboard" element={<Suspense fallback={<div className="h-screen w-full flex items-center justify-center bg-slate-50 text-slate-500 font-bold">Memuat Dashboard Publik...</div>}><PublicDashboardLayout /></Suspense>}>
-          <Route index element={<Suspense fallback={<div>Memuat Data...</div>}><DashboardHome isPublicRoute={true} /></Suspense>} />
+        <Route path="/public-dashboard" element={<Suspense fallback={<PageSkeleton />}><PublicDashboardLayout /></Suspense>}>
+          <Route index element={<Suspense fallback={<PageSkeleton />}><DashboardHome isPublicRoute={true} /></Suspense>} />
         </Route>
 
         {/* Rute Terlindungi: Dashboard Admin/Staff */}
         <Route 
           path="/dashboard" 
-          element={<Suspense fallback={<div className="h-screen w-full flex items-center justify-center bg-slate-50 text-slate-500 font-bold">Memuat Dashboard...</div>}><DashboardLayout /></Suspense>}
+          element={<Suspense fallback={<PageSkeleton />}><DashboardLayout /></Suspense>}
         >
           {/* Semua sub-rute ini otomatis ikut terlindungi */}
-          <Route index element={<ProtectedRoute><Suspense fallback={<div>Memuat...</div>}><DashboardHome /></Suspense></ProtectedRoute>} />
-          <Route path="livestock" element={<ProtectedRoute><Suspense fallback={<div>Memuat...</div>}><Livestock /></Suspense></ProtectedRoute>} />
-          <Route path="feed" element={<ProtectedRoute><Suspense fallback={<div>Memuat...</div>}><Feed /></Suspense></ProtectedRoute>} />
-          <Route path="reports" element={<ProtectedRoute><Suspense fallback={<div>Memuat...</div>}><Reports /></Suspense></ProtectedRoute>} />
-          <Route path="users" element={<ProtectedRoute><Suspense fallback={<div>Memuat...</div>}><UserManagement /></Suspense></ProtectedRoute>} />
-          <Route path="health" element={<ProtectedRoute><Suspense fallback={<div>Memuat...</div>}><HealthPage /></Suspense></ProtectedRoute>} />
-          <Route path="history" element={<ProtectedRoute><Suspense fallback={<div>Memuat...</div>}><HistoryPage /></Suspense></ProtectedRoute>} />
+          <Route index element={<ProtectedRoute><Suspense fallback={<PageSkeleton />}><DashboardHome /></Suspense></ProtectedRoute>} />
+          <Route path="livestock" element={<ProtectedRoute><Suspense fallback={<PageSkeleton />}><Livestock /></Suspense></ProtectedRoute>} />
+          <Route path="feed" element={<ProtectedRoute><Suspense fallback={<PageSkeleton />}><Feed /></Suspense></ProtectedRoute>} />
+          <Route path="reports" element={<ProtectedRoute><Suspense fallback={<PageSkeleton />}><Reports /></Suspense></ProtectedRoute>} />
+          <Route path="users" element={<ProtectedRoute><Suspense fallback={<PageSkeleton />}><UserManagement /></Suspense></ProtectedRoute>} />
+          <Route path="health" element={<ProtectedRoute><Suspense fallback={<PageSkeleton />}><HealthPage /></Suspense></ProtectedRoute>} />
+          <Route path="history" element={<ProtectedRoute><Suspense fallback={<PageSkeleton />}><HistoryPage /></Suspense></ProtectedRoute>} />
         </Route>
 
         {/* Jika user mengetik rute yang tidak terdaftar, arahkan ke landing page */}

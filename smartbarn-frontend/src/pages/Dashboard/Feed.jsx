@@ -613,7 +613,7 @@ const Feed = () => {
                     {activeTab === 'report' && (
                         <div className="space-y-6">
                             {/* Card Rangkuman Sapi */}
-                            <div className="bg-gradient-to-r from-primary-500 to-indigo-600 text-white p-6 rounded-2xl shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                            <div className="bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 text-white p-6 rounded-2xl shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                                 <div>
                                     <h3 className="text-xl font-black mb-1">Statistik Populasi Ternak</h3>
                                     <p className="text-primary-100 text-sm">Rangkuman jenis dan total sapi yang saat ini dikelola di kandang</p>
