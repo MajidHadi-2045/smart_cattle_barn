@@ -41,7 +41,7 @@ const WelcomeScreen = ({ navigation }: any) => {
             onPress={() => navigation.navigate('PublicDashboard')}
           >
             <LineChart color={COLORS.primary} size={24} />
-            <Text style={styles.publicBtnText}>Lihat Dashboard Publik</Text>
+            <Text style={styles.publicBtnText}>Lihat Beranda Publik</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -71,8 +71,8 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.lg,
     padding: SPACING.sm,
     backgroundColor: '#f8fafc',
-    borderRadius: 24,
-    ...SHADOWS.md,
+    borderRadius: 16,
+    ...SHADOWS.sm,
   },
   title: {
     fontSize: 32,
@@ -94,8 +94,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-    borderRadius: 16,
+    paddingVertical: 14,
+    borderRadius: 8,
     gap: 12,
     ...SHADOWS.sm,
   },

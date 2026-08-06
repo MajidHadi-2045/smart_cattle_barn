@@ -195,20 +195,20 @@ const LivestockFormModal = ({
 
 const styles = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  container: { backgroundColor: COLORS.white, borderTopLeftRadius: 30, borderTopRightRadius: 30, height: '85%', padding: SPACING.lg },
+  container: { backgroundColor: COLORS.white, borderTopLeftRadius: 16, borderTopRightRadius: 16, height: '85%', padding: SPACING.lg },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.lg },
   title: { fontSize: 20, fontWeight: 'bold', color: COLORS.text },
   form: { flex: 1 },
   inputGroup: { marginBottom: SPACING.md },
   label: { fontSize: 14, fontWeight: '600', color: COLORS.textLight, marginBottom: 8 },
-  input: { backgroundColor: '#f1f5f9', borderRadius: 12, padding: 12, fontSize: 16, color: COLORS.text },
+  input: { backgroundColor: '#f1f5f9', borderRadius: 8, padding: 12, fontSize: 15, color: COLORS.text },
   optionGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  optionItem: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10, backgroundColor: '#f1f5f9', borderWidth: 1, borderColor: '#e2e8f0' },
+  optionItem: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, backgroundColor: '#f1f5f9', borderWidth: 1, borderColor: '#e2e8f0' },
   optionActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
   optionText: { fontSize: 13, fontWeight: '600', color: COLORS.text },
   optionTextActive: { color: COLORS.white },
-  submitButton: { backgroundColor: COLORS.primary, height: 55, borderRadius: 16, justifyContent: 'center', alignItems: 'center', marginTop: SPACING.md, ...SHADOWS.md },
-  submitText: { color: COLORS.white, fontSize: 18, fontWeight: 'bold' }
+  submitButton: { backgroundColor: COLORS.primary, height: 48, borderRadius: 8, justifyContent: 'center', alignItems: 'center', marginTop: SPACING.md, ...SHADOWS.sm },
+  submitText: { color: COLORS.white, fontSize: 16, fontWeight: 'bold' }
 });
 
 export default LivestockFormModal;

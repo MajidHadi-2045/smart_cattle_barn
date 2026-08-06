@@ -18,15 +18,15 @@ const PublicDashboardLayout = () => {
   }, [isDarkMode]);
 
   return (
-    <div className="relative min-h-screen md:flex bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-50 via-slate-50 to-white dark:from-slate-800 dark:via-slate-900 dark:to-slate-950 font-sans overflow-hidden transition-colors duration-300">
+    <div className="relative min-h-screen md:flex bg-slate-50 dark:bg-slate-950 font-sans overflow-hidden transition-colors duration-300">
       
       {/* Sidebar Khusus Publik Dihapus Sesuai Permintaan */}
 
       <main className="flex-1 min-w-0 flex flex-col h-screen overflow-hidden">
-        <header className="sticky top-0 z-10 flex items-center justify-between h-20 px-4 md:px-8 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border-b border-white/20 dark:border-slate-700/50 shadow-sm shrink-0">
+        <header className="sticky top-0 z-10 flex items-center justify-between h-20 px-4 md:px-8 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-sm shrink-0">
           <div className="flex items-center gap-4">
             <Link to="/" className="flex items-center gap-3">
-              <div className="bg-white p-1 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm">
+              <div className="bg-white p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm">
                 <img src="/logoxl.svg" alt="Logo" className="h-8 w-8 object-contain" />
               </div>
               <h1 className="text-xl md:text-2xl font-bold text-slate-800 dark:text-white hover:text-primary-600 transition tracking-tight">Smart Cattle Barn</h1>
@@ -34,7 +34,7 @@ const PublicDashboardLayout = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <Link to="/login" className="px-5 py-2 mr-2 text-sm font-bold bg-slate-900 hover:bg-primary-600 text-white rounded-xl shadow-lg hover:shadow-primary-500/30 transition">
+            <Link to="/login" className="px-4 py-2 text-sm font-semibold bg-primary-600 hover:bg-primary-700 text-white rounded-lg shadow-sm transition">
               Login
             </Link>
             

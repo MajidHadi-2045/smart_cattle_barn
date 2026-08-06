@@ -17,7 +17,14 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "test:k6": "k6 run k6-load-test.js",
+    "test:k6:10vu": "k6 run --vus 10 --duration 30s k6-load-test.js",
+    "test:k6:50vu": "k6 run --vus 50 --duration 30s k6-load-test.js",
+    "test:k6:100vu": "k6 run --vus 100 --duration 30s k6-load-test.js",
+    "test:k6:sensor": "k6 run k6-sensor-test.js",
+    "test:k6:web": "k6 run k6-web-test.js",
+    "test:k6:vps": "k6 run -e BASE_URL=http://77.37.63.21:4000/api k6-load-test.js"
   },
   "dependencies": {
     "@apidevtools/swagger-parser": "^12.1.0",

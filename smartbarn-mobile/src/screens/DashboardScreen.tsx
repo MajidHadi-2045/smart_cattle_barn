@@ -944,28 +944,37 @@ const DashboardScreen = ({ navigation }: any) => {
                     <Text style={[styles.tableHeaderText, { width: 50, textAlign: 'center' }]}>FCR</Text>
                   </View>
                   {performanceSummaries.map((sum, index) => (
-                    <View key={index} style={styles.tableRow}>
+                    <TouchableOpacity 
+                      key={index} 
+                      style={styles.tableRow}
+                      onPress={() => {
+                        const weighInfo = sum.lastWeighDate 
+                          ? new Date(sum.lastWeighDate).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                          : 'Belum pernah ditimbang';
+                        const updateInfo = sum.lastUpdatedDate
+                          ? new Date(sum.lastUpdatedDate).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                          : 'Baru saja';
+
+                        Alert.alert(
+                          `Detail Status Sapi ${sum.cowId === 'ALL' ? 'Rata-rata' : sum.cowId}`,
+                          `⚖️ Terakhir Ditimbang:\n${weighInfo}\n\n🔄 Data Diperbaharui:\n${updateInfo}\n\n📊 Total DMI: ${sum.totalBk} Kg BK\n🏋️ Bobot Akhir: ${sum.endWeight} Kg\n📈 ADG: ${sum.adg} Kg/hari\n📉 FCR: ${sum.fcr}`,
+                          [{ text: 'Tutup', style: 'cancel' }]
+                        );
+                      }}
+                      activeOpacity={0.7}
+                    >
                       <View style={{ width: 90 }}>
                         <Text style={[styles.tableRowText, { fontWeight: 'bold' }]}>{sum.cowId}</Text>
-                        {sum.isEstimated && <Text style={{ fontSize: 9, color: '#f59e0b', marginTop: -2 }}>(Estimasi)</Text>}
+                        <Text style={{ fontSize: 8, color: COLORS.primary, marginTop: 1 }}>Tekan info ℹ️</Text>
                       </View>
                       <Text style={[styles.tableRowText, { width: 75, textAlign: 'center' }]}>{sum.totalBk}</Text>
                       <Text style={[styles.tableRowText, { width: 60, textAlign: 'center' }]}>{sum.startWeight}</Text>
                       <View style={{ width: 60, alignItems: 'center' }}>
                         <Text style={[styles.tableRowText, { textAlign: 'center' }]}>{sum.endWeight}</Text>
-                        {sum.isEstimated ? (
-                          <Text style={{ fontSize: 8, color: '#f59e0b', marginTop: -2 }}>~estimasi</Text>
-                        ) : (
-                          sum.estimatedWeight && Math.abs(sum.estimatedWeight - sum.endWeight) >= 0.5 && (
-                            <Text style={{ fontSize: 8, color: '#64748b', marginTop: -2 }}>
-                              ~{sum.estimatedWeight} <Text style={{ color: '#f59e0b', fontSize: 7 }}>(est)</Text>
-                            </Text>
-                          )
-                        )}
                       </View>
                       <Text style={[styles.tableRowText, { width: 60, textAlign: 'center', color: COLORS.success, fontWeight: 'bold' }]}>{sum.adg}</Text>
                       <Text style={[styles.tableRowText, { width: 50, textAlign: 'center', color: COLORS.primary, fontWeight: 'bold' }]}>{sum.fcr}</Text>
-                    </View>
+                    </TouchableOpacity>
                   ))}
                   {performanceSummaries.length === 0 && (
                     <View style={{ padding: 20, alignItems: 'center' }}>
@@ -1850,15 +1859,15 @@ const styles = StyleSheet.create({
   },
   historyModalContent: {
     backgroundColor: COLORS.white,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
     padding: SPACING.lg,
     maxHeight: '85%',
   },
   editModalContent: {
     backgroundColor: COLORS.white,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
     padding: SPACING.lg,
     paddingBottom: SPACING.xl,
   },

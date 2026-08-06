@@ -49,3 +49,6 @@ google.json
 check-cows.js
 fetch-test.js
 
+#----
+K6_TESTING_GUIDE.md
+

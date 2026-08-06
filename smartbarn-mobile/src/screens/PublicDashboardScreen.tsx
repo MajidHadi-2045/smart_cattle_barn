@@ -281,7 +281,7 @@ const PublicDashboardScreen = ({ navigation }: any) => {
           <ChevronLeft size={24} color={COLORS.text} />
         </TouchableOpacity>
         <View style={{ alignItems: 'center' }}>
-          <Text style={styles.headerTitle}>Dashboard Publik</Text>
+          <Text style={styles.headerTitle}>Beranda Publik</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
             <View style={[styles.statusDot, { backgroundColor: isDataLive ? COLORS.success : COLORS.danger }]} />
             <Text style={{ fontSize: 12, color: COLORS.textLight, marginLeft: 4 }}>
@@ -567,28 +567,37 @@ const PublicDashboardScreen = ({ navigation }: any) => {
                     <Text style={[styles.tableHeaderText, { width: 50, textAlign: 'center' }]}>FCR</Text>
                   </View>
                   {performanceSummaries.map((sum, index) => (
-                    <View key={index} style={styles.tableRow}>
+                    <TouchableOpacity 
+                      key={index} 
+                      style={styles.tableRow}
+                      onPress={() => {
+                        const weighInfo = sum.lastWeighDate 
+                          ? new Date(sum.lastWeighDate).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                          : 'Belum pernah ditimbang';
+                        const updateInfo = sum.lastUpdatedDate
+                          ? new Date(sum.lastUpdatedDate).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                          : 'Baru saja';
+
+                        Alert.alert(
+                          `Detail Status Sapi ${sum.cowId === 'ALL' ? 'Rata-rata' : sum.cowId}`,
+                          `⚖️ Terakhir Ditimbang:\n${weighInfo}\n\n🔄 Data Diperbaharui:\n${updateInfo}\n\n📊 Total DMI: ${sum.totalBk} Kg BK\n🏋️ Bobot Akhir: ${sum.endWeight} Kg\n📈 ADG: ${sum.adg} Kg/hari\n📉 FCR: ${sum.fcr}`,
+                          [{ text: 'Tutup', style: 'cancel' }]
+                        );
+                      }}
+                      activeOpacity={0.7}
+                    >
                       <View style={{ width: 90 }}>
                         <Text style={[styles.tableRowText, { fontWeight: 'bold' }]}>{sum.cowId === 'ALL' ? 'Rata-rata' : sum.cowId}</Text>
-                        {sum.isEstimated && <Text style={{ fontSize: 9, color: '#f59e0b', marginTop: -2 }}>(Estimasi)</Text>}
+                        <Text style={{ fontSize: 8, color: COLORS.primary, marginTop: 1 }}>Tekan info ℹ️</Text>
                       </View>
                       <Text style={[styles.tableRowText, { width: 75, textAlign: 'center' }]}>{sum.totalBk}</Text>
                       <Text style={[styles.tableRowText, { width: 60, textAlign: 'center' }]}>{sum.startWeight}</Text>
                       <View style={{ width: 60, alignItems: 'center' }}>
                         <Text style={[styles.tableRowText, { textAlign: 'center' }]}>{sum.endWeight}</Text>
-                        {sum.isEstimated ? (
-                          <Text style={{ fontSize: 8, color: '#f59e0b', marginTop: -2 }}>~estimasi</Text>
-                        ) : (
-                          sum.estimatedWeight && Math.abs(sum.estimatedWeight - sum.endWeight) >= 0.5 && (
-                            <Text style={{ fontSize: 8, color: '#64748b', marginTop: -2 }}>
-                              ~{sum.estimatedWeight} <Text style={{ color: '#f59e0b', fontSize: 7 }}>(est)</Text>
-                            </Text>
-                          )
-                        )}
                       </View>
                       <Text style={[styles.tableRowText, { width: 60, textAlign: 'center', color: COLORS.success, fontWeight: 'bold' }]}>{sum.adg}</Text>
                       <Text style={[styles.tableRowText, { width: 50, textAlign: 'center', color: COLORS.primary, fontWeight: 'bold' }]}>{sum.fcr}</Text>
-                    </View>
+                    </TouchableOpacity>
                   ))}
                   {performanceSummaries.length === 0 && (
                     <View style={{ padding: 20, alignItems: 'center' }}>
@@ -856,7 +865,7 @@ const styles = StyleSheet.create({
   statLabel: { fontSize: 12, color: COLORS.textLight, marginBottom: 4 },
   statValue: { fontSize: 18, fontWeight: 'bold', color: COLORS.text },
   statIconContainer: { padding: SPACING.sm, borderRadius: 8 },
-  chartContainer: { backgroundColor: COLORS.white, borderRadius: 20, padding: SPACING.lg, ...SHADOWS.md, marginBottom: SPACING.xl },
+  chartContainer: { backgroundColor: COLORS.white, borderRadius: 12, padding: SPACING.lg, ...SHADOWS.sm, marginBottom: SPACING.xl },
   chartHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: SPACING.md },
   chartHeaderResponsive: {
     flexDirection: 'row',
@@ -879,7 +888,7 @@ const styles = StyleSheet.create({
   rangeBtnTextActive: { color: COLORS.primary },
   cowSelectFilterBtn: { backgroundColor: '#eff6ff', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: '#bfdbfe' },
   cowSelectFilterBtnText: { fontSize: 12, fontWeight: 'bold', color: COLORS.primary },
-  emptyChart: { height: 200, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f8fafc', borderRadius: 16 },
+  emptyChart: { height: 200, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f8fafc', borderRadius: 12 },
   tableContainer: { marginTop: SPACING.md, borderTopWidth: 1, borderTopColor: '#f1f5f9', paddingTop: SPACING.md },
   tableTitle: { fontSize: 13, fontWeight: 'bold', color: COLORS.text, marginBottom: SPACING.sm },
   tableHeader: { flexDirection: 'row', backgroundColor: '#f8fafc', paddingVertical: 8, paddingHorizontal: 8, borderRadius: 8, marginBottom: 4 },
@@ -887,7 +896,7 @@ const styles = StyleSheet.create({
   tableRow: { flexDirection: 'row', paddingVertical: 10, paddingHorizontal: 8, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
   tableRowText: { fontSize: 12, color: COLORS.text },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  modalContent: { backgroundColor: COLORS.white, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: SPACING.lg },
+  modalContent: { backgroundColor: COLORS.white, borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: SPACING.lg },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.md },
   modalTitle: { fontSize: 16, fontWeight: 'bold', color: COLORS.text },
   cowSelectGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

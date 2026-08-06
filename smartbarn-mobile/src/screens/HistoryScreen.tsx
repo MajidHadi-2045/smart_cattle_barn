@@ -349,9 +349,11 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: COLORS.white,
-    borderRadius: 24,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
     overflow: 'hidden',
-    ...SHADOWS.md
+    ...SHADOWS.sm
   },
   modalHeader: {
     flexDirection: 'row',

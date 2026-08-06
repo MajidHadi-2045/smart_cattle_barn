@@ -703,10 +703,10 @@ const DashboardHome = ({ isPublicRoute = false }) => {
 
     return (
         <div className="space-y-6 animate-fade-in">
-            {/* Header Dashboard */}
+            {/* Header Dashboard / Beranda */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Ringkasan Operasional</h2>
+                    <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{isPublicRoute ? 'Beranda Publik' : 'Beranda Utama'}</h2>
                     <p className="text-slate-500 dark:text-slate-400 text-sm">Pantau kondisi lingkungan dan ternak secara real-time</p>
                 </div>
                 
@@ -1356,35 +1356,51 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                                 </tr>
                             </thead>
                             <tbody className="bg-white dark:bg-slate-900/50 divide-y divide-slate-100 dark:divide-slate-800/50">
-                                {performanceMultiSummaries.length > 0 ? performanceMultiSummaries.map((sum) => (
-                                    <tr key={sum.cowId} className="hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors">
-                                        <td className="px-4 py-3 font-bold text-slate-800 dark:text-slate-200">
-                                            {sum.cowId}
-                                            {sum.isEstimated && <span className="ml-1 text-[10px] text-amber-500 font-normal">(Estimasi)</span>}
-                                        </td>
-                                        <td className="px-4 py-3 text-center text-slate-600 dark:text-slate-300">{sum.totalBk}</td>
-                                        <td className="px-4 py-3 text-center text-slate-600 dark:text-slate-300">{sum.startWeight}</td>
-                                        <td className="px-4 py-3 text-center font-semibold text-slate-700 dark:text-slate-200">
-                                            {sum.isEstimated ? (
-                                                <>
-                                                    <div>{sum.endWeight}</div>
-                                                    <span className="block text-[9px] text-amber-500/80 -mt-0.5">~estimasi</span>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <div>{sum.endWeight}</div>
-                                                    {sum.estimatedWeight && Math.abs(sum.estimatedWeight - sum.endWeight) >= 0.5 && (
-                                                        <span className="block text-[10px] text-slate-400 font-normal -mt-0.5">
-                                                            ~{sum.estimatedWeight} <span className="text-[9px] text-amber-500/80 font-medium">(estimasi)</span>
-                                                        </span>
-                                                    )}
-                                                </>
-                                            )}
-                                        </td>
-                                        <td className="px-4 py-3 text-center font-bold text-emerald-600 dark:text-emerald-400">{sum.adg}</td>
-                                        <td className="px-4 py-3 text-center font-bold text-purple-600 dark:text-purple-400">{sum.fcr}</td>
-                                    </tr>
-                                )) : performanceTableCowIds.length === 0 ? (
+                                {performanceMultiSummaries.length > 0 ? performanceMultiSummaries.map((sum) => {
+                                    const weighInfoStr = sum.lastWeighDate ? new Date(sum.lastWeighDate).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Belum pernah';
+                                    const updateInfoStr = sum.lastUpdatedDate ? new Date(sum.lastUpdatedDate).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Baru saja';
+                                    const tooltipContent = `Sapi ID: ${sum.cowId}\n⚖️ Terakhir Ditimbang: ${weighInfoStr}\n🔄 Data Diperbaharui: ${updateInfoStr}`;
+
+                                    return (
+                                        <tr 
+                                            key={sum.cowId} 
+                                            className="group relative hover:bg-amber-50/50 dark:hover:bg-slate-800/80 transition-colors cursor-pointer"
+                                            title={tooltipContent}
+                                        >
+                                            <td className="px-4 py-3 font-bold text-slate-800 dark:text-slate-200 relative">
+                                                <div className="flex items-center gap-1.5">
+                                                    <span>{sum.cowId}</span>
+                                                    <span className="text-[10px] text-slate-400 group-hover:text-amber-500 transition-colors" title="Arahkan kursor untuk info penimbangan & pembaruan">ℹ️</span>
+                                                </div>
+
+                                                {/* Floating Tooltip Card on Hover */}
+                                                <div className="pointer-events-none absolute left-4 bottom-full mb-2 hidden group-hover:block z-30 w-64 p-3 bg-slate-900/95 text-white text-xs rounded-xl shadow-xl backdrop-blur-md border border-slate-700 transition-all transform scale-100">
+                                                    <div className="font-bold text-amber-400 border-b border-slate-700/80 pb-1.5 mb-2 flex items-center justify-between">
+                                                        <span>Detail Status Sapi {sum.cowId}</span>
+                                                        <span className="text-[9px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-normal">Hover Info</span>
+                                                    </div>
+                                                    <div className="space-y-1.5">
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="text-slate-400">⚖️ Terakhir Ditimbang:</span>
+                                                            <span className="font-semibold text-emerald-300 ml-2">{weighInfoStr}</span>
+                                                        </div>
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="text-slate-400">🔄 Data Diperbaharui:</span>
+                                                            <span className="font-semibold text-sky-300 ml-2">{updateInfoStr}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-3 text-center text-slate-600 dark:text-slate-300">{sum.totalBk}</td>
+                                            <td className="px-4 py-3 text-center text-slate-600 dark:text-slate-300">{sum.startWeight}</td>
+                                            <td className="px-4 py-3 text-center font-semibold text-slate-700 dark:text-slate-200">
+                                                {sum.endWeight}
+                                            </td>
+                                            <td className="px-4 py-3 text-center font-bold text-emerald-600 dark:text-emerald-400">{sum.adg}</td>
+                                            <td className="px-4 py-3 text-center font-bold text-purple-600 dark:text-purple-400">{sum.fcr}</td>
+                                        </tr>
+                                    );
+                                }) : performanceTableCowIds.length === 0 ? (
                                     <tr>
                                         <td colSpan="6" className="px-4 py-12 text-center">
                                             <div className="flex flex-col items-center justify-center">

@@ -1162,6 +1162,49 @@ export class LivestockService {
       chartData.push(dailyData);
     }
     
+    // Fetch latest weight and update timestamps per cow
+    const latestWeightMap: Record<string, Date> = {};
+    const latestUpdateMap: Record<string, Date> = {};
+
+    if (!isAllCows && targetIds.length > 0) {
+       try {
+         const allLatestWeights = await this.prisma.livestockWeightRecord.findMany({
+           where: { cattleId: { in: targetIds } },
+           orderBy: { weighDate: 'desc' }
+         });
+         
+         const allLatestFeeds = await this.prisma.livestockFeedRecord.findMany({
+           where: { cattleId: { in: targetIds } },
+           orderBy: { feedDate: 'desc' }
+         });
+
+         const livestockInfos = await this.prisma.livestock.findMany({
+           where: { cattleId: { in: targetIds } },
+           select: { cattleId: true, updatedAt: true }
+         });
+
+         targetIds.forEach(id => {
+           const lw = allLatestWeights.find(w => w.cattleId === id);
+           if (lw) latestWeightMap[id] = lw.weighDate;
+
+           const lf = allLatestFeeds.find(f => f.cattleId === id);
+           const ls = livestockInfos.find(s => s.cattleId === id);
+
+           const times = [
+             lw ? new Date(lw.weighDate).getTime() : 0,
+             lf ? new Date(lf.feedDate).getTime() : 0,
+             ls ? new Date(ls.updatedAt).getTime() : 0
+           ];
+           const maxTime = Math.max(...times);
+           if (maxTime > 0) {
+             latestUpdateMap[id] = new Date(maxTime);
+           }
+         });
+       } catch (e) {
+         console.warn("Error fetching last weigh/update dates:", e);
+       }
+    }
+
     // Finalize summaries
     const finalSummaries = targetIds.map(id => {
       const sum = summaries[id];
@@ -1183,6 +1226,9 @@ export class LivestockService {
 
       const estimatedWeightVal = sum.startWeight + (sum.totalDmi * 0.15);
 
+      const lastWeighDate = latestWeightMap[id] ? latestWeightMap[id].toISOString() : null;
+      const lastUpdatedDate = latestUpdateMap[id] ? latestUpdateMap[id].toISOString() : (new Date()).toISOString();
+
       return {
          cowId: id,
          totalBk: parseFloat(sum.totalDmi.toFixed(2)),
@@ -1191,7 +1237,9 @@ export class LivestockService {
          estimatedWeight: parseFloat(estimatedWeightVal.toFixed(2)),
          adg: parseFloat(adgTotal.toFixed(2)),
          fcr: parseFloat(fcr.toFixed(2)),
-         isEstimated
+         isEstimated,
+         lastWeighDate,
+         lastUpdatedDate
       };
     });
 

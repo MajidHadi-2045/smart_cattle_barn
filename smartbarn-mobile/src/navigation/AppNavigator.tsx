@@ -75,7 +75,7 @@ const MainTabs = () => {
         name="LivestockTab" 
         component={LivestockScreen} 
         options={{
-          tabBarLabel: 'Sapi',
+          tabBarLabel: 'Data Ternak',
           tabBarIcon: ({ color, size }) => <Beef color={color} size={size} />
         }}
       />

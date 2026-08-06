@@ -24,13 +24,13 @@ const DashboardLayout = () => {
   const token = localStorage.getItem('token');
 
   return (
-    <div className="relative min-h-screen md:flex bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-50 via-slate-50 to-white dark:from-slate-800 dark:via-slate-900 dark:to-slate-950 font-sans overflow-hidden transition-colors duration-300">
+    <div className="relative min-h-screen md:flex bg-slate-50 dark:bg-slate-950 font-sans overflow-hidden transition-colors duration-300">
 
       {/* Sidebar */}
       <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
 
       <main className="flex-1 min-w-0 flex flex-col h-screen overflow-hidden">
-        <header className="sticky top-0 z-30 flex items-center justify-between h-20 px-4 md:px-8 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border-b border-white/20 dark:border-slate-700/50 shadow-sm shrink-0">
+        <header className="sticky top-0 z-30 flex items-center justify-between h-20 px-4 md:px-8 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-sm shrink-0">
           <div className="flex items-center gap-4">
             <button className="md:hidden text-slate-600 dark:text-slate-300 p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition" onClick={toggleSidebar}>
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>

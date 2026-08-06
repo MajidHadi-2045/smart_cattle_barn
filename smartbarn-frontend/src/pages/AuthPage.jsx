@@ -117,37 +117,37 @@ const AuthPage = () => {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-slate-100 dark:bg-slate-900 p-4 transition-colors duration-300">
-            <div className="w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-8 border border-slate-200 dark:border-slate-700 relative overflow-hidden">
+        <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4 transition-colors duration-300">
+            <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-xl shadow-sm p-8 border border-slate-200 dark:border-slate-800 relative overflow-hidden">
 
-                {/* Dekorasi Latar Belakang Form */}
-                <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-primary-500 to-secondary-500"></div>
+                {/* Accent Top Border */}
+                <div className="absolute top-0 left-0 w-full h-1.5 bg-primary-600"></div>
 
                 {/* Header Form */}
                 <div className="text-center mb-8 mt-2">
                     <div className="inline-flex bg-white p-2 rounded-full mb-4 shadow-sm border border-slate-100">
                         <img src="/logoxl.svg" alt="Logo" className="w-12 h-12 object-contain" />
                     </div>
-                    <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Smart Cattle Barn System</h2>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Silakan masuk untuk mengakses dashboard</p>
+                    <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Smart Cattle Barn</h2>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Silakan masuk untuk mengakses sistem</p>
                 </div>
 
                 {/* Pesan Error Alert */}
                 {error && (
-                    <div className="mb-6 p-3 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm rounded">
+                    <div className="mb-6 p-3 bg-red-50 dark:bg-red-950/30 border-l-4 border-red-500 text-red-700 dark:text-red-300 text-sm rounded-md">
                         {error}
                     </div>
                 )}
 
                 {/* --- TAMPILAN LOGIN --- */}
                 <div className="animate-fade-in">
-                    <form className="space-y-5" onSubmit={handleLogin}>
+                    <form className="space-y-4" onSubmit={handleLogin}>
                         <div>
                             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Pilih Peran / Akses</label>
                             <select
                                 value={loginRole}
                                 onChange={(e) => setLoginRole(e.target.value)}
-                                className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none transition"
+                                className="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none transition"
                                 required
                             >
                                 <option value="" disabled>-- Pilih Peran --</option>
@@ -163,11 +163,10 @@ const AuthPage = () => {
                                 type="text"
                                 value={email}
                                 onChange={(e) => {
-                                    // Hilangkan spasi jika user mencoba mengetik spasi
                                     setEmail(e.target.value.replace(/\s/g, ''));
                                 }}
                                 placeholder="budi_123 atau email@domain.com"
-                                className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none transition"
+                                className="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none transition"
                                 required
                             />
                         </div>
@@ -179,7 +178,7 @@ const AuthPage = () => {
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 placeholder="••••••••"
-                                className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none transition"
+                                className="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none transition"
                                 required
                             />
                         </div>
@@ -187,9 +186,9 @@ const AuthPage = () => {
                         <button
                             type="submit"
                             disabled={isLoading}
-                            className={`w-full py-3.5 rounded-xl font-bold text-white transition-all transform ${isLoading ? 'bg-slate-400 cursor-not-allowed' : 'bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-500/30 hover:-translate-y-0.5'}`}
+                            className={`w-full py-3 rounded-lg font-semibold text-white transition-all ${isLoading ? 'bg-slate-400 cursor-not-allowed' : 'bg-primary-600 hover:bg-primary-700 shadow-sm'}`}
                         >
-                            {isLoading ? 'Memproses...' : 'Masuk Dashboard'}
+                            {isLoading ? 'Memproses...' : 'Masuk Beranda'}
                         </button>
 
                         <div className="text-center mt-4">

@@ -24,13 +24,13 @@ const FeatureCard = ({ title, desc, icon }) => {
                 transform: `perspective(1000px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg) scale3d(1.02, 1.02, 1.02)`,
                 transition: 'transform 0.15s ease-out'
             }}
-            className="min-w-[300px] md:min-w-[380px] snap-center p-10 bg-white rounded-[2.5rem] border border-slate-50 shadow-[0_15px_40px_-15px_rgba(0,0,0,0.08)] hover:shadow-[0_30px_70px_-20px_rgba(0,0,0,0.15)] transition-all duration-500 cursor-default group"
+            className="min-w-[300px] md:min-w-[380px] snap-center p-8 bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300 cursor-default group"
         >
-            <div className="w-16 h-16 bg-primary-50 rounded-2xl flex items-center justify-center text-primary-600 mb-8 group-hover:bg-primary-600 group-hover:text-white transition-all duration-500 shadow-sm">
+            <div className="w-14 h-14 bg-primary-50 rounded-lg flex items-center justify-center text-primary-600 mb-6 group-hover:bg-primary-600 group-hover:text-white transition-all duration-300 shadow-sm">
                 {icon}
             </div>
-            <h3 className="text-xl font-bold text-slate-900 mb-4">{title}</h3>
-            <p className="text-slate-500 leading-relaxed text-base">
+            <h3 className="text-xl font-bold text-slate-900 mb-3">{title}</h3>
+            <p className="text-slate-500 leading-relaxed text-sm">
                 {desc}
             </p>
         </div>
@@ -57,8 +57,8 @@ const Typewriter = ({ text }) => {
             <style>{`
                 @keyframes css-typing {
                     0%, 5% { width: 100%; border-left-color: transparent; }
-                    10% { border-left-color: #2563eb; } /* Asumsi primary-600 = biru */
-                    45%, 80% { width: 0%; border-left-color: #2563eb; }
+                    10% { border-left-color: #059669; }
+                    45%, 80% { width: 0%; border-left-color: #059669; }
                     85%, 100% { width: 100%; border-left-color: transparent; }
                 }
             `}</style>
