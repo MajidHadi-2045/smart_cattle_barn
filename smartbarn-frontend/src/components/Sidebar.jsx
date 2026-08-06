@@ -117,12 +117,12 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         <div className="flex items-center justify-between h-20 px-6 border-b border-slate-200 dark:border-slate-700 shrink-0">
           <Link to="/dashboard" className="flex items-center gap-3">
             <div className="bg-white p-1 rounded-lg">
-              <img src="/logoxl.svg" alt="Logo" className="h-8 w-8 object-contain" />
+              <img src="/logoxl.svg" alt="Logo" width="32" height="32" className="h-8 w-8 object-contain" />
             </div>
             <span className="text-xl font-bold text-slate-800 dark:text-slate-100">Smart Cattle Barn</span>
           </Link>
 
-          <button className="md:hidden text-slate-400" onClick={toggleSidebar}>
+          <button aria-label="Tutup Sidebar" className="md:hidden text-slate-400" onClick={toggleSidebar}>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
           </button>
         </div>

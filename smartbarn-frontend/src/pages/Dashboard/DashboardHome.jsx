@@ -71,6 +71,25 @@ const MultiSelectDropdown = ({ options, selectedIds, onChange, maxSelection, pla
     );
 };
 
+const CustomPerformanceTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+        return (
+            <div className="bg-slate-900/95 text-white p-3 rounded-xl border border-slate-700 shadow-2xl backdrop-blur-md text-xs max-h-60 overflow-y-auto space-y-1.5 z-50 min-w-[200px]">
+                <p className="font-bold text-amber-400 border-b border-slate-700/80 pb-1 mb-1.5">{label}</p>
+                <div className="space-y-1">
+                    {payload.map((entry, index) => (
+                        <div key={`item-${index}`} className="flex items-center justify-between gap-4">
+                            <span style={{ color: entry.color }} className="font-semibold">{entry.name}:</span>
+                            <span className="font-bold text-slate-100">{entry.value}</span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    }
+    return null;
+};
+
 const DashboardHome = ({ isPublicRoute = false }) => {
     const userRole = isPublicRoute ? null : localStorage.getItem('userRole');
     const userName = isPublicRoute ? null : localStorage.getItem('userName');
@@ -1300,8 +1319,8 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                                     {/* Y-Axis for Weight & BK */}
                                     <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 11}} />
 
-                                    <Tooltip contentStyle={{backgroundColor: '#fff', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
-                                    <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                                    <Legend verticalAlign="top" align="center" wrapperStyle={{ paddingBottom: '16px', fontSize: '11px' }} />
+                                    <Tooltip content={<CustomPerformanceTooltip />} wrapperStyle={{ zIndex: 1000 }} />
 
                                     {selectedCowsForChart.map((cowId, idx) => {
                                         const colors = ['#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#3b82f6', '#ec4899', '#6366f1', '#14b8a6', '#f97316', '#84cc16'];
@@ -1343,7 +1362,7 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                                 />
                             </div>
                         </div>
-                        <div className="overflow-x-auto relative z-10">
+                        <div className="overflow-x-auto relative z-10 pb-4">
                         <table className="w-full text-sm text-left">
                             <thead className="bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs uppercase font-bold tracking-wider">
                                 <tr>
@@ -1357,14 +1376,14 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                             </thead>
                             <tbody className="bg-white dark:bg-slate-900/50 divide-y divide-slate-100 dark:divide-slate-800/50">
                                 {performanceMultiSummaries.length > 0 ? performanceMultiSummaries.map((sum) => {
-                                    const weighInfoStr = sum.lastWeighDate ? new Date(sum.lastWeighDate).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Belum pernah';
+                                    const weighInfoStr = sum.lastWeighDate ? new Date(sum.lastWeighDate).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Bobot Awal (Belum Ditimbang Ulang)';
                                     const updateInfoStr = sum.lastUpdatedDate ? new Date(sum.lastUpdatedDate).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Baru saja';
                                     const tooltipContent = `Sapi ID: ${sum.cowId}\n⚖️ Terakhir Ditimbang: ${weighInfoStr}\n🔄 Data Diperbaharui: ${updateInfoStr}`;
 
                                     return (
                                         <tr 
                                             key={sum.cowId} 
-                                            className="group relative hover:bg-amber-50/50 dark:hover:bg-slate-800/80 transition-colors cursor-pointer"
+                                            className="group relative hover:bg-amber-50/50 dark:hover:bg-slate-800/80 transition-colors cursor-pointer hover:z-50"
                                             title={tooltipContent}
                                         >
                                             <td className="px-4 py-3 font-bold text-slate-800 dark:text-slate-200 relative">
@@ -1373,20 +1392,20 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                                                     <span className="text-[10px] text-slate-400 group-hover:text-amber-500 transition-colors" title="Arahkan kursor untuk info penimbangan & pembaruan">ℹ️</span>
                                                 </div>
 
-                                                {/* Floating Tooltip Card on Hover */}
-                                                <div className="pointer-events-none absolute left-4 bottom-full mb-2 hidden group-hover:block z-30 w-64 p-3 bg-slate-900/95 text-white text-xs rounded-xl shadow-xl backdrop-blur-md border border-slate-700 transition-all transform scale-100">
+                                                {/* Floating Tooltip Card on Hover - Positioned to the right near cursor */}
+                                                <div className="pointer-events-none absolute left-full top-0 ml-3 hidden group-hover:block z-50 w-72 p-3 bg-slate-900/95 text-white text-xs rounded-xl shadow-2xl backdrop-blur-md border border-slate-700 transition-all transform scale-100">
                                                     <div className="font-bold text-amber-400 border-b border-slate-700/80 pb-1.5 mb-2 flex items-center justify-between">
                                                         <span>Detail Status Sapi {sum.cowId}</span>
                                                         <span className="text-[9px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-normal">Hover Info</span>
                                                     </div>
                                                     <div className="space-y-1.5">
-                                                        <div className="flex justify-between items-center">
-                                                            <span className="text-slate-400">⚖️ Terakhir Ditimbang:</span>
-                                                            <span className="font-semibold text-emerald-300 ml-2">{weighInfoStr}</span>
+                                                        <div className="flex justify-between items-center gap-2">
+                                                            <span className="text-slate-400 shrink-0">⚖️ Terakhir Ditimbang:</span>
+                                                            <span className="font-semibold text-emerald-300 text-right">{weighInfoStr}</span>
                                                         </div>
-                                                        <div className="flex justify-between items-center">
-                                                            <span className="text-slate-400">🔄 Data Diperbaharui:</span>
-                                                            <span className="font-semibold text-sky-300 ml-2">{updateInfoStr}</span>
+                                                        <div className="flex justify-between items-center gap-2">
+                                                            <span className="text-slate-400 shrink-0">🔄 Data Diperbaharui:</span>
+                                                            <span className="font-semibold text-sky-300 text-right">{updateInfoStr}</span>
                                                         </div>
                                                     </div>
                                                 </div>

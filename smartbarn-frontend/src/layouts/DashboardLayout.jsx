@@ -32,7 +32,7 @@ const DashboardLayout = () => {
       <main className="flex-1 min-w-0 flex flex-col h-screen overflow-hidden">
         <header className="sticky top-0 z-30 flex items-center justify-between h-20 px-4 md:px-8 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-sm shrink-0">
           <div className="flex items-center gap-4">
-            <button className="md:hidden text-slate-600 dark:text-slate-300 p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition" onClick={toggleSidebar}>
+            <button aria-label="Buka Menu Navigasi" className="md:hidden text-slate-600 dark:text-slate-300 p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition" onClick={toggleSidebar}>
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
             </button>
             <Link to="/">
@@ -52,6 +52,7 @@ const DashboardLayout = () => {
 
             {/* Dark Mode Toggle Toggle */}
             <button 
+              aria-label={isDarkMode ? 'Ganti ke Mode Terang' : 'Ganti ke Mode Gelap'}
               onClick={() => setIsDarkMode(!isDarkMode)}
               className={`p-2 rounded-lg transition-all duration-300 ${isDarkMode ? 'bg-slate-700 text-yellow-400' : 'bg-slate-100 text-slate-500 hover:text-primary-600 shadow-inner'}`}
               title={isDarkMode ? 'Ganti ke Mode Terang' : 'Ganti ke Mode Gelap'}

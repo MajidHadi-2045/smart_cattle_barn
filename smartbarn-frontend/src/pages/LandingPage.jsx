@@ -146,14 +146,14 @@ const LandingPage = () => {
                             </h1>
                             <p className="text-lg text-slate-500 mb-10 max-w-xl mx-auto lg:mx-0 leading-relaxed font-medium">
                                 Efisiensi tanpa batas dengan integrasi IoT. Pantau kesehatan, pakan, dan lingkungan secara terintegrasi. <br/>
-                                <span className="text-primary-600 font-bold mt-2 inline-block">✨ Kini hadir dengan Dashboard Publik transparan yang dapat diakses oleh siapa saja!</span>
+                                <span className="text-primary-600 font-bold mt-2 inline-block">Kini hadir dengan Beranda Publik transparan yang dapat diakses oleh siapa saja!</span>
                             </p>
                             <div className="flex flex-col sm:flex-row gap-5 justify-center lg:justify-start">
-                                <Link to="/dashboard" className="px-10 py-5 bg-slate-900 text-white rounded-[1.5rem] font-bold hover:bg-primary-600 transition shadow-xl hover:shadow-primary-500/40 flex items-center justify-center gap-3 group">
+                                <Link to="/dashboard" className="px-8 py-4 bg-primary-600 text-white rounded-xl font-bold hover:bg-primary-700 transition shadow-sm flex items-center justify-center gap-3 group">
                                     Mulai Sekarang
                                     <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                                 </Link>
-                                <a href="#mobile-app" className="px-10 py-5 bg-white text-slate-700 border border-slate-100 rounded-[1.5rem] font-bold hover:bg-slate-50 transition shadow-sm flex items-center justify-center gap-3">
+                                <a href="#mobile-app" className="px-8 py-4 bg-white text-slate-700 border border-slate-200 rounded-xl font-bold hover:bg-slate-50 transition shadow-sm flex items-center justify-center gap-3">
                                     Unduh Aplikasi
                                 </a>
                             </div>
