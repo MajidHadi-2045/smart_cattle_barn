@@ -19,20 +19,28 @@ const HistoryPage = React.lazy(() => import('./pages/Dashboard/HistoryPage'));
 
 // --- SKELETON PLACEHOLDER UNTUK MENCEGAH LAYOUT SHIFT (CLS) ---
 const PageSkeleton = () => (
-  <div className="space-y-6 p-4 md:p-8 animate-pulse min-h-screen bg-slate-50 dark:bg-slate-950">
-    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-      <div>
-        <div className="h-8 w-48 bg-slate-200 dark:bg-slate-800 rounded-lg mb-2"></div>
-        <div className="h-4 w-64 bg-slate-200 dark:bg-slate-800 rounded"></div>
+  <div className="flex flex-col min-h-screen bg-slate-50 dark:bg-slate-950 font-sans">
+    {/* Header Skeleton (Presisi h-20 untuk mencegah shift saat layout dimuat) */}
+    <div className="flex items-center justify-between h-20 px-4 md:px-8 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shrink-0">
+      <div className="h-8 w-48 bg-slate-200 dark:bg-slate-800 rounded-lg"></div>
+      <div className="h-9 w-24 bg-slate-200 dark:bg-slate-800 rounded-lg"></div>
+    </div>
+    {/* Body Skeleton */}
+    <div className="flex-1 p-4 md:p-8 space-y-6 animate-pulse">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <div className="h-8 w-48 bg-slate-200 dark:bg-slate-800 rounded-lg mb-2"></div>
+          <div className="h-4 w-64 bg-slate-200 dark:bg-slate-800 rounded"></div>
+        </div>
+        <div className="h-10 w-40 bg-slate-200 dark:bg-slate-800 rounded-lg"></div>
       </div>
-      <div className="h-10 w-40 bg-slate-200 dark:bg-slate-800 rounded-lg"></div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {[1, 2, 3, 4].map(i => (
+          <div key={i} className="h-28 bg-slate-200 dark:bg-slate-800 rounded-xl"></div>
+        ))}
+      </div>
+      <div className="h-80 bg-slate-200 dark:bg-slate-800 rounded-xl"></div>
     </div>
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 min-h-[120px]">
-      {[1, 2, 3, 4].map(i => (
-        <div key={i} className="h-28 bg-slate-200 dark:bg-slate-800 rounded-xl"></div>
-      ))}
-    </div>
-    <div className="h-64 bg-slate-200 dark:bg-slate-800 rounded-xl"></div>
   </div>
 );
 
