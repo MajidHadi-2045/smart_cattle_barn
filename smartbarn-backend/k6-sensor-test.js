@@ -16,7 +16,7 @@ export const options = {
 };
 
 export default function () {
-  const cattleIds = ['C-301', 'C-302', 'C-303', 'C-304', 'C-305'];
+  const cattleIds = ['C-302', 'C-304', 'C-500', 'C-576', 'C-904'];
   const cattleId = cattleIds[Math.floor(Math.random() * cattleIds.length)];
 
   const payload = JSON.stringify({

@@ -54,7 +54,7 @@ export default function (data) {
     // SKENARIO 1: Simulasi Kalung Sensor Sapi (70% Trafik)
     // Menghantam endpoint Ingestion Telemetri (Redis & BullMQ Queue)
     // ========================================================
-    const cattleIds = ['C-301', 'C-302', 'C-303', 'C-304', 'C-305'];
+    const cattleIds = ['C-302', 'C-304', 'C-500', 'C-576', 'C-904'];
     const randomCattle = cattleIds[Math.floor(Math.random() * cattleIds.length)];
 
     const payload = JSON.stringify({
