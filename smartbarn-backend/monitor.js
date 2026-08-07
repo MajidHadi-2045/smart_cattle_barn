@@ -2,16 +2,16 @@ const { execSync } = require('child_process');
 
 function getMetrics() {
   try {
-    let cpu = '0';
-    let memMb = '0';
+    let cpu = '0.00';
+    let memMb = '0.00';
 
     try {
       const pm2Output = execSync('npx pm2 jlist', { encoding: 'utf-8' });
       const pm2Data = JSON.parse(pm2Output);
       const app = pm2Data.find(a => a.name.includes('smartbarn') || a.name.includes('4000')) || pm2Data[0];
       if (app && app.monit) {
-        cpu = app.monit.cpu;
-        memMb = (app.monit.memory / 1024 / 1024).toFixed(1);
+        cpu = (Number(app.monit.cpu) || 0).toFixed(2);
+        memMb = ((Number(app.monit.memory) || 0) / 1024 / 1024).toFixed(2);
       }
     } catch (e) {
       // Fallback jika pm2 jlist tidak ada
