@@ -37,31 +37,42 @@ const FeatureCard = ({ title, desc, icon }) => {
     );
 };
 
-const Typewriter = ({ text }) => {
-    return (
-        <span className="relative inline-flex">
-            {/* Teks dirender full secara statis agar Lighthouse/Google membacanya seketika untuk LCP */}
-            <span className="text-primary-600 font-black relative z-0">
-                {text}
-            </span>
-            
-            {/* Layer animasi CSS murni yang menutupi teks, lalu menyusut ke kanan (efek mengetik) */}
-            <span 
-                className="absolute top-0 right-0 bottom-0 bg-white border-l-4 border-primary-600 z-10 box-content"
-                style={{
-                    width: '100%',
-                    animation: `css-typing 10s infinite steps(${text.length})`
-                }}
-            ></span>
+const Typewriter = ({ text = "Jauh Lebih Cerdas.", phrases }) => {
+    const defaultPhrases = phrases || [text, "Jauh Lebih Efisien.", "Hasil Maksimal."];
+    const [currentPhraseIndex, setCurrentPhraseIndex] = useState(0);
+    const [displayedText, setDisplayedText] = useState("");
+    const [isDeleting, setIsDeleting] = useState(false);
 
-            <style>{`
-                @keyframes css-typing {
-                    0%, 5% { width: 100%; border-left-color: transparent; }
-                    10% { border-left-color: #059669; }
-                    45%, 80% { width: 0%; border-left-color: #059669; }
-                    85%, 100% { width: 100%; border-left-color: transparent; }
-                }
-            `}</style>
+    useEffect(() => {
+        const targetText = defaultPhrases[currentPhraseIndex] || text;
+
+        if (!isDeleting && displayedText === targetText) {
+            const timeout = setTimeout(() => setIsDeleting(true), 2500);
+            return () => clearTimeout(timeout);
+        }
+
+        if (isDeleting && displayedText === "") {
+            setIsDeleting(false);
+            setCurrentPhraseIndex((prev) => (prev + 1) % defaultPhrases.length);
+            return;
+        }
+
+        const speed = isDeleting ? 40 : 85;
+        const timer = setTimeout(() => {
+            setDisplayedText(
+                isDeleting
+                    ? targetText.substring(0, displayedText.length - 1)
+                    : targetText.substring(0, displayedText.length + 1)
+            );
+        }, speed);
+
+        return () => clearTimeout(timer);
+    }, [displayedText, isDeleting, currentPhraseIndex, defaultPhrases, text]);
+
+    return (
+        <span className="text-primary-600 font-black inline-flex items-center">
+            <span>{displayedText}</span>
+            <span className="w-[3px] h-[0.85em] bg-primary-600 ml-1 inline-block animate-cursor-blink rounded-sm"></span>
         </span>
     );
 };

@@ -70,3 +70,12 @@ input[type="number"]::-webkit-outer-spin-button {
 input[type="number"] {
     -moz-appearance: textfield;
 }
+
+/* --- Typewriter Cursor Blink --- */
+@keyframes cursorBlink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
+.animate-cursor-blink {
+    animation: cursorBlink 0.8s infinite;
+}
