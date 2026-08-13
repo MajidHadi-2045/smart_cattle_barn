@@ -12,14 +12,24 @@ export class ZoneService {
     });
   }
 
-  async create(data: { name: string; description?: string }) {
+  async create(data: { name: string; description?: string; location?: string }) {
+    const descriptionText = data.description || data.location || undefined;
     return this.prisma.zone.create({
-      data,
+      data: {
+        name: data.name,
+        description: descriptionText,
+      },
     });
   }
 
   // --- SECTION MANAGEMENT ---
-  async addSection(zoneId: number, name: string) {
+  async addSection(zoneId: number, name: string, capacity?: any) {
+    if (capacity !== undefined && capacity !== null && capacity !== '') {
+      const parsedCapacity = Number(capacity);
+      if (isNaN(parsedCapacity)) {
+        throw new (require('@nestjs/common').BadRequestException)('Kapasitas harus berupa angka');
+      }
+    }
     return this.prisma.section.create({
       data: { name, zoneId },
     });

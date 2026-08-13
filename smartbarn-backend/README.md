@@ -68,6 +68,7 @@ $ pm2 status
 $ pm2 logs smartbarn-api-4000
 #Batasi RAM
 $ pm2 start smartbarn-api-4000 --max-memory-restart 200M
+$ pm2 restart smartbarn-api-4000 --max-memory-restart 200M
 
 ## FRONTEND (Vite / Website UI)
 #Masuk ke folder Frontend

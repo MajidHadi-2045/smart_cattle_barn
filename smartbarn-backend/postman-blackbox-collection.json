@@ -169,7 +169,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Staf Testing Bbox\",\n  \"username\": \"staf_bbox_6912\",\n  \"email\": \"stafbaru_9344@smartbarn.com\",\n  \"phone\": \"081225652588\",\n  \"password\": \"password123\",\n  \"role\": \"STAFF\"\n}"
+              "raw": "{\n  \"name\": \"Staf Testing Bbox\",\n  \"username\": \"staf_bbox_5530\",\n  \"email\": \"stafbaru_5137@smartbarn.com\",\n  \"phone\": \"081215632535\",\n  \"password\": \"password123\",\n  \"role\": \"STAFF\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/auth/register",
@@ -714,7 +714,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{admin_token}}",
+                  "value": "{{staff_token}}",
                   "type": "string"
                 }
               ]
@@ -728,7 +728,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Kandang Alpha Blackbox\",\n  \"location\": \"Blok A\"\n}"
+              "raw": "{\n  \"name\": \"Kandang Alpha Blackbox\",\n  \"description\": \"Blok A\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/zones",
@@ -762,7 +762,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{admin_token}}",
+                  "value": "{{staff_token}}",
                   "type": "string"
                 }
               ]
@@ -812,7 +812,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{admin_token}}",
+                  "value": "{{staff_token}}",
                   "type": "string"
                 }
               ]
