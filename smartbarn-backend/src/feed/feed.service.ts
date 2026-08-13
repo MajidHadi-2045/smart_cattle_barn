@@ -234,7 +234,8 @@ export class FeedService {
   }
 
   async createSchedule(data: any, author: string = 'Admin') {
-    const zoneId = parseInt(data.zoneId || data.location);
+    const rawZoneId = data.zoneId !== undefined && data.zoneId !== null ? data.zoneId : (data.location || data.targetSectionId || data.sectionId || 1);
+    const zoneId = parseInt(rawZoneId);
     
     if (isNaN(zoneId)) {
       throw new BadRequestException('ID Kandang tidak valid atau belum dipilih');
@@ -336,10 +337,14 @@ export class FeedService {
     const silo = await this.prisma.silo.findUnique({ where: { id: siloId } });
     if (!silo) throw new BadRequestException('Silo tidak ditemukan');
 
-    const type = data.type; // "MASUK" atau "KELUAR"
-    const weightKg = parseFloat(data.weightKg);
+    let type = String(data.type || 'MASUK').toUpperCase();
+    if (type === 'IN' || type === 'ADD' || type === 'RESTOCK') type = 'MASUK';
+    if (type === 'OUT' || type === 'SUBTRACT') type = 'KELUAR';
+
+    const rawWeight = data.weightKg !== undefined && data.weightKg !== null ? data.weightKg : data.amount;
+    const weightKg = parseFloat(rawWeight);
     const expiryDate = data.expiryDate ? new Date(data.expiryDate) : null;
-    const description = data.description;
+    const description = data.description || data.notes || undefined;
 
     if (isNaN(weightKg) || weightKg <= 0) {
       throw new BadRequestException('Jumlah pakan tidak valid');

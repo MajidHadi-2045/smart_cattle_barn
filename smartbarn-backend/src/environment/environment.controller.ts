@@ -23,23 +23,33 @@ export class EnvironmentController {
   // ==========================================
   // A. ENDPOINT PENERIMA SENSOR DARI ESP32 / SIMULATOR
   // ==========================================
-  @Post('sensor')
+  @Post(['sensor', 'data'])
   async receiveData(@Body() data: any) {
-    if (data.type === 'zone_sensor' || data.type === 'section_sensor') {
-      const zId = data.zoneId || data.sectionId;
+    const type = data.type || 'zone_sensor';
+    const zId = data.zoneId || data.sectionId || 1;
+
+    if (type === 'zone_sensor' || type === 'section_sensor') {
       try {
         await this.redis.set(`live:zone:${zId}:environment`, JSON.stringify({ ...data, zoneId: zId, type: 'zone_sensor' }), 'EX', 70);
       } catch (err) {}
-      this.gateway.server.emit('websocket:environment', { ...data, zoneId: zId, type: 'zone_sensor' });
-      await this.environmentService.saveZoneSensorData(zId, data);
-    } else if (data.type === 'wind_sensor') {
+      if (this.gateway?.server) {
+        this.gateway.server.emit('websocket:environment', { ...data, zoneId: zId, type: 'zone_sensor' });
+      }
       try {
-        await this.redis.set(`live:zone:${data.zoneId}:windspeed`, JSON.stringify(data), 'EX', 70);
+        await this.environmentService.saveZoneSensorData(zId, data);
       } catch (err) {}
-      this.gateway.server.emit('websocket:windspeed', data);
-      await this.environmentService.saveWindData(data.zoneId, data.windspeed);
+    } else if (type === 'wind_sensor') {
+      try {
+        await this.redis.set(`live:zone:${zId}:windspeed`, JSON.stringify(data), 'EX', 70);
+      } catch (err) {}
+      if (this.gateway?.server) {
+        this.gateway.server.emit('websocket:windspeed', data);
+      }
+      try {
+        await this.environmentService.saveWindData(zId, data.windspeed);
+      } catch (err) {}
     }
-    return { status: 'success' };
+    return { status: 'success', message: 'Data telemetri berhasil diterima' };
   }
 
   // ==========================================
