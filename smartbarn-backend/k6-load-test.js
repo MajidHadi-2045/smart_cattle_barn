@@ -52,7 +52,7 @@ export default function (data) {
   if (isSensor) {
     // ========================================================
     // SKENARIO 1: Simulasi Kalung Sensor Sapi (70% Trafik)
-    // Menghantam endpoint Ingestion Telemetri (Redis & BullMQ Queue)
+    // endpoint Ingestion Telemetri (Redis & BullMQ Queue)
     // ========================================================
     const cattleIds = ['C-302', 'C-304', 'C-500', 'C-576', 'C-904'];
     const randomCattle = cattleIds[Math.floor(Math.random() * cattleIds.length)];
@@ -73,7 +73,7 @@ export default function (data) {
   } else {
     // ========================================================
     // SKENARIO 2: Simulasi Pengguna Web Dashboard (30% Trafik)
-    // Menghantam endpoint pemantauan utama
+    // endpoint pemantauan utama
     // ========================================================
     const resSummary = http.get(`${BASE_URL}/dashboard/summary`, { headers: authHeaders });
     check(resSummary, {

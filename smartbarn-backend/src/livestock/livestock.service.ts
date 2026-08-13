@@ -184,13 +184,18 @@ export class LivestockService {
    * 3. TAMBAH SAPI BARU
    */
   async create(data: any, author: string = 'Admin') {
+    const weight = parseFloat(data.initialWeight !== undefined && data.initialWeight !== null ? data.initialWeight : data.weight || 0);
+    if (isNaN(weight) || weight <= 0) {
+      throw new BadRequestException('initialWeight must be a positive number');
+    }
+
     const newLivestock = await this.prisma.livestock.create({
       data: {
         cattleId: data.rfid || data.cattleId,
         breed: data.breed,
         gender: data.gender,
         birthDate: data.birthDate ? new Date(data.birthDate) : null,
-        initialWeight: parseFloat(data.initialWeight || data.weight || 0),
+        initialWeight: weight,
         sectionId: parseInt(data.sectionId),
         status: data.status || 'SEHAT',
       },
@@ -294,7 +299,11 @@ export class LivestockService {
     return { success: true, count: updated.count };
   }
 
-  async update(idOrCattleId: string | number, data: any, author: string = 'Admin') {
+  async update(idOrCattleId: string | number, data: any, author: string = 'Admin', userRole?: string) {
+    if (data.status && userRole && userRole.toUpperCase() !== 'VETERINER') {
+      throw new (require('@nestjs/common').ForbiddenException)('Hanya Dokter Hewan (VETERINER) yang berhak memperbarui status kesehatan ternak.');
+    }
+
     const isNumeric = !isNaN(Number(idOrCattleId)) && String(idOrCattleId).trim() !== '';
     const whereClause = isNumeric
       ? { id: Number(idOrCattleId) }
@@ -307,7 +316,7 @@ export class LivestockService {
         breed: data.breed,
         gender: data.gender,
         initialWeight: data.initialWeight ? parseFloat(data.initialWeight) : undefined,
-        status: data.status,
+        ...(userRole?.toUpperCase() === 'VETERINER' || !data.status ? { status: data.status } : {}),
         sectionId: data.sectionId ? parseInt(data.sectionId) : undefined,
         currentWeight: data.currentWeight
           ? parseFloat(data.currentWeight)

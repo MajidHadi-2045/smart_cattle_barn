@@ -1,5 +1,5 @@
 // src/livestock/livestock.controller.ts
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, Query, BadRequestException } from '@nestjs/common';
 import { AuthGuard } from '../auth/auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -80,6 +80,9 @@ export class LivestockController {
   @UseGuards(AuthGuard, RolesGuard)
   @Roles('STAFF')
   create(@Body() data: CreateLivestockDto, @Req() req: any) {
+    if (data.initialWeight <= 0) {
+      throw new BadRequestException('Berat awal harus berupa angka positif');
+    }
     if (data.birthDate) {
       data.birthDate = new Date(data.birthDate);
     }
@@ -117,9 +120,12 @@ export class LivestockController {
   @UseGuards(AuthGuard, RolesGuard)
   @Roles('STAFF')
   recordWaste(@Body() data: { cattleIds: string[], fecesKg: number, urineL: number }, @Req() req: any) {
+    if (data.fecesKg < 0 || data.urineL < 0) {
+      throw new BadRequestException('Berat limbah tidak valid');
+    }
     const author = req.user?.name ? `${req.user.name} (${req.user.role})` : req.user?.email || 'Admin';
     if (!data.cattleIds || !Array.isArray(data.cattleIds)) {
-      throw new Error('cattleIds harus berupa array string');
+      throw new BadRequestException('cattleIds harus berupa array string');
     }
     return this.livestockService.recordWaste(data.cattleIds, data.fecesKg, data.urineL, author);
   }
@@ -128,6 +134,9 @@ export class LivestockController {
   @UseGuards(AuthGuard, RolesGuard)
   @Roles('STAFF')
   recordZoneWaste(@Body() data: { zoneId: number, fecesKg: number, urineL: number }, @Req() req: any) {
+    if (data.fecesKg < 0 || data.urineL < 0) {
+      throw new BadRequestException('Berat limbah tidak valid');
+    }
     const author = req.user?.name ? `${req.user.name} (${req.user.role})` : req.user?.email || 'Admin';
     return this.livestockService.recordZoneWaste(+data.zoneId, data.fecesKg, data.urineL, author);
   }
@@ -150,14 +159,20 @@ export class LivestockController {
   @UseGuards(AuthGuard, RolesGuard)
   @Roles('STAFF')
   recordWeight(@Body() data: { cattleId: string, weight: number, date?: string }, @Req() req: any) {
+    if (data.weight <= 0) {
+      throw new BadRequestException('Berat badan harus berupa angka positif');
+    }
     const author = req.user?.name ? `${req.user.name} (${req.user.role})` : req.user?.email || 'Admin';
     return this.livestockService.recordWeight(data.cattleId, data.weight, author, data.date);
   }
 
   @Post('feed')
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles('STAFF')
+  @Roles('STAFF', 'VETERINER')
   recordFeed(@Body() data: { cattleId: string, feedType: string, weightKg: number, bkPercent: number, siloId?: number }, @Req() req: any) {
+    if (data.weightKg <= 0) {
+      throw new BadRequestException('Jumlah pakan harus lebih dari 0');
+    }
     const author = req.user?.name ? `${req.user.name} (${req.user.role})` : req.user?.email || 'Admin';
     return this.livestockService.recordFeed(data.cattleId, data.feedType, data.weightKg, data.bkPercent, author, data.siloId);
   }
@@ -273,10 +288,10 @@ export class LivestockController {
 
   @Patch(':id')
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles('STAFF')
+  @Roles('STAFF', 'VETERINER')
   update(@Param('id') id: string, @Body() data: any, @Req() req: any) {
     const author = req.user?.name ? `${req.user.name} (${req.user.role})` : req.user?.email || 'Admin';
-    return this.livestockService.update(id, data, author);
+    return this.livestockService.update(id, data, author, req.user?.role);
   }
 
   @Delete(':cattleId')

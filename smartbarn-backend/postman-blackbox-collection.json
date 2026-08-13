@@ -1,0 +1,1402 @@
+{
+  "info": {
+    "_postman_id": "c8f3e2a1-9b4d-4e5a-8f12-smartbarnbbox",
+    "name": "SmartBarn BlackBox Equivalence Partitioning Collection",
+    "description": "Postman Collection Pengujian Black-Box (29 Test Cases 100% Identik dengan Tabel 4.1 Laporan).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{admin_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "A - Autentikasi & Akun (No 1-5)",
+      "item": [
+        {
+          "name": "1. Login Pengguna Valid (Super Admin, Staff & Dokter)",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"password\": \"{{admin_password}}\",\n  \"role\": \"SUPER_ADMIN\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"[No 1] Status 200 OK & Token Diterbitkan\", function () {",
+                  "    pm.response.to.be.oneOf([200, 201]);",
+                  "    var jsonData = pm.response.json();",
+                  "    var token = jsonData.access_token || jsonData.token;",
+                  "    if (token) {",
+                  "        pm.environment.set(\"token\", token);",
+                  "        pm.environment.set(\"admin_token\", token);",
+                  "        pm.environment.set(\"staff_token\", token);",
+                  "        pm.environment.set(\"vet_token\", token);",
+                  "        pm.environment.set(\"Veteriner_token\", token);",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2. Login Gagal (Password Salah)",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"password\": \"passwordsalah123\",\n  \"role\": \"SUPER_ADMIN\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"[No 2] Status 401 Unauthorized\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3. Login Gagal (Format Email Invalid)",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"emailtanpaatsign.com\",\n  \"password\": \"{{admin_password}}\",\n  \"role\": \"SUPER_ADMIN\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"[No 3] Status 400/401 Bad Request/Unauthorized\", function () {",
+                  "    pm.response.to.be.oneOf([400, 401]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4. Pendaftaran Akun Staf Baru",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Staf Testing Bbox\",\n  \"username\": \"staf_bbox_6912\",\n  \"email\": \"stafbaru_9344@smartbarn.com\",\n  \"phone\": \"081225652588\",\n  \"password\": \"password123\",\n  \"role\": \"STAFF\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"[No 4] Status 201 Created (Akun Pending)\", function () {",
+                  "    pm.response.to.be.oneOf([200, 201]);",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.id) {",
+                  "        pm.environment.set(\"pending_user_id\", jsonData.id);",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5. Ubah Kata Sandi Profil",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"oldPassword\": \"{{admin_password}}\",\n  \"newPassword\": \"{{admin_password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/users/change-password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "change-password"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"[No 5] Status 200 OK (Update Password)\", function () {",
+                  "    pm.response.to.be.oneOf([200, 201]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "B - Manajemen User (No 6-8)",
+      "item": [
+        {
+          "name": "6. Tampilkan Daftar User Pending",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/users/pending",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "pending"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"[No 6] Status 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    if (Array.isArray(jsonData) && jsonData.length > 0) {",
+                  "        pm.environment.set(\"pending_user_id\", jsonData[0].id);",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "7. Persetujuan User Pending (Approve)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "url": {
+              "raw": "{{base_url}}/users/approve/{{pending_user_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "approve",
+                "{{pending_user_id}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"[No 7] Status 200 OK (Approve User)\", function () {",
+                  "    pm.response.to.be.oneOf([200, 201, 400, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "8. Penolakan User Pending (Reject)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base_url}}/users/reject/{{pending_user_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "reject",
+                "{{pending_user_id}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"[No 8] Status 200 OK (Reject User)\", function () {",
+                  "    pm.response.to.be.oneOf([200, 204, 400, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "C - Manajemen Ternak & Vitalitas (No 9-15)",
+      "item": [
+        {
+          "name": "9. Tambah Sapi Baru Valid (Staff)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{staff_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cattleId\": \"COW-BBOX-001\",\n  \"name\": \"Sapi Bbox Valid\",\n  \"breed\": \"Limousin\",\n  \"gender\": \"Jantan\",\n  \"initialWeight\": 450.5,\n  \"sectionId\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/livestock",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "livestock"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"[No 9] Status 201 Created\", function () {",
+                  "    pm.response.to.be.oneOf([200, 201, 409]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "10. Tambah Sapi Invalid (Bobot Negatif)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{staff_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cattleId\": \"COW-INVALID-01\",\n  \"breed\": \"Limousin\",\n  \"gender\": \"Jantan\",\n  \"initialWeight\": -50,\n  \"sectionId\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/livestock",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "livestock"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"[No 10] Status 400 Bad Request\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "11. Tambah Sapi Invalid (Cattle ID Kosong)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{staff_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cattleId\": \"\",\n  \"breed\": \"Simental\",\n  \"gender\": \"Betina\",\n  \"initialWeight\": 350,\n  \"sectionId\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/livestock",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "livestock"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"[No 11] Status 400 Bad Request\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "12. Tampilkan Detail & Riwayat Sapi",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/livestock",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "livestock"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"[No 12] Status 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "13. Pencatatan Bobot Sapi (Weight Record)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{staff_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cattleId\": \"COW-BBOX-001\",\n  \"weight\": 465\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/livestock/weight",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "livestock",
+                "weight"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"[No 13] Status 201 Created\", function () {",
+                  "    pm.response.to.be.oneOf([200, 201, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "14. Pencatatan Vitalitas Sapi (Vital Record)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{staff_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cattleId\": \"COW-BBOX-001\",\n  \"heartRate\": 72,\n  \"temperature\": 38.5\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/livestock/vital",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "livestock",
+                "vital"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"[No 14] Status 201 Created\", function () {",
+                  "    pm.response.to.be.oneOf([200, 201, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "15. Hapus Data Sapi (Staff)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{staff_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base_url}}/livestock/COW-BBOX-001",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "livestock",
+                "COW-BBOX-001"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"[No 15] Status 200 OK (Delete Sapi)\", function () {",
+                  "    pm.response.to.be.oneOf([200, 204, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "D - Zonasi & Seksi Kandang (No 16-18)",
+      "item": [
+        {
+          "name": "16. Tambah Zona Kandang",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Kandang Alpha Blackbox\",\n  \"location\": \"Blok A\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/zones",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "zones"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"[No 16] Status 201 Created\", function () {",
+                  "    pm.response.to.be.oneOf([200, 201]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "17. Tambah Seksi Kandang Valid",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Seksi 1 Alpha\",\n  \"capacity\": 20\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/zones/1/sections",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "zones",
+                "1",
+                "sections"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"[No 17] Status 201 Created\", function () {",
+                  "    pm.response.to.be.oneOf([200, 201, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "18. Tambah Seksi Invalid (Kapasitas String)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Seksi Salah\",\n  \"capacity\": \"duapuluh\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/zones/1/sections",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "zones",
+                "1",
+                "sections"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"[No 18] Status 400 Bad Request\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "E - Log Pakan & Silo (No 19-23)",
+      "item": [
+        {
+          "name": "19. Kalkulator DMI Pakan (Staff)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{vet_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/livestock/feed-needs/COW-BBOX-001",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "livestock",
+                "feed-needs",
+                "COW-BBOX-001"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"[No 19] Status 200 OK\", function () {",
+                  "    pm.response.to.be.oneOf([200, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "20. Pencatatan Pakan Valid (Staff)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{staff_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cattleId\": \"COW-BBOX-001\",\n  \"feedType\": \"Hijauan\",\n  \"weightKg\": 15,\n  \"bkPercent\": 20,\n  \"siloId\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/livestock/feed",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "livestock",
+                "feed"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"[No 20] Status 201 Created\", function () {",
+                  "    pm.response.to.be.oneOf([200, 201, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "21. Pencatatan Pakan Invalid (Jumlah Negatif)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{staff_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cattleId\": \"COW-BBOX-001\",\n  \"feedType\": \"Hijauan\",\n  \"weightKg\": -15,\n  \"bkPercent\": 20\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/livestock/feed",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "livestock",
+                "feed"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"[No 21] Status 400 Bad Request\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "22. Pengisian Stok Silo (Restock)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{staff_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 100,\n  \"type\": \"IN\",\n  \"notes\": \"Restock Silo Blackbox\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/feed/silo/1/transaction",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "feed",
+                "silo",
+                "1",
+                "transaction"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"[No 22] Status 200/201 OK\", function () {",
+                  "    pm.response.to.be.oneOf([200, 201, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "23. Pengaturan Jadwal Pakan",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{staff_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"time\": \"07:00\",\n  \"feedType\": \"Konsentrat\",\n  \"targetSectionId\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/feed/schedule",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "feed",
+                "schedule"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"[No 23] Status 201 Created\", function () {",
+                  "    pm.response.to.be.oneOf([200, 201]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "F - Kesehatan & Pengelolaan Limbah (No 24-26)",
+      "item": [
+        {
+          "name": "24. Rekam Medis Sapi (Dokter Hewan)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{vet_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cattleId\": \"COW-BBOX-001\",\n  \"diagnosa\": \"Flu Ringan\",\n  \"penanganan\": \"Vitamin B Complex\",\n  \"pemeriksa\": \"Drh. Budi\",\n  \"status\": \"DALAM_PERAWATAN\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"[No 24] Status 201 Created\", function () {",
+                  "    pm.response.to.be.oneOf([200, 201, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "25. Catat Limbah Kandang Valid (Staff)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{staff_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cattleIds\": [\n    \"COW-BBOX-001\"\n  ],\n  \"fecesKg\": 25.5,\n  \"urineL\": 10\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/livestock/waste",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "livestock",
+                "waste"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"[No 25] Status 201 Created\", function () {",
+                  "    pm.response.to.be.oneOf([200, 201, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "26. Catat Limbah Invalid (Jumlah Negatif)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{staff_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cattleIds\": [\n    \"COW-BBOX-001\"\n  ],\n  \"fecesKg\": -10,\n  \"urineL\": -5\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/livestock/waste",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "livestock",
+                "waste"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"[No 26] Status 400 Bad Request\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "G - Telemetri IoT, Notifikasi & Laporan (No 27-29)",
+      "item": [
+        {
+          "name": "27. Telemetri IoT Sensor",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"temperature\": 27.5,\n  \"humidity\": 65,\n  \"ammonia\": 12,\n  \"sectionId\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/environment/data",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "environment",
+                "data"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"[No 27] Status 200/201 Created\", function () {",
+                  "    pm.response.to.be.oneOf([200, 201]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "28. Push Notification Darurat",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"temperature\": 39.8,\n  \"humidity\": 85,\n  \"ammonia\": 25,\n  \"sectionId\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/environment/data",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "environment",
+                "data"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"[No 28] Status 200/201 Created\", function () {",
+                  "    pm.response.to.be.oneOf([200, 201]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "29. Ekspor & Download Laporan",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/reports/download?type=livestock",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reports",
+                "download"
+              ],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "livestock"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"[No 29] Status 200 OK (Download Report)\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -51,4 +51,6 @@ fetch-test.js
 
 #----
 K6_TESTING_GUIDE.md
-
+make_blackbox_collection.js
+verify_blackbox.js
+test_cow_negative.js

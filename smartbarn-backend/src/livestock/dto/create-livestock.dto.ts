@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsNumber, IsOptional } from 'class-validator';
+import { IsString, IsNotEmpty, IsNumber, IsOptional, Min } from 'class-validator';
 
 export class CreateLivestockDto {
   @IsString()
@@ -18,6 +18,7 @@ export class CreateLivestockDto {
   gender: string;
 
   @IsNumber()
+  @Min(0, { message: 'initialWeight must be a positive number' })
   @IsNotEmpty()
   initialWeight: number;
 
