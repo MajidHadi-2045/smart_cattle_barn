@@ -54,3 +54,7 @@ K6_TESTING_GUIDE.md
 make_blackbox_collection.js
 verify_blackbox.js
 test_cow_negative.js
+query_cow_dmi.js
+clean_negative_records.js
+clean_database_remote.js
+clearSchedules.js

@@ -44,6 +44,11 @@ const Livestock = () => {
     // Modal States
     const [showCowModal, setShowCowModal] = useState(false);
     const [cowFormData, setCowFormData] = useState({ id: null, cattleId: '', breed: '', gender: 'Betina', birthDate: '', initialWeight: '', sectionId: '', status: 'SEHAT' });
+    const [deleteTargetCow, setDeleteTargetCow] = useState(null);
+    const [isDeletingCow, setIsDeletingCow] = useState(false);
+    const [deleteTargetZone, setDeleteTargetZone] = useState(null);
+    const [deleteTargetSection, setDeleteTargetSection] = useState(null);
+    const [isDeletingZoneOrSection, setIsDeletingZoneOrSection] = useState(false);
     
     const [showWasteModal, setShowWasteModal] = useState(false);
     const [wasteSummary, setWasteSummary] = useState({ totalFeces: 0, totalUrine: 0, cowCount: 0 });
@@ -354,20 +359,28 @@ const Livestock = () => {
         );
     };
 
-    const handleDelete = async (id) => {
-        if (!window.confirm(`Apakah Anda yakin ingin menghapus data sapi ini?`)) return;
-        toast.promise(
-            fetchApi(`/livestock/${id}`, { method: 'DELETE' })
-            .then(res => { if(!res.ok) throw new Error(); return res; }),
-            {
-                loading: 'Menghapus data...',
-                success: () => {
-                    setCows(cows.filter(cow => cow.id !== id));
-                    return 'Data sapi berhasil dihapus';
-                },
-                error: 'Gagal menghapus data',
+    const openDeleteModal = (cow) => {
+        setDeleteTargetCow(cow);
+    };
+
+    const confirmDeleteCow = async () => {
+        if (!deleteTargetCow) return;
+        setIsDeletingCow(true);
+        try {
+            const res = await fetchApi(`/livestock/${deleteTargetCow.id}`, { method: 'DELETE' });
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.message || 'Gagal menghapus data sapi');
             }
-        );
+            setCows(prev => prev.filter(c => c.id !== deleteTargetCow.id));
+            mutateCows();
+            toast.success(`Data Sapi ${deleteTargetCow.cattleId || ''} berhasil dihapus!`);
+            setDeleteTargetCow(null);
+        } catch (err) {
+            toast.error(err.message || 'Gagal menghapus data sapi');
+        } finally {
+            setIsDeletingCow(false);
+        }
     };
 
     const openEditCow = (cow) => {
@@ -588,7 +601,11 @@ const Livestock = () => {
     const handleBulkFeedSubmit = async (e) => {
         e.preventDefault();
         if (selectedFeedWeightCows.length === 0) { toast.error('Pilih minimal satu sapi'); return; }
-        if (!bulkFeed.weightKg) { toast.error('Masukkan berat pakan'); return; }
+        const parsedWeight = parseFloat(bulkFeed.weightKg);
+        if (!bulkFeed.weightKg || isNaN(parsedWeight) || parsedWeight <= 0) {
+            toast.error('Masukkan berat pakan berupa angka positif lebih besar dari 0');
+            return;
+        }
         const bkPercent = getBulkFeedBkPercent(bulkFeed.feedType);
         
         const payload = {
@@ -669,34 +686,50 @@ const Livestock = () => {
         );
     };
 
-    const handleDeleteSection = async (id) => {
-        if (!window.confirm('Hapus section ini?')) return;
-        toast.promise(
-            fetchApi(`/zones/sections/${id}`, { method: 'DELETE' }).then(res => { if(!res.ok) throw new Error(); return res; }),
-            {
-                loading: 'Menghapus section...',
-                success: () => {
-                    fetchZones();
-                    return 'Section berhasil dihapus!';
-                },
-                error: 'Gagal menghapus section',
-            }
-        );
+    const openDeleteZoneModal = (zone) => {
+        setDeleteTargetZone(zone);
     };
 
-    const handleDeleteZone = async (id) => {
-        if (!window.confirm('Hapus kandang ini? Semua section di dalamnya juga akan terhapus.')) return;
-        toast.promise(
-            fetchApi(`/zones/${id}`, { method: 'DELETE' }).then(res => { if(!res.ok) throw new Error(); return res; }),
-            {
-                loading: 'Menghapus kandang...',
-                success: () => {
-                    fetchZones();
-                    return 'Kandang berhasil dihapus!';
-                },
-                error: 'Gagal menghapus kandang',
+    const confirmDeleteZone = async () => {
+        if (!deleteTargetZone) return;
+        setIsDeletingZoneOrSection(true);
+        try {
+            const res = await fetchApi(`/zones/${deleteTargetZone.id}`, { method: 'DELETE' });
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.message || 'Gagal menghapus kandang');
             }
-        );
+            fetchZones();
+            toast.success(`Kandang "${deleteTargetZone.name}" berhasil dihapus!`);
+            setDeleteTargetZone(null);
+        } catch (err) {
+            toast.error(err.message || 'Gagal menghapus kandang');
+        } finally {
+            setIsDeletingZoneOrSection(false);
+        }
+    };
+
+    const openDeleteSectionModal = (section, zone) => {
+        setDeleteTargetSection({ ...section, zoneName: zone?.name });
+    };
+
+    const confirmDeleteSection = async () => {
+        if (!deleteTargetSection) return;
+        setIsDeletingZoneOrSection(true);
+        try {
+            const res = await fetchApi(`/zones/sections/${deleteTargetSection.id}`, { method: 'DELETE' });
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.message || 'Gagal menghapus seksi');
+            }
+            fetchZones();
+            toast.success(`Seksi "${deleteTargetSection.name}" berhasil dihapus!`);
+            setDeleteTargetSection(null);
+        } catch (err) {
+            toast.error(err.message || 'Gagal menghapus seksi');
+        } finally {
+            setIsDeletingZoneOrSection(false);
+        }
     };
 
     // --- 5. FUNGSI GRAFIK REALTIME (EKG) ---
@@ -931,6 +964,12 @@ const Livestock = () => {
                 break;
             }
             case 'Tmr': computedBkPercent = (nutritionPrefsForm.concentrateRatio === 999) ? (nutritionPrefsForm.forageDM || 50) : 50; break;
+        }
+
+        const parsedSingleWeight = parseFloat(feedInput.weightKg);
+        if (!feedInput.weightKg || isNaN(parsedSingleWeight) || parsedSingleWeight <= 0) {
+            toast.error('Masukkan berat pakan berupa angka positif lebih besar dari 0');
+            return;
         }
 
         toast.promise(
@@ -1174,7 +1213,7 @@ const Livestock = () => {
                             {userRole !== 'VETERINER' && userRole !== 'SUPER_ADMIN' && (
                                 <div className="flex gap-1 opacity-60 hover:opacity-100 transition-opacity">
                                     <button onClick={() => openEditCow(cow)} className="p-1 text-slate-400 hover:text-blue-500 transition" title="Edit Sapi">✏️</button>
-                                    <button onClick={() => handleDelete(cow.id)} className="p-1 text-slate-400 hover:text-red-500 transition" title="Hapus">🗑️</button>
+                                    <button onClick={() => openDeleteModal(cow)} className="p-1 text-slate-400 hover:text-red-500 transition" title="Hapus Data Sapi">🗑️</button>
                                 </div>
                             )}
                         </div>
@@ -1223,6 +1262,223 @@ const Livestock = () => {
                         </div>
                     )}
                 </>
+            )}
+
+            {/* --- MODAL KONFIRMASI HAPUS SAPI (PREMIUM GLASSMORPHIC) --- */}
+            {deleteTargetCow && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200" onClick={() => !isDeletingCow && setDeleteTargetCow(null)}>
+                    <div className="bg-white dark:bg-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 dark:border-slate-700/60 scale-100 transform transition-all" onClick={e => e.stopPropagation()}>
+                        {/* Header Warning Icon Badge */}
+                        <div className="flex flex-col items-center text-center">
+                            <div className="w-16 h-16 rounded-2xl bg-red-50 dark:bg-red-950/50 text-red-500 dark:text-red-400 flex items-center justify-center text-3xl mb-4 shadow-sm ring-8 ring-red-50/50 dark:ring-red-900/20 animate-pulse">
+                                🗑️
+                            </div>
+                            <h3 className="text-xl font-black text-slate-800 dark:text-white mb-1">
+                                Hapus Data Sapi?
+                            </h3>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs leading-relaxed">
+                                Apakah Anda yakin ingin menghapus data ternak ini dari sistem secara permanen?
+                            </p>
+                        </div>
+
+                        {/* Cow Details Card Box */}
+                        <div className="mt-5 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-700/60 flex items-center gap-3.5 shadow-inner">
+                            <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-amber-500 to-orange-400 flex items-center justify-center text-2xl shadow-md shrink-0">
+                                🐄
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between gap-2">
+                                    <span className="font-black text-slate-900 dark:text-white truncate text-base">
+                                        {deleteTargetCow.cattleId || `Sapi #${deleteTargetCow.id}`}
+                                    </span>
+                                    <span className={`px-2 py-0.5 text-[10px] font-black rounded-md uppercase tracking-wider ${
+                                        deleteTargetCow.status === 'SEHAT' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300' :
+                                        deleteTargetCow.status === 'SAKIT' ? 'bg-red-100 text-red-700 dark:bg-red-950/80 dark:text-red-300' :
+                                        'bg-amber-100 text-amber-700 dark:bg-amber-950/80 dark:text-amber-300'
+                                    }`}>
+                                        {deleteTargetCow.status || 'SEHAT'}
+                                    </span>
+                                </div>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-2">
+                                    <span>Ras: <strong className="text-slate-700 dark:text-slate-200">{deleteTargetCow.breed || 'Limousin'}</strong></span>
+                                    <span>•</span>
+                                    <span>Berat: <strong className="text-slate-700 dark:text-slate-200">{deleteTargetCow.currentWeight || deleteTargetCow.initialWeight || 0} kg</strong></span>
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Red Warning Banner */}
+                        <div className="mt-4 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-100 dark:border-rose-900/50 text-[11px] text-rose-600 dark:text-rose-300 flex items-start gap-2">
+                            <span className="text-sm shrink-0">📌</span>
+                            <span className="leading-tight">
+                                <strong>Tindakan Tidak Dapat Dibatalkan:</strong> Seluruh riwayat timbang, pakan, limbah, dan rekam medis sapi ini akan terhapus.
+                            </span>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="mt-6 flex items-center gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setDeleteTargetCow(null)}
+                                disabled={isDeletingCow}
+                                className="flex-1 py-3 px-4 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-100 dark:hover:bg-slate-700 transition active:scale-95 text-sm"
+                            >
+                                Batal
+                            </button>
+                            <button
+                                type="button"
+                                onClick={confirmDeleteCow}
+                                disabled={isDeletingCow}
+                                className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-bold shadow-lg shadow-red-500/25 hover:shadow-red-500/40 transition active:scale-95 text-sm flex items-center justify-center gap-2"
+                            >
+                                {isDeletingCow ? (
+                                    <>
+                                        <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                                        <span>Menghapus...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <span>🗑️</span>
+                                        <span>Ya, Hapus Sapi</span>
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* --- MODAL KONFIRMASI HAPUS KANDANG (ZONE) --- */}
+            {deleteTargetZone && (
+                <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200" onClick={() => !isDeletingZoneOrSection && setDeleteTargetZone(null)}>
+                    <div className="bg-white dark:bg-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 dark:border-slate-700/60 scale-100 transform transition-all" onClick={e => e.stopPropagation()}>
+                        <div className="flex flex-col items-center text-center">
+                            <div className="w-16 h-16 rounded-2xl bg-amber-50 dark:bg-amber-950/50 text-amber-500 dark:text-amber-400 flex items-center justify-center text-3xl mb-4 shadow-sm ring-8 ring-amber-50/50 dark:ring-amber-900/20 animate-pulse">
+                                🏛️
+                            </div>
+                            <h3 className="text-xl font-black text-slate-800 dark:text-white mb-1">
+                                Hapus Kandang Utama?
+                            </h3>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs leading-relaxed">
+                                Apakah Anda yakin ingin menghapus area zona kandang ini dari sistem?
+                            </p>
+                        </div>
+
+                        <div className="mt-5 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-700/60 flex items-center gap-3.5 shadow-inner">
+                            <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-amber-600 to-yellow-500 flex items-center justify-center text-2xl shadow-md shrink-0 text-white font-bold">
+                                🏛️
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <div className="font-black text-slate-900 dark:text-white truncate text-base">
+                                    {deleteTargetZone.name}
+                                </div>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                    Memiliki <strong className="text-amber-600 dark:text-amber-400">{deleteTargetZone.sections?.length || 0} Seksi Kandang</strong> di dalamnya
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="mt-4 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-100 dark:border-rose-900/50 text-[11px] text-rose-600 dark:text-rose-300 flex items-start gap-2">
+                            <span className="text-sm shrink-0">⚠️</span>
+                            <span className="leading-tight">
+                                <strong>Peringatan Penting:</strong> Menghapus Kandang ini akan menghapus seluruh seksi kandang di dalamnya secara permanen.
+                            </span>
+                        </div>
+
+                        <div className="mt-6 flex items-center gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setDeleteTargetZone(null)}
+                                disabled={isDeletingZoneOrSection}
+                                className="flex-1 py-3 px-4 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-100 dark:hover:bg-slate-700 transition active:scale-95 text-sm"
+                            >
+                                Batal
+                            </button>
+                            <button
+                                type="button"
+                                onClick={confirmDeleteZone}
+                                disabled={isDeletingZoneOrSection}
+                                className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-bold shadow-lg shadow-red-500/25 hover:shadow-red-500/40 transition active:scale-95 text-sm flex items-center justify-center gap-2"
+                            >
+                                {isDeletingZoneOrSection ? (
+                                    <>
+                                        <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                                        <span>Menghapus...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <span>🗑️</span>
+                                        <span>Ya, Hapus Kandang</span>
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* --- MODAL KONFIRMASI HAPUS SEKSI KANDANG (SECTION) --- */}
+            {deleteTargetSection && (
+                <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200" onClick={() => !isDeletingZoneOrSection && setDeleteTargetSection(null)}>
+                    <div className="bg-white dark:bg-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 dark:border-slate-700/60 scale-100 transform transition-all" onClick={e => e.stopPropagation()}>
+                        <div className="flex flex-col items-center text-center">
+                            <div className="w-16 h-16 rounded-2xl bg-orange-50 dark:bg-orange-950/50 text-orange-500 dark:text-orange-400 flex items-center justify-center text-3xl mb-4 shadow-sm ring-8 ring-orange-50/50 dark:ring-orange-900/20 animate-pulse">
+                                🚪
+                            </div>
+                            <h3 className="text-xl font-black text-slate-800 dark:text-white mb-1">
+                                Hapus Seksi Kandang?
+                            </h3>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs leading-relaxed">
+                                Apakah Anda yakin ingin menghapus seksi kandang ini?
+                            </p>
+                        </div>
+
+                        <div className="mt-5 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-700/60 flex items-center gap-3.5 shadow-inner">
+                            <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-orange-500 to-amber-500 flex items-center justify-center text-2xl shadow-md shrink-0 text-white font-bold">
+                                📍
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <div className="font-black text-slate-900 dark:text-white truncate text-base">
+                                    {deleteTargetSection.name}
+                                </div>
+                                {deleteTargetSection.zoneName && (
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                        Bagian dari: <strong className="text-slate-700 dark:text-slate-300">{deleteTargetSection.zoneName}</strong>
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="mt-6 flex items-center gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setDeleteTargetSection(null)}
+                                disabled={isDeletingZoneOrSection}
+                                className="flex-1 py-3 px-4 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-100 dark:hover:bg-slate-700 transition active:scale-95 text-sm"
+                            >
+                                Batal
+                            </button>
+                            <button
+                                type="button"
+                                onClick={confirmDeleteSection}
+                                disabled={isDeletingZoneOrSection}
+                                className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-bold shadow-lg shadow-red-500/25 hover:shadow-red-500/40 transition active:scale-95 text-sm flex items-center justify-center gap-2"
+                            >
+                                {isDeletingZoneOrSection ? (
+                                    <>
+                                        <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                                        <span>Menghapus...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <span>🗑️</span>
+                                        <span>Ya, Hapus Seksi</span>
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
 
             {/* --- MODAL TAMBAH/EDIT SAPI --- */}
@@ -1375,7 +1631,7 @@ const Livestock = () => {
                                     <div key={z.id} className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-slate-100 dark:border-slate-600">
                                         <div className="flex justify-between items-center mb-3">
                                             <span className="font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider">{z.name}</span>
-                                            <button onClick={() => handleDeleteZone(z.id)} className="text-red-500 hover:text-red-700 text-sm font-bold">Hapus Kandang</button>
+                                            <button onClick={() => openDeleteZoneModal(z)} className="text-red-500 hover:text-red-700 text-sm font-bold transition">Hapus Kandang</button>
                                         </div>
                                         
                                         {/* Sections List */}
@@ -1383,7 +1639,7 @@ const Livestock = () => {
                                             {(expandedZones[z.id] ? z.sections : z.sections.slice(0, 3)).map(s => (
                                                 <div key={s.id} className="flex justify-between items-center text-sm">
                                                     <span className="text-slate-600 dark:text-slate-300 font-medium">📍 {s.name}</span>
-                                                    <button onClick={() => handleDeleteSection(s.id)} className="text-slate-400 hover:text-red-500 font-bold">×</button>
+                                                    <button onClick={() => openDeleteSectionModal(s, z)} className="text-slate-400 hover:text-red-500 font-bold transition" title="Hapus Seksi">×</button>
                                                 </div>
                                             ))}
 

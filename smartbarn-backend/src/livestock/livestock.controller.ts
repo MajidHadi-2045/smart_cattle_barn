@@ -170,19 +170,24 @@ export class LivestockController {
   @UseGuards(AuthGuard, RolesGuard)
   @Roles('STAFF', 'VETERINER')
   recordFeed(@Body() data: { cattleId: string, feedType: string, weightKg: number, bkPercent: number, siloId?: number }, @Req() req: any) {
-    if (data.weightKg <= 0) {
-      throw new BadRequestException('Jumlah pakan harus lebih dari 0');
+    const weight = parseFloat(data.weightKg as any);
+    if (isNaN(weight) || weight <= 0) {
+      throw new BadRequestException('Jumlah pakan harus berupa angka positif lebih dari 0');
     }
     const author = req.user?.name ? `${req.user.name} (${req.user.role})` : req.user?.email || 'Admin';
-    return this.livestockService.recordFeed(data.cattleId, data.feedType, data.weightKg, data.bkPercent, author, data.siloId);
+    return this.livestockService.recordFeed(data.cattleId, data.feedType, weight, data.bkPercent, author, data.siloId);
   }
 
   @Post('feed-bulk')
   @UseGuards(AuthGuard, RolesGuard)
   @Roles('STAFF')
   recordFeedBulk(@Body() data: { cattleIds: string[], feedType: string, weightKgPerCow: number, bkPercent: number, siloForageId?: number, siloConcentrateId?: number }, @Req() req: any) {
+    const weight = parseFloat(data.weightKgPerCow as any);
+    if (isNaN(weight) || weight <= 0) {
+      throw new BadRequestException('Jumlah pakan harus berupa angka positif lebih dari 0');
+    }
     const author = req.user?.name ? `${req.user.name} (${req.user.role})` : req.user?.email || 'Admin';
-    return this.livestockService.recordFeedBulk(data.cattleIds, data.feedType, data.weightKgPerCow, data.bkPercent, author, data.siloForageId, data.siloConcentrateId);
+    return this.livestockService.recordFeedBulk(data.cattleIds, data.feedType, weight, data.bkPercent, author, data.siloForageId, data.siloConcentrateId);
   }
 
   @Get('feed-needs/:cattleId')
@@ -268,6 +273,13 @@ export class LivestockController {
   deleteZoneWaste(@Param('id') id: string, @Req() req: any) {
     const author = req.user?.name ? `${req.user.name} (${req.user.role})` : req.user?.email || 'Admin';
     return this.livestockService.deleteZoneWasteRecord(+id, author);
+  }
+
+  @Post('reset-performance/:cattleId')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'STAFF')
+  resetCowPerformanceData(@Param('cattleId') cattleId: string) {
+    return this.livestockService.resetCowPerformanceData(cattleId);
   }
 
   // ==========================================

@@ -25,6 +25,7 @@
     "test:k6:sensor": "k6 run k6-sensor-test.js",
     "test:k6:web": "k6 run k6-web-test.js",
     "test:k6:vps": "k6 run -e BASE_URL=http://77.37.63.21:4000/api k6-load-test.js",
+    "clean-db": "node clean_database_remote.js",
     "monitor": "node monitor.js"
   },
   "dependencies": {

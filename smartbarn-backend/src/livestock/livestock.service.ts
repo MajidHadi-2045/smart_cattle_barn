@@ -634,25 +634,8 @@ export class LivestockService {
     }
   }
 
-  // 1. Catat Berat Sapi (Dengan opsi tanggal mundur/kustom)
+  // 1. Catat Berat Sapi (Dengan opsi tanggal mundur/kustom - Tanpa Batas Kuota)
   async recordWeight(cattleId: string, weight: number, author: string = 'Admin', dateStr?: string) {
-    const config = this.loadChecklistConfig();
-    const period = config.weight?.period || 'monthly';
-    const goal = config.weight?.goal || 1;
-    const startDate = this.getStartDateForPeriod(period);
-
-    const count = await this.prisma.livestockWeightRecord.count({
-        where: {
-            cattleId,
-            weighDate: { gte: startDate }
-        }
-    });
-
-    if (count >= goal) {
-        throw new BadRequestException(`Batas pencatatan timbang (${goal} kali per ${period === 'monthly' ? 'bulan' : period === 'weekly' ? 'minggu' : 'hari'}) sudah tercapai untuk sapi ${cattleId}.`);
-    }
-
-    // 1. Simpan history
     const weighDate = dateStr ? new Date(dateStr) : new Date();
     
     const record = await this.prisma.livestockWeightRecord.create({
@@ -689,23 +672,13 @@ export class LivestockService {
 
   // 2. Catat Pemberian Pakan per Sapi
   async recordFeed(cattleId: string, feedType: string, weightKg: number, bkPercent: number = 100, author: string = 'Admin', siloId?: number) {
-    const cow = await this.getFeedNeeds(cattleId);
-    const config = this.loadChecklistConfig();
-    const period = config.feed?.period || 'daily';
-    const goal = cow.prefs.feedingFrequency || config.feed?.goal || 1;
-    
-    const startDate = this.getStartDateForPeriod(period);
-    
-    const count = await this.prisma.livestockFeedRecord.count({
-        where: {
-            cattleId,
-            feedDate: { gte: startDate }
-        }
-    });
-
-    if (count >= goal) {
-        throw new BadRequestException(`Batas pakan (${goal} kali per ${period === 'monthly' ? 'bulan' : period === 'weekly' ? 'minggu' : 'hari'}) sudah tercapai untuk sapi ${cattleId}.`);
+    const numericWeight = parseFloat(weightKg as any);
+    if (isNaN(numericWeight) || numericWeight <= 0) {
+      throw new BadRequestException('Jumlah pakan harus berupa angka positif lebih dari 0');
     }
+    weightKg = numericWeight;
+
+    const cow = await this.getFeedNeeds(cattleId);
 
     const asFedWeight = weightKg; // Berat yang diberikan
     const bkConsumed = weightKg * (bkPercent / 100); // Berat BK sesungguhnya
@@ -816,6 +789,12 @@ export class LivestockService {
   // 2b. Catat Pemberian Pakan Bulk
   async recordFeedBulk(cattleIds: string[], feedType: string, weightKgPerCow: number, bkPercent: number = 100, author: string = 'Admin', siloForageId?: number, siloConcentrateId?: number) {
     if (!cattleIds || cattleIds.length === 0) throw new BadRequestException('Tidak ada sapi yang dipilih');
+    
+    const numericWeight = parseFloat(weightKgPerCow as any);
+    if (isNaN(numericWeight) || numericWeight <= 0) {
+      throw new BadRequestException('Jumlah pakan harus berupa angka positif lebih dari 0');
+    }
+    weightKgPerCow = numericWeight;
     
     const crypto = require('crypto');
     const batchId = crypto.randomUUID();
@@ -1217,32 +1196,36 @@ export class LivestockService {
     // Finalize summaries
     const finalSummaries = targetIds.map(id => {
       const sum = summaries[id];
+      const safeDmi = Math.max(0, sum.totalDmi);
       let adgTotal = days > 0 ? sum.totalWeightGain / days : 0;
+      if (adgTotal < 0) adgTotal = 0;
+      
       let isEstimated = false;
       
       const cowWeights = weightRecords.filter(w => w.cattleId === id);
       if (isAllCows || cowWeights.length === 0) {
-          adgTotal = days > 0 ? (sum.totalDmi * 0.15 / days) : 0; 
-          sum.endWeight = sum.startWeight + (adgTotal * days);
-          sum.totalWeightGain = sum.endWeight - sum.startWeight;
+          adgTotal = days > 0 ? (safeDmi * 0.15 / days) : 0; 
+          sum.endWeight = Math.max(sum.startWeight, sum.startWeight + (adgTotal * days));
+          sum.totalWeightGain = Math.max(0, sum.endWeight - sum.startWeight);
           isEstimated = true;
       }
 
       let fcr = 0;
       if (sum.totalWeightGain > 0) {
-          fcr = sum.totalDmi / sum.totalWeightGain;
+          fcr = safeDmi / sum.totalWeightGain;
+          if (fcr < 0) fcr = 0;
       }
 
-      const estimatedWeightVal = sum.startWeight + (sum.totalDmi * 0.15);
+      const estimatedWeightVal = sum.startWeight + (safeDmi * 0.15);
 
       const lastWeighDate = latestWeightMap[id] ? latestWeightMap[id].toISOString() : null;
       const lastUpdatedDate = latestUpdateMap[id] ? latestUpdateMap[id].toISOString() : (new Date()).toISOString();
 
       return {
          cowId: id,
-         totalBk: parseFloat(sum.totalDmi.toFixed(2)),
+         totalBk: parseFloat(safeDmi.toFixed(2)),
          startWeight: parseFloat(sum.startWeight.toFixed(2)),
-         endWeight: parseFloat(sum.endWeight.toFixed(2)),
+         endWeight: parseFloat(Math.max(sum.startWeight, sum.endWeight).toFixed(2)),
          estimatedWeight: parseFloat(estimatedWeightVal.toFixed(2)),
          adg: parseFloat(adgTotal.toFixed(2)),
          fcr: parseFloat(fcr.toFixed(2)),
@@ -1258,6 +1241,55 @@ export class LivestockService {
       summary: isAllCows ? finalSummaries[0] : null,
       multiSummaries: finalSummaries,
       selectedCows: targetIds
+    };
+  }
+
+  // Reset & Pembersihan Data Performance Sapi (Pakan Minus & Weight Unreasonable)
+  async resetCowPerformanceData(cattleId: string) {
+    const deletedFeeds = await this.prisma.livestockFeedRecord.deleteMany({
+      where: {
+        OR: [
+          { cattleId: { contains: cattleId, mode: 'insensitive' } },
+          { weightKg: { lte: 0 } }
+        ]
+      }
+    });
+
+    const cow = await this.prisma.livestock.findFirst({
+      where: { cattleId: { contains: cattleId, mode: 'insensitive' } }
+    });
+
+    let updatedWeight: number | null = null;
+    let deletedWeightsCount = 0;
+
+    if (cow) {
+      const targetWeight = Math.max(cow.initialWeight + 15, cow.currentWeight && cow.currentWeight > cow.initialWeight ? cow.currentWeight : cow.initialWeight + 15);
+      const updatedCow = await this.prisma.livestock.update({
+        where: { id: cow.id },
+        data: { currentWeight: targetWeight }
+      });
+      updatedWeight = updatedCow.currentWeight;
+
+      const deletedWeights = await this.prisma.livestockWeightRecord.deleteMany({
+        where: {
+          cattleId: cow.cattleId,
+          weight: { lt: 100 }
+        }
+      });
+      deletedWeightsCount = deletedWeights.count;
+    }
+
+    try {
+      await this.redis.del('dashboard:farm-summary');
+      await this.redis.del('livestock:list:all');
+    } catch (e) {}
+
+    return {
+      status: 'success',
+      message: `Data performa sapi ${cattleId} berhasil di-reset dan dibersihkan!`,
+      deletedNegativeFeeds: deletedFeeds.count,
+      deletedUnreasonableWeights: deletedWeightsCount,
+      currentWeight: updatedWeight
     };
   }
 

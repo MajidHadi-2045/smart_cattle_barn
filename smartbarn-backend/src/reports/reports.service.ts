@@ -32,7 +32,7 @@ export class ReportsService {
     let columns: any[] = [];
     let ringkasanTeks = '';
 
-    // 2. Tarik Data Sesuai Pilihan
+    // 2. Tarik Data Sesuai Pilihan (Populasi, Kesehatan, Lingkungan, Pakan, Limbah)
     switch (jenisLaporan) {
       case 'Lingkungan':
         const rawEnv = await this.prisma.environmentData.findMany({

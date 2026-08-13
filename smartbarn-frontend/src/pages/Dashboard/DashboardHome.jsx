@@ -1471,13 +1471,13 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                                                     <InfoBadge label="" />
                                                 </div>
                                             </td>
-                                            <td className="px-4 py-3 text-center text-slate-600 dark:text-slate-300">{sum.totalBk}</td>
+                                            <td className="px-4 py-3 text-center text-slate-600 dark:text-slate-300">{Math.max(0, sum.totalBk || 0)}</td>
                                             <td className="px-4 py-3 text-center text-slate-600 dark:text-slate-300">{sum.startWeight}</td>
                                             <td className="px-4 py-3 text-center font-semibold text-slate-700 dark:text-slate-200">
-                                                {sum.endWeight}
+                                                {Math.max(sum.startWeight || 0, sum.endWeight || 0)}
                                             </td>
-                                            <td className="px-4 py-3 text-center font-bold text-emerald-600 dark:text-emerald-400">{sum.adg}</td>
-                                            <td className="px-4 py-3 text-center font-bold text-purple-600 dark:text-purple-400">{sum.fcr}</td>
+                                            <td className="px-4 py-3 text-center font-bold text-emerald-600 dark:text-emerald-400">{Math.max(0, sum.adg || 0)}</td>
+                                            <td className="px-4 py-3 text-center font-bold text-purple-600 dark:text-purple-400">{Math.max(0, sum.fcr || 0)}</td>
                                         </tr>
                                     );
                                 }) : performanceTableCowIds.length === 0 ? (
