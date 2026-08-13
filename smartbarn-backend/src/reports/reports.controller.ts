@@ -11,16 +11,18 @@ export class ReportsController {
   @Get('download')
   @UseGuards(AuthGuard)
   async downloadReport(
-    @Query('jenis') jenis: string,
-    @Query('start') start: string,
-    @Query('end') end: string,
-    @Query('format') format: 'CSV' | 'XLSX' | 'PDF',
+    @Query('jenis') queryJenis: string,
+    @Query('start') queryStart: string,
+    @Query('end') queryEnd: string,
+    @Query('format') queryFormat: any,
+    @Query('type') type: string,
     @Res() res: Response, 
     @Req() req: any,
   ) {
-    if (!jenis || !start || !end || !format) {
-      throw new BadRequestException('Parameter laporan tidak lengkap (jenis, start, end, format wajib diisi)');
-    }
+    const jenis = queryJenis || type || 'Ternak';
+    const start = queryStart || '2026-01-01';
+    const end = queryEnd || new Date().toISOString().split('T')[0];
+    const format = 'PDF'; // Format laporan resmi aplikasi khusus PDF
 
     const author = req.user?.name ? `${req.user.name} (${req.user.role})` : req.user?.email || 'Admin';
     const file = await this.reportsService.generateReport(jenis, start, end, format, author);
