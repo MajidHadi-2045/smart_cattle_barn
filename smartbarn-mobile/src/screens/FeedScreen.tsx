@@ -32,6 +32,7 @@ const FeedScreen = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [reportPage, setReportPage] = useState(1);
   const [activeTab, setActiveTab] = useState<'silo' | 'schedule' | 'report'>('silo');
   const ITEMS_PER_PAGE = 10;
   
@@ -542,28 +543,170 @@ const FeedScreen = () => {
         />
         </View>
       ) : (
-        <FlatList
-          data={reports.transactions || []}
-          keyExtractor={item => item.id.toString()}
-          contentContainerStyle={styles.listContent}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchFeedData(); }} />}
-          renderItem={({ item }) => (
-            <View style={styles.card}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
-                <Text style={{ fontWeight: 'bold', fontSize: 16, color: COLORS.text }}>{item.silo?.name || 'Silo Terhapus'}</Text>
-                <View style={[styles.statusBadge, { backgroundColor: item.type === 'MASUK' ? '#d1fae5' : '#e0e7ff' }]}>
-                  <Text style={[styles.statusText, { color: item.type === 'MASUK' ? '#047857' : '#4338ca' }]}>
-                    {item.type === 'MASUK' ? '📥 Masuk' : '📤 Keluar'}
-                  </Text>
-                </View>
-              </View>
-              <Text style={{ color: COLORS.textLight, fontSize: 14 }}>Jumlah: {item.weightKg} {item.silo?.unit || 'Kg'}</Text>
-              <Text style={{ color: COLORS.textLight, fontSize: 14, marginTop: 4 }}>Ket: {item.description || '-'}</Text>
-              <Text style={{ color: COLORS.textLight, fontSize: 12, marginTop: 8 }}>{new Date(item.createdAt).toLocaleString('id-ID')}</Text>
+        /* TAB LAPORAN PAKAN & STATISTIK SAPI */
+        <ScrollView 
+          contentContainerStyle={{ padding: SPACING.md }}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchFeedData(); setReportPage(1); }} />}
+        >
+          {/* BANNER STATISTIK POPULASI TERNAK */}
+          <View style={styles.populationBanner}>
+            <View style={{ marginBottom: 12 }}>
+              <Text style={styles.populationBannerTitle}>Statistik Populasi Ternak</Text>
+              <Text style={styles.populationBannerSubtitle}>Rangkuman jenis dan total sapi yang dikelola</Text>
             </View>
-          )}
-          ListEmptyComponent={<Text style={{ textAlign: 'center', marginTop: 20, color: COLORS.textLight }}>Belum ada riwayat transaksi pakan.</Text>}
-        />
+
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
+              <View style={styles.totalPopCard}>
+                <Text style={styles.totalPopLabel}>TOTAL POPULASI</Text>
+                <Text style={styles.totalPopValue}>{reports.cows?.total ?? cows.length ?? 0} Ekor</Text>
+              </View>
+
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, flex: 1 }}>
+                {reports.cows?.breeds && reports.cows.breeds.length > 0 ? (
+                  reports.cows.breeds.map((b: any, idx: number) => (
+                    <View key={idx} style={styles.breedPill}>
+                      <Text style={styles.breedPillText}>🐄 {b.breed}: {b.count} ekor</Text>
+                    </View>
+                  ))
+                ) : (
+                  <View style={styles.breedPill}>
+                    <Text style={styles.breedPillText}>🐄 Total Registered: {cows.length} ekor</Text>
+                  </View>
+                )}
+              </View>
+            </View>
+          </View>
+
+          {/* TABEL RIWAYAT TRANSAKSI PAKAN SAMA SEPERTI DI WEB */}
+          <View style={styles.tableCardContainer}>
+            <View style={{ padding: SPACING.md, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }}>
+              <Text style={{ fontSize: 16, fontWeight: 'bold', color: COLORS.text }}>Riwayat Catatan Stok Pakan Masuk & Keluar</Text>
+              <Text style={{ fontSize: 12, color: COLORS.textLight, marginTop: 2 }}>Geser ke kanan untuk melihat kolom lengkap tabel</Text>
+            </View>
+
+            {(() => {
+              const allTx = reports.transactions || [];
+              const totalReportPages = Math.ceil(allTx.length / ITEMS_PER_PAGE) || 1;
+              const paginatedTx = allTx.slice((reportPage - 1) * ITEMS_PER_PAGE, reportPage * ITEMS_PER_PAGE);
+
+              if (allTx.length === 0) {
+                return (
+                  <View style={{ padding: 30, alignItems: 'center' }}>
+                    <Text style={{ color: COLORS.textLight }}>Belum ada catatan aliran stok pakan masuk atau keluar.</Text>
+                  </View>
+                );
+              }
+
+              return (
+                <View>
+                  {/* SLIDEABLE HORIZONTAL TABLE */}
+                  <ScrollView horizontal showsHorizontalScrollIndicator={true}>
+                    <View>
+                      {/* HEADER TABEL */}
+                      <View style={styles.tableHeaderRow}>
+                        <Text style={[styles.tableColHeader, { width: 140 }]}>WAKTU</Text>
+                        <Text style={[styles.tableColHeader, { width: 130 }]}>SILO / STOK</Text>
+                        <Text style={[styles.tableColHeader, { width: 100 }]}>KATEGORI</Text>
+                        <Text style={[styles.tableColHeader, { width: 90, textAlign: 'center' }]}>TIPE</Text>
+                        <Text style={[styles.tableColHeader, { width: 100, textAlign: 'right' }]}>JUMLAH</Text>
+                        <Text style={[styles.tableColHeader, { width: 130 }]}>KADALUARSA</Text>
+                        <Text style={[styles.tableColHeader, { width: 100 }]}>PENGINPUT</Text>
+                        <Text style={[styles.tableColHeader, { width: 160 }]}>KETERANGAN</Text>
+                      </View>
+
+                      {/* ISI BARIS TABEL */}
+                      {paginatedTx.map((tx: any, i: number) => {
+                        const isMasuk = tx.type === 'MASUK';
+                        return (
+                          <View key={tx.id || i} style={[styles.tableBodyRow, i % 2 === 1 && { backgroundColor: '#f8fafc' }]}>
+                            <Text style={[styles.tableCellText, { width: 140, color: COLORS.textLight }]}>
+                              {new Date(tx.createdAt).toLocaleString('id-ID', {
+                                year: 'numeric', month: 'short', day: 'numeric',
+                                hour: '2-digit', minute: '2-digit'
+                              })}
+                            </Text>
+                            <Text style={[styles.tableCellText, { width: 130, fontWeight: 'bold', color: COLORS.text }]}>
+                              {tx.silo?.name ?? 'Silo Terhapus'}
+                            </Text>
+                            <View style={{ width: 100, justifyContent: 'center' }}>
+                              <View style={styles.categoryTagSmall}>
+                                <Text style={styles.categoryTagSmallText}>{tx.silo?.feedType ?? 'Umum'}</Text>
+                              </View>
+                            </View>
+                            <View style={{ width: 90, alignItems: 'center', justifyContent: 'center' }}>
+                              <View style={[styles.typeBadge, { backgroundColor: isMasuk ? '#dcfce7' : '#e0e7ff' }]}>
+                                <Text style={[styles.typeBadgeText, { color: isMasuk ? '#15803d' : '#4338ca' }]}>
+                                  {isMasuk ? '📥 Masuk' : '📤 Keluar'}
+                                </Text>
+                              </View>
+                            </View>
+                            <Text style={[styles.tableCellText, { width: 100, textAlign: 'right', fontWeight: 'bold', color: isMasuk ? '#16a34a' : '#4f46e5' }]}>
+                              {isMasuk ? '+' : '-'}{tx.weightKg} {tx.silo?.unit ?? 'Kg'}
+                            </Text>
+                            <Text style={[styles.tableCellText, { width: 130, color: COLORS.textLight }]}>
+                              {tx.expiryDate ? new Date(tx.expiryDate).toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric' }) : '-'}
+                            </Text>
+                            <Text style={[styles.tableCellText, { width: 100, fontWeight: '500', color: COLORS.text }]}>
+                              {tx.creator || 'Admin'}
+                            </Text>
+                            <Text style={[styles.tableCellText, { width: 160, color: COLORS.textLight }]} numberOfLines={2}>
+                              {tx.description || '-'}
+                            </Text>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  </ScrollView>
+
+                  {/* NAVIGASI PAGINATION BERBAGAI NOMOR (1, 2, 3 ... >) SEPERTI DI WEB */}
+                  {totalReportPages >= 1 && (
+                    <View style={styles.paginationContainer}>
+                      <Text style={styles.paginationCounterText}>
+                        Menampilkan {(reportPage - 1) * ITEMS_PER_PAGE + 1} - {Math.min(reportPage * ITEMS_PER_PAGE, allTx.length)} dari {allTx.length} data
+                      </Text>
+
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
+                        {/* Tombol Mundur (<) */}
+                        <TouchableOpacity
+                          disabled={reportPage === 1}
+                          onPress={() => setReportPage(prev => Math.max(prev - 1, 1))}
+                          style={[styles.pageBtn, reportPage === 1 && styles.pageBtnDisabled]}
+                        >
+                          <Text style={[styles.pageBtnText, reportPage === 1 && styles.pageBtnTextDisabled]}>&lt; Mundur</Text>
+                        </TouchableOpacity>
+
+                        {/* Tombol Nomor Halaman [1] [2] [3]... */}
+                        {Array.from({ length: totalReportPages }, (_, idx) => idx + 1).map((pNum) => {
+                          const isActive = pNum === reportPage;
+                          return (
+                            <TouchableOpacity
+                              key={pNum}
+                              onPress={() => setReportPage(pNum)}
+                              style={[styles.pageNumberBtn, isActive && styles.pageNumberBtnActive]}
+                            >
+                              <Text style={[styles.pageNumberText, isActive && styles.pageNumberTextActive]}>
+                                {pNum}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+
+                        {/* Tombol Lanjut (>) */}
+                        <TouchableOpacity
+                          disabled={reportPage === totalReportPages}
+                          onPress={() => setReportPage(prev => Math.min(prev + 1, totalReportPages))}
+                          style={[styles.pageBtn, reportPage === totalReportPages && styles.pageBtnDisabled]}
+                        >
+                          <Text style={[styles.pageBtnText, reportPage === totalReportPages && styles.pageBtnTextDisabled]}>Lanjut &gt;</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  )}
+                </View>
+              );
+            })()}
+          </View>
+        </ScrollView>
       )}
 
       {/* MODAL JADWAL PAKAN */}
@@ -856,6 +999,167 @@ const styles = StyleSheet.create({
   },
   realisasiBox: {
     marginBottom: SPACING.md,
+  },
+
+  // Population Banner
+  populationBanner: {
+    backgroundColor: '#059669',
+    padding: SPACING.lg,
+    borderRadius: 16,
+    marginBottom: SPACING.md,
+    ...SHADOWS.sm,
+  },
+  populationBannerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#ffffff',
+  },
+  populationBannerSubtitle: {
+    fontSize: 12,
+    color: '#a7f3d0',
+    marginTop: 2,
+  },
+  totalPopCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  totalPopLabel: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#a7f3d0',
+    letterSpacing: 0.5,
+  },
+  totalPopValue: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    marginTop: 2,
+  },
+  breedPill: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  breedPillText: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: '#ffffff',
+  },
+
+  // Table Card Container
+  tableCardContainer: {
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginBottom: SPACING.lg,
+    borderWidth: 1,
+    borderColor: '#f1f5f9',
+    ...SHADOWS.sm,
+  },
+  tableHeaderRow: {
+    flexDirection: 'row',
+    backgroundColor: '#f8fafc',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+  },
+  tableColHeader: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: COLORS.textLight,
+    letterSpacing: 0.5,
+  },
+  tableBodyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+  },
+  tableCellText: {
+    fontSize: 12,
+  },
+  categoryTagSmall: {
+    backgroundColor: '#f1f5f9',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    alignSelf: 'flex-start',
+  },
+  categoryTagSmallText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: COLORS.textLight,
+  },
+  typeBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+  },
+  typeBadgeText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+
+  // Pagination Controls
+  paginationContainer: {
+    padding: SPACING.md,
+    backgroundColor: '#f8fafc',
+    borderTopWidth: 1,
+    borderTopColor: '#f1f5f9',
+    alignItems: 'center',
+    gap: 10,
+  },
+  paginationCounterText: {
+    fontSize: 12,
+    color: COLORS.textLight,
+    fontWeight: '500',
+  },
+  pageBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: COLORS.white,
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+  },
+  pageBtnDisabled: {
+    opacity: 0.4,
+  },
+  pageBtnText: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: COLORS.text,
+  },
+  pageBtnTextDisabled: {
+    color: COLORS.textLight,
+  },
+  pageNumberBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: COLORS.white,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  pageNumberBtnActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  pageNumberText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: COLORS.text,
+  },
+  pageNumberTextActive: {
+    color: COLORS.white,
   }
 });
 

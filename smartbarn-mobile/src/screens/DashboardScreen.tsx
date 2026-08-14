@@ -550,15 +550,19 @@ const DashboardScreen = ({ navigation }: any) => {
       activeOpacity={0.7}
     >
       <View style={styles.statInfo}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-          <Text style={styles.statLabel}>{title}</Text>
-          {infoDesc && <Info size={11} color={COLORS.textLight} />}
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
+          <Text style={[styles.statLabel, { flexShrink: 1, marginRight: 4 }]} numberOfLines={1}>{title}</Text>
+          {infoDesc && (
+            <View style={{ backgroundColor: '#f1f5f9', borderRadius: 6, paddingHorizontal: 4, paddingVertical: 2, alignItems: 'center', justifyContent: 'center' }}>
+              <Info size={10} color={COLORS.textLight} />
+            </View>
+          )}
         </View>
         <Text style={styles.statValue}>{value}</Text>
-        {target && <Text style={{ fontSize: 10, color: COLORS.textLight, marginTop: 4 }}>{target}</Text>}
+        {target && <Text style={{ fontSize: 10, color: COLORS.textLight, marginTop: 2 }} numberOfLines={1}>{target}</Text>}
       </View>
-      <View style={[styles.statIconContainer, { backgroundColor: color + '20' }]}>
-        <Icon size={24} color={color} />
+      <View style={[styles.statIconContainer, { backgroundColor: color + '20', marginLeft: 6 }]}>
+        <Icon size={22} color={color} />
       </View>
     </TouchableOpacity>
   );
@@ -1657,6 +1661,7 @@ const styles = StyleSheet.create({
   },
   statInfo: {
     flex: 1,
+    minWidth: 0,
   },
   statLabel: {
     fontSize: 12,

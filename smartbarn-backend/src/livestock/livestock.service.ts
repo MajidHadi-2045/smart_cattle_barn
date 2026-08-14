@@ -683,20 +683,28 @@ export class LivestockService {
     const asFedWeight = weightKg; // Berat yang diberikan
     const bkConsumed = weightKg * (bkPercent / 100); // Berat BK sesungguhnya
 
-    // 1. Tentukan Kebutuhan per Komponen Pakan
+    // 1. Tentukan Kebutuhan per Komponen Pakan (Rasio 100% untuk Tunggal, Proporsional untuk Campuran)
     let reqHijauan = 0;
     let reqKonsentrat = 0;
     const typeStr = feedType.toLowerCase();
 
-    if (typeStr.includes('konsentrat+hijauan') || typeStr === 'tmr') {
+    if (typeStr.includes('konsentrat+hijauan')) {
         const fRatio = cow.prefs?.forageRatio || 60;
         const cRatio = cow.prefs?.concentrateRatio || 40;
         reqHijauan = weightKg * (fRatio / 100);
         reqKonsentrat = weightKg * (cRatio / 100);
     } else if (typeStr.includes('konsentrat')) {
+        // Konsentrat Saja -> 100% Konsentrat
         reqKonsentrat = weightKg;
-    } else {
+        reqHijauan = 0;
+    } else if (typeStr.includes('tmr')) {
+        // TMR Saja -> 100% TMR
         reqHijauan = weightKg;
+        reqKonsentrat = 0;
+    } else {
+        // Hijauan Saja -> 100% Hijauan
+        reqHijauan = weightKg;
+        reqKonsentrat = 0;
     }
 
     // 2. Ambil Semua Silo dan Prioritaskan silo yang dipilih user
@@ -824,16 +832,24 @@ export class LivestockService {
        let reqHijauan = 0;
        let reqKonsentrat = 0;
        
-       if (typeStr.includes('konsentrat+hijauan') || typeStr === 'tmr') {
-           const fRatio = cow.prefs?.forageRatio || 60;
-           const cRatio = cow.prefs?.concentrateRatio || 40;
-           reqHijauan = cowAsFed * (fRatio / 100);
-           reqKonsentrat = cowAsFed * (cRatio / 100);
-       } else if (typeStr.includes('konsentrat')) {
-           reqKonsentrat = cowAsFed;
-       } else {
-           reqHijauan = cowAsFed;
-       }
+        if (typeStr.includes('konsentrat+hijauan')) {
+            const fRatio = cow.prefs?.forageRatio || 60;
+            const cRatio = cow.prefs?.concentrateRatio || 40;
+            reqHijauan = cowAsFed * (fRatio / 100);
+            reqKonsentrat = cowAsFed * (cRatio / 100);
+        } else if (typeStr.includes('konsentrat')) {
+            // Konsentrat Saja -> 100% Konsentrat
+            reqKonsentrat = cowAsFed;
+            reqHijauan = 0;
+        } else if (typeStr.includes('tmr')) {
+            // TMR Saja -> 100% TMR
+            reqHijauan = cowAsFed;
+            reqKonsentrat = 0;
+        } else {
+            // Hijauan Saja -> 100% Hijauan
+            reqHijauan = cowAsFed;
+            reqKonsentrat = 0;
+        }
        
        totalHijauan += reqHijauan;
        totalKonsentrat += reqKonsentrat;
