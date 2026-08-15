@@ -27,7 +27,7 @@ const PublicDashboardLayout = () => {
           <div className="flex items-center gap-4">
             <Link to="/" className="flex items-center gap-3">
               <div className="bg-white p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm">
-                <img src="/logoxl.svg" alt="Logo" className="h-8 w-8 object-contain" />
+                <img src="/logoxl.svg" alt="Logo" width="32" height="32" className="h-8 w-8 object-contain" />
               </div>
               <h1 className="text-xl md:text-2xl font-bold text-slate-800 dark:text-white hover:text-primary-600 transition tracking-tight">Smart Cattle Barn</h1>
             </Link>
