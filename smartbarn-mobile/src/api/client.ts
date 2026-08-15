@@ -40,10 +40,14 @@ export const injectToastHandler = (handler: typeof toastHandler) => {
 
 apiClient.interceptors.response.use(
   (response) => response,
-  (error: AxiosError) => {
-    // Secara sengaja menonaktifkan trigger toast notifikasi error secara global pada level Axios.
-    // Hal ini bertujuan untuk mencegah background fetch/caching menghasilkan spam pesan error yang mengganggu pengalaman pengguna.
-    // Penanganan error (seperti menampilkan pesan gagal) sepenuhnya didelegasikan kepada masing-masing UI/screen.
+  async (error: AxiosError) => {
+    // Jika server mengembalikan 401 Unauthorized (token kedaluwarsa/invalid), bersihkan token lokal
+    if (error.response?.status === 401) {
+      try {
+        await AsyncStorage.removeItem('token');
+        await AsyncStorage.removeItem('user');
+      } catch (e) {}
+    }
     return Promise.reject(error);
   }
 );

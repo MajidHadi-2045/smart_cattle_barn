@@ -84,7 +84,7 @@ const LandingPage = () => {
 
     useEffect(() => {
         const handleScroll = () => setScrolled(window.scrollY > 20);
-        window.addEventListener('scroll', handleScroll);
+        window.addEventListener('scroll', handleScroll, { passive: true });
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
@@ -105,7 +105,7 @@ const LandingPage = () => {
                     <div className="flex justify-between items-center">
                         <div className="flex items-center gap-3 cursor-pointer" onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})}>
                             <div className="bg-white p-1.5 rounded-xl shadow-sm border border-slate-100">
-                                <img src="/logoxl.svg" alt="Logo" className="h-8 w-8" />
+                                <img src="/logoxl.svg" alt="Logo" width="32" height="32" className="h-8 w-8" />
                             </div>
                             <span className="text-xl font-bold text-slate-900 tracking-tight text-shadow-sm">Smart Cattle Barn</span>
                         </div>
@@ -399,7 +399,7 @@ const LandingPage = () => {
                 <footer className="bg-white rounded-[2.5rem] p-10 md:p-16 shadow-sm border border-slate-100">
                     <div className="flex flex-col md:flex-row justify-between items-center gap-10">
                         <div className="flex items-center gap-4">
-                            <div className="p-2 bg-slate-50 rounded-xl border border-slate-100 shadow-sm"><img src="/logoxl.svg" alt="Logo" className="h-6 w-6"/></div>
+                            <div className="p-2 bg-slate-50 rounded-xl border border-slate-100 shadow-sm"><img src="/logoxl.svg" alt="Logo" width="24" height="24" className="h-6 w-6"/></div>
                             <span className="text-lg font-bold">Smart Cattle Barn</span>
                         </div>
                         <p className="text-slate-400 text-sm font-medium">© 2026 PT AgriTekno Nusantara. All rights reserved.</p>

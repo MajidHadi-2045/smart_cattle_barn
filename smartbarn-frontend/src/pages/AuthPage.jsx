@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
 const AuthPage = () => {
@@ -125,10 +125,22 @@ const AuthPage = () => {
 
                 {/* Header Form */}
                 <div className="text-center mb-8 mt-2">
-                    <div className="inline-flex bg-white p-2 rounded-full mb-4 shadow-sm border border-slate-100">
-                        <img src="/logoxl.svg" alt="Logo" className="w-12 h-12 object-contain" />
-                    </div>
-                    <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Smart Cattle Barn</h2>
+                    <Link 
+                        to="/" 
+                        className="inline-flex flex-col items-center group focus:outline-none focus:ring-2 focus:ring-primary-500 rounded-2xl p-2 transition-all duration-300"
+                        title="Kembali ke Halaman Utama (Landing Page)"
+                        aria-label="Kembali ke Halaman Utama"
+                    >
+                        <div className="bg-white dark:bg-slate-800 p-2.5 rounded-full mb-3 shadow-sm border border-slate-100 dark:border-slate-800 group-hover:scale-110 group-hover:shadow-md group-hover:border-primary-200 transition-all duration-300">
+                            <img src="/logoxl.svg" alt="Logo Smart Cattle Barn" width="48" height="48" className="w-12 h-12 object-contain" />
+                        </div>
+                        <h2 className="text-2xl font-bold text-slate-800 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors duration-300 flex items-center gap-1.5">
+                            Smart Cattle Barn
+                            <svg className="w-4 h-4 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                            </svg>
+                        </h2>
+                    </Link>
                     <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Silakan masuk untuk mengakses sistem</p>
                 </div>
 

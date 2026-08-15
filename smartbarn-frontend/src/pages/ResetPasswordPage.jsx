@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
 const ResetPasswordPage = () => {
@@ -79,9 +79,14 @@ const ResetPasswordPage = () => {
 
         {/* Header Form */}
         <div className="text-center mb-8 mt-2">
-            <div className="inline-flex bg-white p-2 rounded-full mb-4 shadow-sm border border-slate-100">
-                <img src="/logoxl.svg" alt="Logo" className="w-12 h-12 object-contain" />
-            </div>
+            <Link 
+                to="/" 
+                className="inline-flex bg-white dark:bg-slate-800 p-2.5 rounded-full mb-3 shadow-sm border border-slate-100 dark:border-slate-700 hover:scale-110 hover:shadow-md transition-all duration-300 group"
+                title="Kembali ke Halaman Utama (Landing Page)"
+                aria-label="Kembali ke Halaman Utama"
+            >
+                <img src="/logoxl.svg" alt="Logo Smart Cattle Barn" width="48" height="48" className="w-12 h-12 object-contain" />
+            </Link>
             <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Buat Password Baru</h2>
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
                 Akun: <span className="font-semibold text-slate-700 dark:text-slate-300">{email}</span>

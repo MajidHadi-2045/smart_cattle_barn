@@ -5,11 +5,11 @@ import LandingPage from './pages/LandingPage';
 import AuthPage from './pages/AuthPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 
-// --- CODE SPLITTING UNTUK MENINGKATKAN SKOR LCP ---
-// Komponen Dashboard yang berat (mengandung chart, map, js besar) dipisah menjadi chunk terpisah
+import DashboardHome from './pages/Dashboard/DashboardHome';
+
+// --- CODE SPLITTING UNTUK RUTE DASHBOARD TERLINDUNGI ---
 const DashboardLayout = React.lazy(() => import('./layouts/DashboardLayout'));
 const PublicDashboardLayout = React.lazy(() => import('./layouts/PublicDashboardLayout'));
-const DashboardHome = React.lazy(() => import('./pages/Dashboard/DashboardHome'));
 const Livestock = React.lazy(() => import('./pages/Dashboard/Livestock'));
 const HealthPage = React.lazy(() => import('./pages/Dashboard/HealthPage'));
 const Feed = React.lazy(() => import('./pages/Dashboard/Feed'));

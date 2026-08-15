@@ -36,6 +36,15 @@ export const fetchApi = async (endpoint, options = {}) => {
   }
 
   const response = await fetch(`${API_URL}${endpoint}`, { ...options, headers });
+  
+  // Jika server mengembalikan 401 Unauthorized (token kedaluwarsa/tidak valid), otomatis logout & redirect ke login
+  if (response.status === 401 && !endpoint.includes('/auth/login')) {
+    localStorage.clear();
+    if (window.location.pathname !== '/login') {
+      window.location.href = '/login';
+    }
+  }
+
   return response;
 };
 
