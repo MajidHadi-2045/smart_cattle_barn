@@ -34,7 +34,7 @@ const PublicDashboardLayout = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <Link to="/login" className="px-4 py-2 text-sm font-semibold bg-primary-600 hover:bg-primary-700 text-white rounded-lg shadow-sm transition">
+            <Link to="/login" className="px-4 py-2 text-sm font-bold bg-primary-700 hover:bg-primary-800 text-white rounded-lg shadow-sm transition">
               Login
             </Link>
             

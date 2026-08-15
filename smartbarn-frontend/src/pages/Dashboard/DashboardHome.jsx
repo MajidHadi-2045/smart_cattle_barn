@@ -1043,6 +1043,7 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                     {/* Filter Kandang */}
                     <div className="flex flex-col sm:flex-row gap-3">
                         <select 
+                            aria-label="Pilih Kandang atau Zona"
                             value={selectedZoneId || ''}
                             onChange={(e) => {
                                 const zid = e.target.value;
@@ -1079,7 +1080,7 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                             </span>
                             <span className="text-teal-800 dark:text-teal-200 font-medium mb-1">m/s</span>
                         </div>
-                        <div className="mt-2 text-xs font-medium text-teal-700/70 dark:text-teal-300/70">Target: {'>'} 1 m/s</div>
+                        <div className="mt-2 text-xs font-semibold text-teal-900 dark:text-teal-200">Target: {'>'} 1 m/s</div>
                     </div>
 
                     {/* Kartu Suhu */}
@@ -1102,7 +1103,7 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                             </span>
                             <span className="text-orange-800 dark:text-orange-200 font-medium mb-1">°C</span>
                         </div>
-                        <div className="mt-2 text-xs font-medium text-orange-700/70 dark:text-orange-300/70">Target: 25-28 °C</div>
+                        <div className="mt-2 text-xs font-semibold text-orange-900 dark:text-orange-200">Target: 25-28 °C</div>
                     </div>
 
                     {/* Kartu Kelembapan */}
@@ -1125,7 +1126,7 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                             </span>
                             <span className="text-blue-800 dark:text-blue-200 font-medium mb-1">%</span>
                         </div>
-                        <div className="mt-2 text-xs font-medium text-blue-700/70 dark:text-blue-300/70">Target: 60-80 %</div>
+                        <div className="mt-2 text-xs font-semibold text-blue-900 dark:text-blue-200">Target: 60-80 %</div>
                     </div>
 
                     {/* Kartu Amonia */}
@@ -1148,7 +1149,7 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                             </span>
                             <span className="text-red-800 dark:text-red-200 font-medium mb-1">PPM</span>
                         </div>
-                        <div className="mt-2 text-xs font-medium text-red-700/70 dark:text-red-300/70">Batas: {'<'} 20 PPM</div>
+                        <div className="mt-2 text-xs font-semibold text-red-900 dark:text-red-200">Batas: {'<'} 20 PPM</div>
                     </div>
 
                     {/* Kartu Stress Level (THI) */}
