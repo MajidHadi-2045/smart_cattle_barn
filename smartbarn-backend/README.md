@@ -142,7 +142,5 @@ $ node test-notifikasi.js web
 
 #riset db sensor
 $ node reset-sensor.js
-
-
-
-
+#nginx config
+sudo nano /etc/nginx/sites-available/default

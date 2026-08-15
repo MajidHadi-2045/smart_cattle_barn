@@ -17,15 +17,18 @@ const Reports = React.lazy(() => import('./pages/Dashboard/Reports'));
 const UserManagement = React.lazy(() => import('./pages/Dashboard/UserManagement'));
 const HistoryPage = React.lazy(() => import('./pages/Dashboard/HistoryPage'));
 
-// --- SKELETON PLACEHOLDER UNTUK MENCEGAH LAYOUT SHIFT (CLS) ---
+// --- SKELETON PLACEHOLDER UNTUK MENCEGAH LAYOUT SHIFT (CLS = 0.00) ---
 const PageSkeleton = () => (
   <div className="flex flex-col min-h-screen bg-slate-50 dark:bg-slate-950 font-sans">
     {/* Header Skeleton (Presisi h-20 untuk mencegah shift saat layout dimuat) */}
     <div className="flex items-center justify-between h-20 px-4 md:px-8 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shrink-0">
-      <div className="h-8 w-48 bg-slate-200 dark:bg-slate-800 rounded-lg"></div>
+      <div className="flex items-center gap-3">
+        <div className="h-8 w-8 bg-slate-200 dark:bg-slate-800 rounded-lg"></div>
+        <div className="h-6 w-44 bg-slate-200 dark:bg-slate-800 rounded-lg"></div>
+      </div>
       <div className="h-9 w-24 bg-slate-200 dark:bg-slate-800 rounded-lg"></div>
     </div>
-    {/* Body Skeleton */}
+    {/* Body Skeleton (Presisi sm:grid-cols-3 h-[92px] persis dengan kartu statistik) */}
     <div className="flex-1 p-4 md:p-8 space-y-6 animate-pulse">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
@@ -34,12 +37,14 @@ const PageSkeleton = () => (
         </div>
         <div className="h-10 w-40 bg-slate-200 dark:bg-slate-800 rounded-lg"></div>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {[1, 2, 3, 4].map(i => (
-          <div key={i} className="h-28 bg-slate-200 dark:bg-slate-800 rounded-xl"></div>
-        ))}
+      {/* 3 Kartu Statistik Presisi 92px */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="h-[92px] bg-slate-200 dark:bg-slate-800 rounded-2xl"></div>
+        <div className="h-[92px] bg-slate-200 dark:bg-slate-800 rounded-2xl"></div>
+        <div className="h-[92px] bg-slate-200 dark:bg-slate-800 rounded-2xl"></div>
       </div>
-      <div className="h-80 bg-slate-200 dark:bg-slate-800 rounded-xl"></div>
+      {/* Container Grafik/Sensor */}
+      <div className="h-80 bg-slate-200 dark:bg-slate-800 rounded-2xl"></div>
     </div>
   </div>
 );
