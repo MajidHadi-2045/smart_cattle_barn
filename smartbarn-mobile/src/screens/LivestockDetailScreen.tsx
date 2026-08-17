@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getUser } from '../utils/storage';
 import { COLORS, SPACING, SHADOWS, RADIUS, FONT_SIZE, FONT_WEIGHT, TYPOGRAPHY } from '../theme';
 import { 
   ChevronLeft, 
@@ -96,9 +97,8 @@ const LivestockDetailScreen = ({ route, navigation }: any) => {
   }, [item, route.params?.autoOpenNutrition]);
 
   const checkUserRole = async () => {
-    const userStr = await AsyncStorage.getItem('user');
-    if (userStr) {
-      const user = JSON.parse(userStr);
+    const user = await getUser();
+    if (user) {
       setUserRole(user.role);
     }
   };

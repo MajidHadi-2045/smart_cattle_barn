@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { BASE_URL } from '../api/client';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getToken } from '../utils/storage';
 
 export const useSocket = (eventNames: string[]) => {
   const [data, setData] = useState<any>({});
@@ -10,7 +10,7 @@ export const useSocket = (eventNames: string[]) => {
 
   useEffect(() => {
     const initSocket = async () => {
-      const token = await AsyncStorage.getItem('token');
+      const token = await getToken();
       
       // NestJS WebSocket Gateway biasanya butuh auth token
       socketRef.current = io(BASE_URL, {

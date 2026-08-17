@@ -5,7 +5,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LayoutDashboard, Beef, Utensils, User, History as HistoryIcon, HeartPulse } from 'lucide-react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getToken, getUser } from '../utils/storage';
 
 import LoginScreen from '../screens/LoginScreen';
 import WelcomeScreen from '../screens/WelcomeScreen';
@@ -34,9 +34,8 @@ const MainTabs = () => {
 
   useEffect(() => {
     const getRole = async () => {
-      const userStr = await AsyncStorage.getItem('user');
-      if (userStr) {
-        const userObj = JSON.parse(userStr);
+      const userObj = await getUser();
+      if (userObj) {
         setUserRole(userObj.role);
       }
     };
@@ -134,7 +133,7 @@ const AppNavigator = () => {
   useEffect(() => {
     const checkLoginStatus = async () => {
       try {
-        const token = await AsyncStorage.getItem('token');
+        const token = await getToken();
         if (token) {
           setInitialRoute('Dashboard');
         }

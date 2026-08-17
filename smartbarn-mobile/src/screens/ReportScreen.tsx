@@ -15,6 +15,7 @@ import { COLORS, SPACING, SHADOWS } from '../theme';
 import { ChevronLeft, FileText, Download, TrendingUp, PieChart, Info, Calendar, CheckCircle } from 'lucide-react-native';
 import apiClient, { BASE_URL } from '../api/client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getToken } from '../utils/storage';
 
 import { useToast } from '../context/ToastContext';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -100,7 +101,7 @@ const ReportScreen = ({ navigation }: any) => {
   const handleDownload = async () => {
     setIsDownloading(true);
     try {
-      const token = await AsyncStorage.getItem('token');
+      const token = await getToken();
       const downloadUrl = `${BASE_URL}/api/reports/download?jenis=${jenisLaporan}&start=${startDate}&end=${endDate}&format=PDF&token=${token}`;
       
       // Buka URL download menggunakan browser sistem untuk mengunduh file secara langsung

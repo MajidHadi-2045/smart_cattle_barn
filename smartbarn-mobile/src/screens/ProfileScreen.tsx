@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getUser, saveUser, clearAuthSession } from '../utils/storage';
 import { COLORS, SPACING, SHADOWS } from '../theme';
 import { User, Mail, Lock, Shield, LogOut, ChevronLeft, Camera, Phone, Edit2, Check, X } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -30,9 +31,8 @@ const ProfileScreen = ({ navigation }: any) => {
 
   useEffect(() => {
     const loadUser = async () => {
-      const userStr = await AsyncStorage.getItem('user');
-      if (userStr) {
-        let parsedUser = JSON.parse(userStr);
+      let parsedUser = await getUser();
+      if (parsedUser) {
         setUser(parsedUser);
         
         // Coba ambil data terbaru dari backend
@@ -41,7 +41,7 @@ const ProfileScreen = ({ navigation }: any) => {
           if (res.data) {
             parsedUser = { ...parsedUser, ...res.data };
             setUser(parsedUser);
-            await AsyncStorage.setItem('user', JSON.stringify(parsedUser));
+            await saveUser(parsedUser);
           }
         } catch (e) {
           console.log('Gagal mengambil data profil terbaru', e);
@@ -64,6 +64,7 @@ const ProfileScreen = ({ navigation }: any) => {
           text: "Keluar", 
           style: "destructive",
           onPress: async () => {
+            await clearAuthSession();
             await AsyncStorage.clear();
             navigation.replace('Login');
           }
@@ -87,7 +88,7 @@ const ProfileScreen = ({ navigation }: any) => {
 
       const updatedUser = { ...user, email: editEmail, phone: editPhone };
       setUser(updatedUser);
-      await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+      await saveUser(updatedUser);
       
       Alert.alert('Sukses', 'Profil berhasil diperbarui!');
       setIsEditingProfile(false);
@@ -161,7 +162,7 @@ const ProfileScreen = ({ navigation }: any) => {
       
       const updatedUser = { ...user, photo_url: base64String, photo: base64String };
       setUser(updatedUser);
-      await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+      await saveUser(updatedUser);
       
       Alert.alert('Sukses', 'Foto profil berhasil diperbarui!');
     } catch (error: any) {

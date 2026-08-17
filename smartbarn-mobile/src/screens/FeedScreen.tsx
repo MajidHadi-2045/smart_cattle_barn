@@ -18,6 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, SPACING, SHADOWS } from '../theme';
 import { Utensils, Zap, Database, Clock, Hourglass } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getUser } from '../utils/storage';
 import apiClient from '../api/client';
 import LoadingSpinner from '../components/LoadingSpinner';
 
@@ -117,9 +118,9 @@ const FeedScreen = () => {
 
   useEffect(() => {
     const checkUserRole = async () => {
-      const userStr = await AsyncStorage.getItem('user');
-      if (userStr) {
-        setUserRole(JSON.parse(userStr).role);
+      const storedUser = await getUser();
+      if (storedUser) {
+        setUserRole(storedUser.role);
       }
     };
     checkUserRole();

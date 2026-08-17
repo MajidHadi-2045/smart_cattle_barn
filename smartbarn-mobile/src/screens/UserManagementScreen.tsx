@@ -36,6 +36,7 @@ import {
 import apiClient from '../api/client';
 import LoadingSpinner from '../components/LoadingSpinner';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getUser } from '../utils/storage';
 
 const UserManagementScreen = ({ navigation }: any) => {
   const [activeTab, setActiveTab] = useState<'list' | 'requests' | 'form' | 'activity'>('list');
@@ -63,8 +64,7 @@ const UserManagementScreen = ({ navigation }: any) => {
 
   const fetchUsersAndRequests = async () => {
     try {
-      const userStr = await AsyncStorage.getItem('user');
-      const currentUser = userStr ? JSON.parse(userStr) : null;
+      const currentUser = await getUser();
       const userRole = currentUser?.role || 'STAFF';
 
       const usersRes = await apiClient.get('/users/staff');
@@ -88,9 +88,8 @@ const UserManagementScreen = ({ navigation }: any) => {
 
   useEffect(() => {
     const loadUser = async () => {
-      const userStr = await AsyncStorage.getItem('user');
-      if (userStr) {
-        const parsed = JSON.parse(userStr);
+      const parsed = await getUser();
+      if (parsed) {
         setCurrentUserRole(parsed.role || 'STAFF');
         setCurrentUserName(parsed.name || 'Staf');
         setFormRole(parsed.role === 'VETERINER' ? 'VETERINER' : 'STAFF');

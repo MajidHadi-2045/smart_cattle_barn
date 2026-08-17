@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, SPACING, SHADOWS } from '../theme';
 import { LogIn, Lock, User, Beef, Eye, EyeOff } from 'lucide-react-native';
 import apiClient from '../api/client';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { saveToken, saveUser } from '../utils/storage';
 import { registerForPushNotificationsAsync } from '../utils/registerForPushNotificationsAsync';
 
 const LoginScreen = ({ navigation }: any) => {
@@ -51,8 +51,8 @@ const LoginScreen = ({ navigation }: any) => {
       });
       const { access_token, user } = response.data;
       
-      await AsyncStorage.setItem('token', access_token);
-      await AsyncStorage.setItem('user', JSON.stringify(user));
+      await saveToken(access_token);
+      await saveUser(user);
       
       navigation.replace('Dashboard');
     } catch (error: any) {

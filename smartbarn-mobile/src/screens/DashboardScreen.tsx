@@ -17,6 +17,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, SPACING, SHADOWS, RADIUS, FONT_SIZE, FONT_WEIGHT, TYPOGRAPHY } from '../theme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getUser } from '../utils/storage';
 import apiClient from '../api/client';
 import { useSocket } from '../hooks/useSocket';
 import { useReadingMode } from '../context/ReadingModeContext';
@@ -254,8 +255,8 @@ const DashboardScreen = ({ navigation }: any) => {
     }
     
     try {
-      const userStr = await AsyncStorage.getItem('user');
-      if (userStr) setUser(JSON.parse(userStr));
+      const storedUser = await getUser();
+      if (storedUser) setUser(storedUser);
     } catch (err) {
       console.warn('Error getting user from storage:', err);
     }

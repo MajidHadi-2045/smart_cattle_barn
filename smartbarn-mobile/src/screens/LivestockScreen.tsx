@@ -39,6 +39,7 @@ import CustomModal from '../components/CustomModal';
 import { useToast } from '../context/ToastContext';
 import Skeleton from '../components/Skeleton';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getUser } from '../utils/storage';
 import { useSocket } from '../hooks/useSocket';
 
 const fetcherMulti = async () => {
@@ -98,9 +99,8 @@ const LivestockScreen = ({ navigation }: any) => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const userStr = await AsyncStorage.getItem('user');
-        if (userStr) {
-          const u = JSON.parse(userStr);
+        const u = await getUser();
+        if (u) {
           setUserRole(u.role);
         }
       } catch (err) {}

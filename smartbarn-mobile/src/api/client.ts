@@ -1,5 +1,5 @@
 import axios, { AxiosError } from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getToken, clearAuthSession } from '../utils/storage';
 
 // ==========================================
 // KONFIGURASI BASE URL API BACKEND
@@ -18,10 +18,10 @@ const apiClient = axios.create({
   },
 });
 
-// Interceptor untuk menyertakan token JWT di setiap request
+// Interceptor untuk menyertakan token JWT terenkripsi di setiap request
 apiClient.interceptors.request.use(
   async (config) => {
-    const token = await AsyncStorage.getItem('token');
+    const token = await getToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -41,11 +41,10 @@ export const injectToastHandler = (handler: typeof toastHandler) => {
 apiClient.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
-    // Jika server mengembalikan 401 Unauthorized (token kedaluwarsa/invalid), bersihkan token lokal
+    // Jika server mengembalikan 401 Unauthorized (token kedaluwarsa/invalid), bersihkan token & sesi lokal secara aman
     if (error.response?.status === 401) {
       try {
-        await AsyncStorage.removeItem('token');
-        await AsyncStorage.removeItem('user');
+        await clearAuthSession();
       } catch (e) {}
     }
     return Promise.reject(error);

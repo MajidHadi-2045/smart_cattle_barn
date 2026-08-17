@@ -20,6 +20,7 @@ import { HeartPulse, User, Calendar, ClipboardList, Plus, X, Edit, Trash2 } from
 import apiClient from '../api/client';
 import LoadingSpinner from '../components/LoadingSpinner';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getUser } from '../utils/storage';
 
 const HealthScreen = () => {
   const [records, setRecords] = useState<any[]>([]);
@@ -67,9 +68,8 @@ const HealthScreen = () => {
 
   useEffect(() => {
     const getRole = async () => {
-      const userStr = await AsyncStorage.getItem('user');
-      if (userStr) {
-        const userObj = JSON.parse(userStr);
+      const userObj = await getUser();
+      if (userObj) {
         setUserRole(userObj.role);
         setFormData(prev => ({ ...prev, pemeriksa: userObj.name || '' }));
       }
