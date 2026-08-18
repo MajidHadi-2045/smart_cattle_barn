@@ -57,9 +57,12 @@ export class HeartrateProcessor extends WorkerHost {
     if (!hasAlerted) {
       await this.redisClient.set(alertKey, '1', 'EX', 1800); // Kunci 30 menit agar tidak spam
       
-      // AMBIL SEMUA USER (Staff, Manager, Veteriner) yang punya token
+      // AMBIL SEMUA PENGGUNA KE-3 PERAN (SUPER_ADMIN, VETERINER, STAFF) YANG MEMILIKI TOKEN
       const targets = await this.prisma.user.findMany({
-        where: { pushToken: { not: null } } 
+        where: { 
+          role: { in: ['SUPER_ADMIN', 'VETERINER', 'STAFF'] },
+          pushToken: { not: null } 
+        } 
       });
 
       const { sendPushNotification } = require('../utils/expoPush');

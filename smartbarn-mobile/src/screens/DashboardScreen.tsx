@@ -22,6 +22,7 @@ import apiClient from '../api/client';
 import { useSocket } from '../hooks/useSocket';
 import { useReadingMode } from '../context/ReadingModeContext';
 import { registerForPushNotificationsAsync } from '../utils/registerForPushNotificationsAsync';
+import { triggerLocalNotification } from '../utils/triggerNotification';
 import { 
   LayoutDashboard, 
   LogOut, 
@@ -59,11 +60,18 @@ import {
 import { Dimensions } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 
-const formatNotificationTime = (timestamp?: string | number | Date) => {
-  if (!timestamp) return '';
-  const date = new Date(timestamp);
-  const now = new Date();
+const formatNotificationTime = (timestamp?: any) => {
+  if (!timestamp) return 'Baru saja';
   
+  // Jika timestamp sudah berupa teks terformat (misal: "Hari ini, 14:30")
+  if (typeof timestamp === 'string' && (timestamp.includes('Hari ini') || timestamp.includes('Kemarin') || timestamp.includes(':') && timestamp.length < 25)) {
+    return timestamp;
+  }
+
+  const date = new Date(isNaN(Number(timestamp)) ? timestamp : Number(timestamp));
+  if (isNaN(date.getTime())) return String(timestamp);
+
+  const now = new Date();
   const dDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
   const dNow = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   
@@ -151,15 +159,16 @@ const DashboardScreen = ({ navigation }: any) => {
     if (socketData['websocket:alert']) {
       const payload = socketData['websocket:alert'];
       const newNotif = {
-        id: Date.now(),
+        id: payload.id || Date.now(),
         title: payload.title,
-        body: payload.body,
+        body: payload.body || payload.message,
         time: formatNotificationTime(payload.timestamp || Date.now())
       };
-      setNotifications(prev => [newNotif, ...prev].slice(0, 10));
+      setNotifications(prev => [newNotif, ...prev].slice(0, 15));
       setUnreadNotifCount(prev => prev + 1);
       
-      Alert.alert(payload.title, payload.body);
+      // Pemicu Notifikasi Spanduk Sistem (Heads-Up Banner) dengan Suara & Getaran
+      triggerLocalNotification(payload.title, payload.body || payload.message);
       
       // Reset socket data to prevent infinite loop
       socketData['websocket:alert'] = null;

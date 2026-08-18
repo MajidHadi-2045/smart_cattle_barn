@@ -139,10 +139,10 @@ export class IotService implements OnModuleInit, OnModuleDestroy {
            // 1. Kunci selama 30 Menit (1800 detik) agar HP pegawai tidak meledak dibanjiri notifikasi
            await this.redisPub.set(alertKey, '1', 'EX', 1800);
            
-           // 2. Ambil token HP untuk seluruh peran (MANAGER, STAFF, VETERINER)
+           // 2. Ambil token HP untuk 3 peran (SUPER_ADMIN, VETERINER, STAFF)
            const targets = await this.prisma.user.findMany({
              where: { 
-               role: { in: ['MANAGER', 'STAFF', 'VETERINER'] }, 
+               role: { in: ['SUPER_ADMIN', 'MANAGER', 'VETERINER', 'STAFF'] },
                pushToken: { not: null } 
              }
            });
@@ -195,7 +195,7 @@ export class IotService implements OnModuleInit, OnModuleDestroy {
 
            const targets = await this.prisma.user.findMany({
              where: { 
-               role: { in: ['MANAGER', 'STAFF', 'VETERINER'] }, 
+               role: { in: ['SUPER_ADMIN', 'MANAGER', 'VETERINER', 'STAFF'] },
                pushToken: { not: null } 
              }
            });
