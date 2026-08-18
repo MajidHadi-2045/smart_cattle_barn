@@ -53,6 +53,11 @@ const testPush = async (pushToken) => {
         sound: 'default',
         title: '🔔 Uji Coba Smart Barn',
         body: 'Halo! Push notification dari Smart Cattle Barn bekerja dengan baik.',
+        priority: 'high',
+        channelId: 'default',
+        badge: 1,
+        _displayInForeground: true,
+        data: { title: '🔔 Uji Coba Smart Barn', body: 'Push notification bekerja dengan baik.' }
     };
 
     try {

@@ -22,8 +22,25 @@ module.exports = {
     "edgeToEdgeEnabled": true,
     "predictiveBackGestureEnabled": false,
     "package": "com.goodakun42.smartbarnmobile",
-    "googleServicesFile": process.env.GOOGLE_SERVICES_JSON || "./google-services.json"
+    "googleServicesFile": process.env.GOOGLE_SERVICES_JSON || "./google-services.json",
+    "permissions": [
+      "NOTIFICATIONS",
+      "POST_NOTIFICATIONS",
+      "RECEIVE_BOOT_COMPLETED",
+      "VIBRATE",
+      "INTERNET"
+    ]
   },
+  "plugins": [
+    [
+      "expo-notifications",
+      {
+        "icon": "./assets/icon.png",
+        "color": "#059669",
+        "sounds": []
+      }
+    ]
+  ],
   "web": {
     "favicon": "./assets/favicon.png"
   },

@@ -29,7 +29,7 @@ const PublicDashboardLayout = () => {
               <div className="bg-white p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm">
                 <img src="/logoxl.svg" alt="Logo" width="32" height="32" className="h-8 w-8 object-contain" />
               </div>
-              <h1 className="text-xl md:text-2xl font-bold text-slate-800 dark:text-white hover:text-primary-600 transition tracking-tight">Smart Cattle Barn</h1>
+              <h1 className="text-base sm:text-xl md:text-2xl font-bold text-slate-800 dark:text-white hover:text-primary-600 transition tracking-tight truncate max-w-[140px] xs:max-w-none">Smart Cattle Barn</h1>
             </Link>
           </div>
 

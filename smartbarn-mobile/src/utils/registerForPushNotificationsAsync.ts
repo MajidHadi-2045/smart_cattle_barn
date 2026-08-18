@@ -8,10 +8,13 @@ export async function registerForPushNotificationsAsync() {
 
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('default', {
-      name: 'default',
+      name: 'Peringatan Darurat SmartBarn',
       importance: Notifications.AndroidImportance.MAX,
       vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#FF231F7C',
+      lightColor: '#059669',
+      sound: 'default',
+      enableVibrate: true,
+      showBadge: true,
     });
   }
 

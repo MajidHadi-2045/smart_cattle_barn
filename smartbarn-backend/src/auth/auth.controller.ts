@@ -28,4 +28,10 @@ export class AuthController {
   resetPassword(@Body() dto: ResetPasswordDto) {
     return this.authService.resetPassword(dto.token, dto.newPassword);
   }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('push-token')
+  updatePushToken(@Body() body: { userId: string; pushToken: string }) {
+    return this.authService.updatePushToken(body.userId, body.pushToken);
+  }
 }

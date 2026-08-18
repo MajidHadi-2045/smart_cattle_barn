@@ -16,7 +16,11 @@ export async function sendPushNotification(pushToken: string, title: string, bod
     sound: 'default',
     title: title,
     body: body,
-    data: { someData: 'goes here' },
+    priority: 'high',            // Wajib 'high' untuk Android agar muncul banner/spanduk saat aplikasi tertutup
+    channelId: 'default',        // Wajib 'default' agar sesuai dengan Android Notification Channel
+    badge: 1,
+    _displayInForeground: true,
+    data: { title, body },
   };
 
   try {
@@ -30,11 +34,12 @@ export async function sendPushNotification(pushToken: string, title: string, bod
       body: JSON.stringify(message)
     });
     
+    const result = await response.json();
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     
-    console.log(`[Push Notification] Berhasil dikirim ke: ${pushToken}`);
+    console.log(`[Push Notification] Berhasil dikirim ke: ${pushToken}`, result);
   } catch (error: any) {
     console.error('[Push Notification] Gagal mengirim:', error.message);
   }

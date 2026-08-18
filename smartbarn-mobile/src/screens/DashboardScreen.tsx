@@ -21,6 +21,7 @@ import { getUser } from '../utils/storage';
 import apiClient from '../api/client';
 import { useSocket } from '../hooks/useSocket';
 import { useReadingMode } from '../context/ReadingModeContext';
+import { registerForPushNotificationsAsync } from '../utils/registerForPushNotificationsAsync';
 import { 
   LayoutDashboard, 
   LogOut, 
@@ -256,9 +257,19 @@ const DashboardScreen = ({ navigation }: any) => {
     
     try {
       const storedUser = await getUser();
-      if (storedUser) setUser(storedUser);
+      if (storedUser) {
+        setUser(storedUser);
+        // Otomatis minta & daftarkan push token HP pengguna ke database backend
+        const pushToken = await registerForPushNotificationsAsync();
+        if (pushToken && storedUser.id) {
+          await apiClient.post('/auth/push-token', {
+            userId: storedUser.id,
+            pushToken
+          });
+        }
+      }
     } catch (err) {
-      console.warn('Error getting user from storage:', err);
+      console.warn('Error getting user / syncing push token:', err);
     }
     
     try {

@@ -63,6 +63,22 @@ export class AuthService {
   }
 
   // ==========================================
+  // FUNGSI UPDATE PUSH TOKEN DINAMIS
+  // ==========================================
+  async updatePushToken(userId: string, pushToken: string) {
+    if (!userId || !pushToken) return { success: false, message: 'Data userId dan pushToken wajib diisi' };
+    try {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { pushToken }
+      });
+      return { success: true, message: 'Push token berhasil diperbarui' };
+    } catch (e: any) {
+      return { success: false, message: e.message };
+    }
+  }
+
+  // ==========================================
   // FUNGSI REGISTER (Khusus inisialisasi awal)
   // ==========================================
   async register(data: any) {
