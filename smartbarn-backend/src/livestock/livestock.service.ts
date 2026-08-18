@@ -14,12 +14,12 @@ export class LivestockService {
     private prisma: PrismaService,
     private activityService: ActivityService
   ) {
-    this.redis = new Redis({ 
-      host: process.env.REDIS_HOST || 'localhost', 
+    this.redis = new Redis({
+      host: process.env.REDIS_HOST || 'localhost',
       port: parseInt(process.env.REDIS_PORT || '6379', 10),
-      maxRetriesPerRequest: 1 
+      maxRetriesPerRequest: 1
     });
-    this.redis.on('error', () => {});
+    this.redis.on('error', () => { });
   }
 
   /**
@@ -80,7 +80,7 @@ export class LivestockService {
    * Helper untuk memformat data Prisma sesuai struktur Frontend
    */
   private mapToFrontendDTO = (cattle: any, config?: any) => {
-    const ageInMonths = cattle.birthDate 
+    const ageInMonths = cattle.birthDate
       ? Math.floor((new Date().getTime() - new Date(cattle.birthDate).getTime()) / (1000 * 60 * 60 * 24 * 30))
       : 0;
 
@@ -134,7 +134,7 @@ export class LivestockService {
         if (keys.length) await this.redis.del(...keys);
         if (statsKeys.length) await this.redis.del(...statsKeys);
       }
-    } catch (err) {}
+    } catch (err) { }
   }
 
   /**
@@ -144,8 +144,11 @@ export class LivestockService {
     const cacheKey = `livestock:list:section:${sectionId}`;
     try {
       const cached = await this.redis.get(cacheKey);
-      if (cached) return JSON.parse(cached);
-    } catch (err) {}
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (err) { }
 
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
@@ -168,11 +171,11 @@ export class LivestockService {
       });
       const config = this.loadChecklistConfig();
       const result = data.map(cow => this.mapToFrontendDTO(cow, config));
-      
+
       try {
         await this.redis.set(cacheKey, JSON.stringify(result), 'EX', 3600); // Cache 1 Jam
-      } catch (err) {}
-      
+      } catch (err) { }
+
       return result;
     } catch (err) {
       console.warn('Database Connection Down in findAllBySection. Returning empty list.');
@@ -216,8 +219,11 @@ export class LivestockService {
     const cacheKey = 'livestock:list:all';
     try {
       const cached = await this.redis.get(cacheKey);
-      if (cached) return JSON.parse(cached);
-    } catch (err) {}
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (err) { }
 
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
@@ -228,7 +234,7 @@ export class LivestockService {
           section: { include: { zone: true } },
           vitals: {
             orderBy: { timestamp: 'desc' },
-            take: 5, 
+            take: 5,
             select: { bodyTemperature: true, heartRate: true }
           },
           feedRecords: {
@@ -239,11 +245,11 @@ export class LivestockService {
       });
       const config = this.loadChecklistConfig();
       const result = data.map(cow => this.mapToFrontendDTO(cow, config));
-      
+
       try {
         await this.redis.set(cacheKey, JSON.stringify(result), 'EX', 3600); // Cache 1 Jam
-      } catch (err) {}
-      
+      } catch (err) { }
+
       return result;
     } catch (err) {
       console.warn('Database Connection Down in findAll. Returning empty list.');
@@ -265,7 +271,7 @@ export class LivestockService {
         include: {
           vitals: {
             orderBy: { timestamp: 'desc' },
-            take: 20, 
+            take: 20,
           },
           healthRecords: {
             orderBy: { createdAt: 'desc' }
@@ -367,7 +373,7 @@ export class LivestockService {
   async getSettings() {
     const feces = await this.prisma.systemSettings.findUnique({ where: { key: 'DEFAULT_FECES_KG' } });
     const urine = await this.prisma.systemSettings.findUnique({ where: { key: 'DEFAULT_URINE_L' } });
-    
+
     return {
       fecesKg: feces ? parseFloat(feces.value) : 25,
       urineL: urine ? parseFloat(urine.value) : 120
@@ -386,7 +392,7 @@ export class LivestockService {
       update: { value: urineL.toString() },
       create: { key: 'DEFAULT_URINE_L', value: urineL.toString() }
     });
-    
+
     await this.activityService.log(author, 'EDIT', 'SILO', 'Memperbarui pengaturan default limbah');
     return { success: true };
   }
@@ -409,9 +415,9 @@ export class LivestockService {
     });
 
     for (const item of counts) {
-        if (item._count._all >= goal) {
-            throw new BadRequestException(`Batas pencatatan limbah (${goal} kali per ${period === 'monthly' ? 'bulan' : period === 'weekly' ? 'minggu' : 'hari'}) sudah tercapai untuk sapi ${item.cattleId}.`);
-        }
+      if (item._count._all >= goal) {
+        throw new BadRequestException(`Batas pencatatan limbah (${goal} kali per ${period === 'monthly' ? 'bulan' : period === 'weekly' ? 'minggu' : 'hari'}) sudah tercapai untuk sapi ${item.cattleId}.`);
+      }
     }
 
     const today = new Date();
@@ -421,7 +427,7 @@ export class LivestockService {
     const chunkSize = 50;
     for (let i = 0; i < cattleIds.length; i += chunkSize) {
       const chunk = cattleIds.slice(i, i + chunkSize);
-      const promises = chunk.map(cattleId => 
+      const promises = chunk.map(cattleId =>
         this.prisma.livestockWaste.upsert({
           where: { cattleId_date: { cattleId, date: today } },
           update: { fecesKg, urineL, isAuto: false },
@@ -444,14 +450,14 @@ export class LivestockService {
     const startDate = this.getStartDateForPeriod(period);
 
     const count = await this.prisma.zoneWaste.count({
-        where: {
-            zoneId,
-            date: { gte: startDate }
-        }
+      where: {
+        zoneId,
+        date: { gte: startDate }
+      }
     });
 
     if (count >= goal) {
-        throw new BadRequestException(`Batas pencatatan limbah (${goal} kali per ${period === 'monthly' ? 'bulan' : period === 'weekly' ? 'minggu' : 'hari'}) sudah tercapai untuk zona/kandang ini.`);
+      throw new BadRequestException(`Batas pencatatan limbah (${goal} kali per ${period === 'monthly' ? 'bulan' : period === 'weekly' ? 'minggu' : 'hari'}) sudah tercapai untuk zona/kandang ini.`);
     }
 
     const today = new Date();
@@ -490,7 +496,7 @@ export class LivestockService {
     today.setUTCHours(0, 0, 0, 0);
 
     const allCattle = await this.prisma.livestock.findMany({ select: { cattleId: true } });
-    
+
     const wasteData = allCattle.map(cow => ({
       cattleId: cow.cattleId,
       date: today,
@@ -557,77 +563,77 @@ export class LivestockService {
       const currentHour = wibDate.getHours();
       const currentMinute = wibDate.getMinutes();
       const currentTimeInMinutes = currentHour * 60 + currentMinute;
-      
+
       const getWibDateString = (dObj: Date) => {
-          const u = dObj.getTime() + (dObj.getTimezoneOffset() * 60000);
-          const w = new Date(u + (3600000 * 7));
-          return `${w.getFullYear()}-${w.getMonth() + 1}-${w.getDate()}`;
+        const u = dObj.getTime() + (dObj.getTimezoneOffset() * 60000);
+        const w = new Date(u + (3600000 * 7));
+        return `${w.getFullYear()}-${w.getMonth() + 1}-${w.getDate()}`;
       };
 
       const todayStr = getWibDateString(now);
 
-      const keyword = feedType.toLowerCase().includes('konsentrat+hijauan') || feedType.toLowerCase() === 'tmr' 
-          ? '' 
-          : feedType.toLowerCase();
+      const keyword = feedType.toLowerCase().includes('konsentrat+hijauan') || feedType.toLowerCase() === 'tmr'
+        ? ''
+        : feedType.toLowerCase();
 
       const schedules = await this.prisma.feedingSchedule.findMany();
-      
+
       let matchedSchedules = schedules.filter(s => {
-          if (keyword && !s.feedType.toLowerCase().includes(keyword) && !keyword.includes(s.feedType.toLowerCase())) return false;
-          if (zoneId && s.zoneId && s.zoneId !== zoneId) return false;
-          return true;
+        if (keyword && !s.feedType.toLowerCase().includes(keyword) && !keyword.includes(s.feedType.toLowerCase())) return false;
+        if (zoneId && s.zoneId && s.zoneId !== zoneId) return false;
+        return true;
       });
 
       matchedSchedules = matchedSchedules.filter(s => {
-          const isUpdatedToday = s.updatedAt && getWibDateString(new Date(s.updatedAt)) === todayStr;
-          return !isUpdatedToday || s.status === 'BELUM';
+        const isUpdatedToday = s.updatedAt && getWibDateString(new Date(s.updatedAt)) === todayStr;
+        return !isUpdatedToday || s.status === 'BELUM';
       });
 
       if (matchedSchedules.length === 0) return;
 
       matchedSchedules.sort((a, b) => {
-          const parseTime = (timeStr: string) => {
-              const parts = timeStr.split('-');
-              const end = parts.length > 1 ? parts[1].trim() : parts[0].trim();
-              const [h, m] = end.split(':').map(Number);
-              return (!isNaN(h) && !isNaN(m)) ? h * 60 + m : 0;
-          };
-          const diffA = Math.abs(currentTimeInMinutes - parseTime(a.time));
-          const diffB = Math.abs(currentTimeInMinutes - parseTime(b.time));
-          return diffA - diffB;
+        const parseTime = (timeStr: string) => {
+          const parts = timeStr.split('-');
+          const end = parts.length > 1 ? parts[1].trim() : parts[0].trim();
+          const [h, m] = end.split(':').map(Number);
+          return (!isNaN(h) && !isNaN(m)) ? h * 60 + m : 0;
+        };
+        const diffA = Math.abs(currentTimeInMinutes - parseTime(a.time));
+        const diffB = Math.abs(currentTimeInMinutes - parseTime(b.time));
+        return diffA - diffB;
       });
 
       const targetSchedule = matchedSchedules[0];
       const timeParts = targetSchedule.time.split('-');
       const endTimeStr = timeParts.length > 1 ? timeParts[1].trim() : timeParts[0].trim();
       const [endHour, endMinute] = endTimeStr.split(':').map(Number);
-      
+
       if (!isNaN(endHour) && !isNaN(endMinute)) {
-          const schedTimeInMinutes = endHour * 60 + endMinute;
-          const diffMinutes = currentTimeInMinutes - schedTimeInMinutes;
-          
-          let newStatus = 'SUDAH';
-          let isLate = false;
-          
-          if (diffMinutes < -30) {
-              newStatus = 'LEBIH_AWAL';
-          } else if (diffMinutes > 30) {
-              newStatus = 'TELAT';
-              isLate = true;
+        const schedTimeInMinutes = endHour * 60 + endMinute;
+        const diffMinutes = currentTimeInMinutes - schedTimeInMinutes;
+
+        let newStatus = 'SUDAH';
+        let isLate = false;
+
+        if (diffMinutes < -30) {
+          newStatus = 'LEBIH_AWAL';
+        } else if (diffMinutes > 30) {
+          newStatus = 'TELAT';
+          isLate = true;
+        }
+
+        await this.prisma.feedingSchedule.update({
+          where: { id: targetSchedule.id },
+          data: {
+            status: newStatus as any,
+            isLate: isLate,
+            updatedAt: now
           }
-          
-          await this.prisma.feedingSchedule.update({
-              where: { id: targetSchedule.id },
-              data: { 
-                  status: newStatus as any, 
-                  isLate: isLate,
-                  updatedAt: now
-              }
-          });
-          
-          try {
-            await this.redis.del('feed:schedules');
-          } catch(e) {}
+        });
+
+        try {
+          await this.redis.del('feed:schedules');
+        } catch (e) { }
       }
     } catch (err) {
       console.error('Error auto-updating schedule:', err);
@@ -637,7 +643,7 @@ export class LivestockService {
   // 1. Catat Berat Sapi (Dengan opsi tanggal mundur/kustom - Tanpa Batas Kuota)
   async recordWeight(cattleId: string, weight: number, author: string = 'Admin', dateStr?: string) {
     const weighDate = dateStr ? new Date(dateStr) : new Date();
-    
+
     const record = await this.prisma.livestockWeightRecord.create({
       data: { cattleId, weight, weighDate }
     });
@@ -661,10 +667,10 @@ export class LivestockService {
     const zoneWastes = await this.prisma.zoneWaste.deleteMany({ where: { batchId } });
 
     await this.activityService.log(author, 'HAPUS', 'TERNAK', `Menghapus input kolektif dengan batchId: ${batchId}`);
-    return { 
-      success: true, 
-      deletedFeeds: feeds.count, 
-      deletedWeights: weights.count, 
+    return {
+      success: true,
+      deletedFeeds: feeds.count,
+      deletedWeights: weights.count,
       deletedWastes: wastes.count,
       deletedZoneWastes: zoneWastes.count
     };
@@ -689,59 +695,59 @@ export class LivestockService {
     const typeStr = feedType.toLowerCase();
 
     if (typeStr.includes('konsentrat+hijauan')) {
-        const fRatio = cow.prefs?.forageRatio || 60;
-        const cRatio = cow.prefs?.concentrateRatio || 40;
-        reqHijauan = weightKg * (fRatio / 100);
-        reqKonsentrat = weightKg * (cRatio / 100);
+      const fRatio = cow.prefs?.forageRatio || 60;
+      const cRatio = cow.prefs?.concentrateRatio || 40;
+      reqHijauan = weightKg * (fRatio / 100);
+      reqKonsentrat = weightKg * (cRatio / 100);
     } else if (typeStr.includes('konsentrat')) {
-        // Konsentrat Saja -> 100% Konsentrat
-        reqKonsentrat = weightKg;
-        reqHijauan = 0;
+      // Konsentrat Saja -> 100% Konsentrat
+      reqKonsentrat = weightKg;
+      reqHijauan = 0;
     } else if (typeStr.includes('tmr')) {
-        // TMR Saja -> 100% TMR
-        reqHijauan = weightKg;
-        reqKonsentrat = 0;
+      // TMR Saja -> 100% TMR
+      reqHijauan = weightKg;
+      reqKonsentrat = 0;
     } else {
-        // Hijauan Saja -> 100% Hijauan
-        reqHijauan = weightKg;
-        reqKonsentrat = 0;
+      // Hijauan Saja -> 100% Hijauan
+      reqHijauan = weightKg;
+      reqKonsentrat = 0;
     }
 
     // 2. Ambil Semua Silo dan Prioritaskan silo yang dipilih user
     let allSilos = await this.prisma.silo.findMany({ orderBy: { currentStock: 'desc' } });
     if (siloId) {
-        const selectedSilo = allSilos.find(s => s.id === parseInt(siloId as any));
-        if (selectedSilo) {
-            allSilos = [selectedSilo, ...allSilos.filter(s => s.id !== selectedSilo.id)];
-        }
+      const selectedSilo = allSilos.find(s => s.id === parseInt(siloId as any));
+      if (selectedSilo) {
+        allSilos = [selectedSilo, ...allSilos.filter(s => s.id !== selectedSilo.id)];
+      }
     }
 
     // 3. Hitung Pemotongan Stok dari berbagai Silo
     const deductions: { id: number, name: string, deductAmount: number, oldStock: number, capacity: number }[] = [];
-    
+
     const fulfill = (amountNeeded: number, keyword: string) => {
-        let remaining = amountNeeded;
-        for (const silo of allSilos) {
-            if (remaining <= 0) break;
-            const sType = (silo.feedType || '').toLowerCase();
-            const sName = (silo.name || '').toLowerCase();
-            if (sType.includes(keyword) || sName.includes(keyword) || (keyword === 'hijauan' && (sType.includes('rumput') || sName.includes('rumput')))) {
-                const available = silo.currentStock - (deductions.find(d => d.id === silo.id)?.deductAmount || 0);
-                if (available > 0) {
-                    const take = Math.min(remaining, available);
-                    const existingDeduction = deductions.find(d => d.id === silo.id);
-                    if (existingDeduction) {
-                        existingDeduction.deductAmount += take;
-                    } else {
-                        deductions.push({ id: silo.id, name: silo.name, deductAmount: take, oldStock: silo.currentStock, capacity: silo.capacity });
-                    }
-                    remaining -= take;
-                }
+      let remaining = amountNeeded;
+      for (const silo of allSilos) {
+        if (remaining <= 0) break;
+        const sType = (silo.feedType || '').toLowerCase();
+        const sName = (silo.name || '').toLowerCase();
+        if (sType.includes(keyword) || sName.includes(keyword) || (keyword === 'hijauan' && (sType.includes('rumput') || sName.includes('rumput')))) {
+          const available = silo.currentStock - (deductions.find(d => d.id === silo.id)?.deductAmount || 0);
+          if (available > 0) {
+            const take = Math.min(remaining, available);
+            const existingDeduction = deductions.find(d => d.id === silo.id);
+            if (existingDeduction) {
+              existingDeduction.deductAmount += take;
+            } else {
+              deductions.push({ id: silo.id, name: silo.name, deductAmount: take, oldStock: silo.currentStock, capacity: silo.capacity });
             }
+            remaining -= take;
+          }
         }
-        if (remaining > 0.01) { 
-            throw new BadRequestException(`Gagal! Stok ${keyword} tidak mencukupi (Kurang ${remaining.toFixed(2)} Kg di seluruh silo)`);
-        }
+      }
+      if (remaining > 0.01) {
+        throw new BadRequestException(`Gagal! Stok ${keyword} tidak mencukupi (Kurang ${remaining.toFixed(2)} Kg di seluruh silo)`);
+      }
     };
 
     if (reqHijauan > 0) fulfill(reqHijauan, 'hijauan');
@@ -749,29 +755,29 @@ export class LivestockService {
 
     // 4. Lakukan Transaksi Database (Rekam Pakan + Update Semua Silo)
     const transactionOps: any[] = [];
-    
+
     transactionOps.push(this.prisma.livestockFeedRecord.create({
       data: { cattleId, feedType, weightKg, bkPercent, asFedWeight }
     }));
 
     for (const d of deductions) {
-        const newStock = d.oldStock - d.deductAmount;
-        const newStatus = newStock <= (d.capacity * 0.2) ? 'KRITIS' : 'AMAN';
-        
-        transactionOps.push(this.prisma.silo.update({
-            where: { id: d.id },
-            data: { currentStock: newStock, status: newStatus }
-        }));
-        
-        transactionOps.push(this.prisma.siloTransaction.create({
-            data: {
-                siloId: d.id,
-                type: 'KELUAR',
-                weightKg: d.deductAmount,
-                description: `Pemberian pakan sapi ${cattleId}`,
-                creator: author
-            }
-        }));
+      const newStock = d.oldStock - d.deductAmount;
+      const newStatus = newStock <= (d.capacity * 0.2) ? 'KRITIS' : 'AMAN';
+
+      transactionOps.push(this.prisma.silo.update({
+        where: { id: d.id },
+        data: { currentStock: newStock, status: newStatus }
+      }));
+
+      transactionOps.push(this.prisma.siloTransaction.create({
+        data: {
+          siloId: d.id,
+          type: 'KELUAR',
+          weightKg: d.deductAmount,
+          description: `Pemberian pakan sapi ${cattleId}`,
+          creator: author
+        }
+      }));
     }
 
     const results = await this.prisma.$transaction(transactionOps);
@@ -779,11 +785,11 @@ export class LivestockService {
 
     try {
       await this.redis.del('feed:schedules');
-    } catch (err) {}
+    } catch (err) { }
 
     await this.clearLivestockCache();
     await this.activityService.log(author, 'TAMBAH', 'TERNAK', `Mencatat pakan sapi ${cattleId}: ${feedType} ${weightKg}kg`);
-    
+
     // Trigger auto-update schedule
     const cowModel = await this.prisma.livestock.findUnique({
       where: { cattleId },
@@ -797,107 +803,107 @@ export class LivestockService {
   // 2b. Catat Pemberian Pakan Bulk
   async recordFeedBulk(cattleIds: string[], feedType: string, weightKgPerCow: number, bkPercent: number = 100, author: string = 'Admin', siloForageId?: number, siloConcentrateId?: number) {
     if (!cattleIds || cattleIds.length === 0) throw new BadRequestException('Tidak ada sapi yang dipilih');
-    
+
     const numericWeight = parseFloat(weightKgPerCow as any);
     if (isNaN(numericWeight) || numericWeight <= 0) {
       throw new BadRequestException('Jumlah pakan harus berupa angka positif lebih dari 0');
     }
     weightKgPerCow = numericWeight;
-    
+
     const crypto = require('crypto');
     const batchId = crypto.randomUUID();
-    
+
     let totalHijauan = 0;
     let totalKonsentrat = 0;
-    
+
     // Asumsi frontend mengirim rata-rata per sapi (weightKgPerCow)
     const totalInputAsFed = weightKgPerCow * cattleIds.length;
 
     const typeStr = feedType.toLowerCase();
     let totalBkRequirement = 0;
     const cowNeedsList: any[] = [];
-    
+
     // First pass: get all cattle BK requirements
     for (const cattleId of cattleIds) {
       const cow = await this.getFeedNeeds(cattleId);
       totalBkRequirement += cow.bkRequirement;
       cowNeedsList.push(cow);
     }
-    
+
     const cowActualFeedList = cowNeedsList.map(cow => {
-       // Distribusi proporsional berdasarkan kebutuhan nutrisi masing-masing sapi (BK Target)
-       const proportion = totalBkRequirement > 0 ? (cow.bkRequirement / totalBkRequirement) : (1 / cattleIds.length);
-       const cowAsFed = totalInputAsFed * proportion;
-       
-       let reqHijauan = 0;
-       let reqKonsentrat = 0;
-       
-        if (typeStr.includes('konsentrat+hijauan')) {
-            const fRatio = cow.prefs?.forageRatio || 60;
-            const cRatio = cow.prefs?.concentrateRatio || 40;
-            reqHijauan = cowAsFed * (fRatio / 100);
-            reqKonsentrat = cowAsFed * (cRatio / 100);
-        } else if (typeStr.includes('konsentrat')) {
-            // Konsentrat Saja -> 100% Konsentrat
-            reqKonsentrat = cowAsFed;
-            reqHijauan = 0;
-        } else if (typeStr.includes('tmr')) {
-            // TMR Saja -> 100% TMR
-            reqHijauan = cowAsFed;
-            reqKonsentrat = 0;
-        } else {
-            // Hijauan Saja -> 100% Hijauan
-            reqHijauan = cowAsFed;
-            reqKonsentrat = 0;
-        }
-       
-       totalHijauan += reqHijauan;
-       totalKonsentrat += reqKonsentrat;
-       
-       const trueCowBkPct = (cowAsFed > 0 && cow.bkRequirement > 0) ? (cow.bkRequirement / cowAsFed) : (bkPercent / 100);
-       
-       return { 
-           cattleId: cow.cattleId, 
-           asFedWeight: parseFloat(cowAsFed.toFixed(2)), 
-           trueBkPct: trueCowBkPct,
-           bkConsumed: parseFloat((cowAsFed * trueCowBkPct).toFixed(2))
-       };
+      // Distribusi proporsional berdasarkan kebutuhan nutrisi masing-masing sapi (BK Target)
+      const proportion = totalBkRequirement > 0 ? (cow.bkRequirement / totalBkRequirement) : (1 / cattleIds.length);
+      const cowAsFed = totalInputAsFed * proportion;
+
+      let reqHijauan = 0;
+      let reqKonsentrat = 0;
+
+      if (typeStr.includes('konsentrat+hijauan')) {
+        const fRatio = cow.prefs?.forageRatio || 60;
+        const cRatio = cow.prefs?.concentrateRatio || 40;
+        reqHijauan = cowAsFed * (fRatio / 100);
+        reqKonsentrat = cowAsFed * (cRatio / 100);
+      } else if (typeStr.includes('konsentrat')) {
+        // Konsentrat Saja -> 100% Konsentrat
+        reqKonsentrat = cowAsFed;
+        reqHijauan = 0;
+      } else if (typeStr.includes('tmr')) {
+        // TMR Saja -> 100% TMR
+        reqHijauan = cowAsFed;
+        reqKonsentrat = 0;
+      } else {
+        // Hijauan Saja -> 100% Hijauan
+        reqHijauan = cowAsFed;
+        reqKonsentrat = 0;
+      }
+
+      totalHijauan += reqHijauan;
+      totalKonsentrat += reqKonsentrat;
+
+      const trueCowBkPct = (cowAsFed > 0 && cow.bkRequirement > 0) ? (cow.bkRequirement / cowAsFed) : (bkPercent / 100);
+
+      return {
+        cattleId: cow.cattleId,
+        asFedWeight: parseFloat(cowAsFed.toFixed(2)),
+        trueBkPct: trueCowBkPct,
+        bkConsumed: parseFloat((cowAsFed * trueCowBkPct).toFixed(2))
+      };
     });
 
     const allSilos = await this.prisma.silo.findMany({ orderBy: { currentStock: 'desc' } });
     const deductions: { id: number, name: string, deductAmount: number, oldStock: number, capacity: number }[] = [];
-    
-    const fulfill = (amountNeeded: number, keyword: string, preferredSiloId?: number) => {
-        let remaining = amountNeeded;
-        let silosToUse = [...allSilos];
-        if (preferredSiloId) {
-            const preferred = silosToUse.find(s => s.id === parseInt(preferredSiloId as any));
-            if (preferred) {
-                silosToUse = [preferred, ...silosToUse.filter(s => s.id !== preferred.id)];
-            }
-        }
 
-        for (const silo of silosToUse) {
-            if (remaining <= 0) break;
-            const sType = (silo.feedType || '').toLowerCase();
-            const sName = (silo.name || '').toLowerCase();
-            if (sType.includes(keyword) || sName.includes(keyword) || (keyword === 'hijauan' && (sType.includes('rumput') || sName.includes('rumput')))) {
-                const available = silo.currentStock - (deductions.find(d => d.id === silo.id)?.deductAmount || 0);
-                if (available > 0) {
-                    const take = Math.min(remaining, available);
-                    const existingDeduction = deductions.find(d => d.id === silo.id);
-                    if (existingDeduction) {
-                        existingDeduction.deductAmount += take;
-                    } else {
-                        deductions.push({ id: silo.id, name: silo.name, deductAmount: take, oldStock: silo.currentStock, capacity: silo.capacity });
-                    }
-                    remaining -= take;
-                }
+    const fulfill = (amountNeeded: number, keyword: string, preferredSiloId?: number) => {
+      let remaining = amountNeeded;
+      let silosToUse = [...allSilos];
+      if (preferredSiloId) {
+        const preferred = silosToUse.find(s => s.id === parseInt(preferredSiloId as any));
+        if (preferred) {
+          silosToUse = [preferred, ...silosToUse.filter(s => s.id !== preferred.id)];
+        }
+      }
+
+      for (const silo of silosToUse) {
+        if (remaining <= 0) break;
+        const sType = (silo.feedType || '').toLowerCase();
+        const sName = (silo.name || '').toLowerCase();
+        if (sType.includes(keyword) || sName.includes(keyword) || (keyword === 'hijauan' && (sType.includes('rumput') || sName.includes('rumput')))) {
+          const available = silo.currentStock - (deductions.find(d => d.id === silo.id)?.deductAmount || 0);
+          if (available > 0) {
+            const take = Math.min(remaining, available);
+            const existingDeduction = deductions.find(d => d.id === silo.id);
+            if (existingDeduction) {
+              existingDeduction.deductAmount += take;
+            } else {
+              deductions.push({ id: silo.id, name: silo.name, deductAmount: take, oldStock: silo.currentStock, capacity: silo.capacity });
             }
+            remaining -= take;
+          }
         }
-        if (remaining > 0.01) { 
-            throw new BadRequestException(`Gagal! Stok ${keyword} tidak mencukupi (Kurang ${remaining.toFixed(2)} Kg di seluruh silo)`);
-        }
+      }
+      if (remaining > 0.01) {
+        throw new BadRequestException(`Gagal! Stok ${keyword} tidak mencukupi (Kurang ${remaining.toFixed(2)} Kg di seluruh silo)`);
+      }
     };
 
     if (totalHijauan > 0) fulfill(totalHijauan, 'hijauan', siloForageId);
@@ -941,11 +947,11 @@ export class LivestockService {
 
     try {
       await this.redis.del('feed:schedules');
-    } catch (err) {}
+    } catch (err) { }
 
     await this.clearLivestockCache();
     await this.activityService.log(author, 'TAMBAH', 'TERNAK', `Mencatat pakan BARENGAN untuk ${cattleIds.length} sapi: ${feedType} (${weightKgPerCow}kg/sapi)`);
-    
+
     // Trigger auto-update schedule (zoneId tidak disertakan karena massal)
     await this.autoUpdateScheduleStatus(feedType);
 
@@ -977,15 +983,15 @@ export class LivestockService {
   async getFeedNeeds(cattleId: string) {
     const cow = await (this.prisma.livestock as any).findUnique({
       where: { cattleId },
-      select: { 
-          currentWeight: true, 
-          initialWeight: true,
-          targetBkPercent: true,
-          forageRatio: true,
-          concentrateRatio: true,
-          forageDM: true,
-          concentrateDM: true,
-          feedingFrequency: true
+      select: {
+        currentWeight: true,
+        initialWeight: true,
+        targetBkPercent: true,
+        forageRatio: true,
+        concentrateRatio: true,
+        forageDM: true,
+        concentrateDM: true,
+        feedingFrequency: true
       }
     });
 
@@ -995,8 +1001,8 @@ export class LivestockService {
     // Ambil target atau gunakan default
     const cowData = cow as any;
     const bkPercentTarget = cowData.targetBkPercent || 2.5;
-    const bkRequirement = weight * (bkPercentTarget / 100); 
-    
+    const bkRequirement = weight * (bkPercentTarget / 100);
+
     const forageRatio = cowData.forageRatio ?? 60;
     const concentrateRatio = cowData.concentrateRatio ?? 40;
     const forageDM = cowData.forageDM ?? 20;
@@ -1027,12 +1033,12 @@ export class LivestockService {
       feedGoal,
       // Sertakan juga parameter asli agar Frontend bisa menampilkannya di form
       prefs: {
-          targetBkPercent: bkPercentTarget,
-          forageRatio,
-          concentrateRatio,
-          forageDM,
-          concentrateDM,
-          feedingFrequency
+        targetBkPercent: bkPercentTarget,
+        forageRatio,
+        concentrateRatio,
+        forageDM,
+        concentrateDM,
+        feedingFrequency
       }
     };
   }
@@ -1068,25 +1074,25 @@ export class LivestockService {
     try {
       const feedWhere: any = { feedDate: { gte: startDate } };
       const weightWhere: any = { weighDate: { gte: startDate } };
-      
+
       if (!isAllCows && cowIds.length > 0) {
-         feedWhere.cattleId = { in: cowIds };
-         weightWhere.cattleId = { in: cowIds };
-         
-         const cows = await this.prisma.livestock.findMany({ where: { cattleId: { in: cowIds } }});
-         cows.forEach(c => initialWeights[c.cattleId] = c.initialWeight || 0);
+        feedWhere.cattleId = { in: cowIds };
+        weightWhere.cattleId = { in: cowIds };
+
+        const cows = await this.prisma.livestock.findMany({ where: { cattleId: { in: cowIds } } });
+        cows.forEach(c => initialWeights[c.cattleId] = c.initialWeight || 0);
       } else {
-         const allCows = await this.prisma.livestock.findMany({ select: { initialWeight: true }});
-         cowsCount = allCows.length > 0 ? allCows.length : 1;
-         const avgInitial = allCows.reduce((acc, c) => acc + (c.initialWeight || 0), 0) / cowsCount;
-         initialWeights['ALL'] = avgInitial;
+        const allCows = await this.prisma.livestock.findMany({ select: { initialWeight: true } });
+        cowsCount = allCows.length > 0 ? allCows.length : 1;
+        const avgInitial = allCows.reduce((acc, c) => acc + (c.initialWeight || 0), 0) / cowsCount;
+        initialWeights['ALL'] = avgInitial;
       }
-      
+
       feeds = await this.prisma.livestockFeedRecord.findMany({
         where: feedWhere,
         orderBy: { feedDate: 'asc' }
       });
-      
+
       weightRecords = await this.prisma.livestockWeightRecord.findMany({
         where: weightWhere,
         orderBy: { weighDate: 'asc' }
@@ -1109,7 +1115,7 @@ export class LivestockService {
 
     const chartData: any[] = [];
     const targetIds = isAllCows ? ['ALL'] : cowIds;
-    
+
     // Siapkan objek ringkasan per sapi
     const summaries: Record<string, any> = {};
     targetIds.forEach(id => {
@@ -1117,14 +1123,14 @@ export class LivestockService {
     });
 
     if (!isAllCows) {
-       targetIds.forEach(id => {
-         const cowWeights = weightRecords.filter(w => w.cattleId === id);
-         const firstWeight = cowWeights.length > 1 ? cowWeights[0].weight : (initialWeights[id] || 0);
-         const lastWeight = cowWeights.length > 0 ? cowWeights[cowWeights.length - 1].weight : (initialWeights[id] || 0);
-         summaries[id].startWeight = firstWeight;
-         summaries[id].endWeight = lastWeight;
-         summaries[id].totalWeightGain = lastWeight - firstWeight;
-       });
+      targetIds.forEach(id => {
+        const cowWeights = weightRecords.filter(w => w.cattleId === id);
+        const firstWeight = cowWeights.length > 1 ? cowWeights[0].weight : (initialWeights[id] || 0);
+        const lastWeight = cowWeights.length > 0 ? cowWeights[cowWeights.length - 1].weight : (initialWeights[id] || 0);
+        summaries[id].startWeight = firstWeight;
+        summaries[id].endWeight = lastWeight;
+        summaries[id].totalWeightGain = lastWeight - firstWeight;
+      });
     }
 
     for (let i = 0; i < days; i++) {
@@ -1138,20 +1144,20 @@ export class LivestockService {
         let dailyBk = 0;
         let dailyAdg = 0;
 
-        const dailyFeeds = precomputedFeeds.filter(f => 
+        const dailyFeeds = precomputedFeeds.filter(f =>
           f.dateStr === dateStr && (isAllCows || f.cattleId === id)
         );
 
         dailyBk = dailyFeeds.reduce((acc, f) => acc + (f.weightKg * ((f.bkPercent || 100) / 100)), 0);
-        
+
         if (isAllCows) {
-            dailyBk = dailyBk / cowsCount;
+          dailyBk = dailyBk / cowsCount;
         }
-        
+
         if (dailyBk > 0) {
-            dailyAdg = dailyBk * 0.15; // Estimasi harian
+          dailyAdg = dailyBk * 0.15; // Estimasi harian
         }
-        
+
         summaries[id].totalDmi += dailyBk;
 
         if (isAllCows) {
@@ -1165,48 +1171,48 @@ export class LivestockService {
 
       chartData.push(dailyData);
     }
-    
+
     // Fetch latest weight and update timestamps per cow
     const latestWeightMap: Record<string, Date> = {};
     const latestUpdateMap: Record<string, Date> = {};
 
     if (!isAllCows && targetIds.length > 0) {
-       try {
-         const allLatestWeights = await this.prisma.livestockWeightRecord.findMany({
-           where: { cattleId: { in: targetIds } },
-           orderBy: { weighDate: 'desc' }
-         });
-         
-         const allLatestFeeds = await this.prisma.livestockFeedRecord.findMany({
-           where: { cattleId: { in: targetIds } },
-           orderBy: { feedDate: 'desc' }
-         });
+      try {
+        const allLatestWeights = await this.prisma.livestockWeightRecord.findMany({
+          where: { cattleId: { in: targetIds } },
+          orderBy: { weighDate: 'desc' }
+        });
 
-         const livestockInfos = await this.prisma.livestock.findMany({
-           where: { cattleId: { in: targetIds } },
-           select: { cattleId: true, updatedAt: true }
-         });
+        const allLatestFeeds = await this.prisma.livestockFeedRecord.findMany({
+          where: { cattleId: { in: targetIds } },
+          orderBy: { feedDate: 'desc' }
+        });
 
-         targetIds.forEach(id => {
-           const lw = allLatestWeights.find(w => w.cattleId === id);
-           if (lw) latestWeightMap[id] = lw.weighDate;
+        const livestockInfos = await this.prisma.livestock.findMany({
+          where: { cattleId: { in: targetIds } },
+          select: { cattleId: true, updatedAt: true }
+        });
 
-           const lf = allLatestFeeds.find(f => f.cattleId === id);
-           const ls = livestockInfos.find(s => s.cattleId === id);
+        targetIds.forEach(id => {
+          const lw = allLatestWeights.find(w => w.cattleId === id);
+          if (lw) latestWeightMap[id] = lw.weighDate;
 
-           const times = [
-             lw ? new Date(lw.weighDate).getTime() : 0,
-             lf ? new Date(lf.feedDate).getTime() : 0,
-             ls ? new Date(ls.updatedAt).getTime() : 0
-           ];
-           const maxTime = Math.max(...times);
-           if (maxTime > 0) {
-             latestUpdateMap[id] = new Date(maxTime);
-           }
-         });
-       } catch (e) {
-         console.warn("Error fetching last weigh/update dates:", e);
-       }
+          const lf = allLatestFeeds.find(f => f.cattleId === id);
+          const ls = livestockInfos.find(s => s.cattleId === id);
+
+          const times = [
+            lw ? new Date(lw.weighDate).getTime() : 0,
+            lf ? new Date(lf.feedDate).getTime() : 0,
+            ls ? new Date(ls.updatedAt).getTime() : 0
+          ];
+          const maxTime = Math.max(...times);
+          if (maxTime > 0) {
+            latestUpdateMap[id] = new Date(maxTime);
+          }
+        });
+      } catch (e) {
+        console.warn("Error fetching last weigh/update dates:", e);
+      }
     }
 
     // Finalize summaries
@@ -1215,21 +1221,21 @@ export class LivestockService {
       const safeDmi = Math.max(0, sum.totalDmi);
       let adgTotal = days > 0 ? sum.totalWeightGain / days : 0;
       if (adgTotal < 0) adgTotal = 0;
-      
+
       let isEstimated = false;
-      
+
       const cowWeights = weightRecords.filter(w => w.cattleId === id);
       if (isAllCows || cowWeights.length === 0) {
-          adgTotal = days > 0 ? (safeDmi * 0.15 / days) : 0; 
-          sum.endWeight = Math.max(sum.startWeight, sum.startWeight + (adgTotal * days));
-          sum.totalWeightGain = Math.max(0, sum.endWeight - sum.startWeight);
-          isEstimated = true;
+        adgTotal = days > 0 ? (safeDmi * 0.15 / days) : 0;
+        sum.endWeight = Math.max(sum.startWeight, sum.startWeight + (adgTotal * days));
+        sum.totalWeightGain = Math.max(0, sum.endWeight - sum.startWeight);
+        isEstimated = true;
       }
 
       let fcr = 0;
       if (sum.totalWeightGain > 0) {
-          fcr = safeDmi / sum.totalWeightGain;
-          if (fcr < 0) fcr = 0;
+        fcr = safeDmi / sum.totalWeightGain;
+        if (fcr < 0) fcr = 0;
       }
 
       const estimatedWeightVal = sum.startWeight + (safeDmi * 0.15);
@@ -1238,16 +1244,16 @@ export class LivestockService {
       const lastUpdatedDate = latestUpdateMap[id] ? latestUpdateMap[id].toISOString() : (new Date()).toISOString();
 
       return {
-         cowId: id,
-         totalBk: parseFloat(safeDmi.toFixed(2)),
-         startWeight: parseFloat(sum.startWeight.toFixed(2)),
-         endWeight: parseFloat(Math.max(sum.startWeight, sum.endWeight).toFixed(2)),
-         estimatedWeight: parseFloat(estimatedWeightVal.toFixed(2)),
-         adg: parseFloat(adgTotal.toFixed(2)),
-         fcr: parseFloat(fcr.toFixed(2)),
-         isEstimated,
-         lastWeighDate,
-         lastUpdatedDate
+        cowId: id,
+        totalBk: parseFloat(safeDmi.toFixed(2)),
+        startWeight: parseFloat(sum.startWeight.toFixed(2)),
+        endWeight: parseFloat(Math.max(sum.startWeight, sum.endWeight).toFixed(2)),
+        estimatedWeight: parseFloat(estimatedWeightVal.toFixed(2)),
+        adg: parseFloat(adgTotal.toFixed(2)),
+        fcr: parseFloat(fcr.toFixed(2)),
+        isEstimated,
+        lastWeighDate,
+        lastUpdatedDate
       };
     });
 
@@ -1298,7 +1304,7 @@ export class LivestockService {
     try {
       await this.redis.del('dashboard:farm-summary');
       await this.redis.del('livestock:list:all');
-    } catch (e) {}
+    } catch (e) { }
 
     return {
       status: 'success',
@@ -1425,7 +1431,7 @@ export class LivestockService {
     const deleted = await this.prisma.livestockFeedRecord.delete({ where: { id } });
     try {
       await this.redis.del('feed:schedules');
-    } catch (err) {}
+    } catch (err) { }
     await this.clearLivestockCache();
     await this.activityService.log(author, 'HAPUS', 'TERNAK', `Menghapus pakan sapi ${deleted.cattleId}: ${deleted.feedType} ${deleted.weightKg}kg`);
     return { success: true };
@@ -1459,7 +1465,7 @@ export class LivestockService {
     if (!old) throw new NotFoundException('Data timbangan tidak ditemukan');
 
     const deleted = await this.prisma.livestockWeightRecord.delete({ where: { id } });
-    
+
     // Cari berat terakhir yang tersisa
     const latest = await this.prisma.livestockWeightRecord.findFirst({
       where: { cattleId: deleted.cattleId },

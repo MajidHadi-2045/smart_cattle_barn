@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { 
-  StyleSheet, 
-  View, 
-  Text, 
-  ScrollView, 
+import {
+  StyleSheet,
+  View,
+  Text,
+  ScrollView,
   TouchableOpacity,
   RefreshControl,
   Modal,
@@ -23,16 +23,16 @@ import { useSocket } from '../hooks/useSocket';
 import { useReadingMode } from '../context/ReadingModeContext';
 import { registerForPushNotificationsAsync } from '../utils/registerForPushNotificationsAsync';
 import { triggerLocalNotification } from '../utils/triggerNotification';
-import { 
-  LayoutDashboard, 
-  LogOut, 
-  Bell, 
+import {
+  LayoutDashboard,
+  LogOut,
+  Bell,
   Clock,
-  Thermometer, 
-  Droplets, 
-  Wind, 
-  Beef, 
-  HeartPulse, 
+  Thermometer,
+  Droplets,
+  Wind,
+  Beef,
+  HeartPulse,
   Utensils,
   FileBarChart,
   Users,
@@ -62,7 +62,7 @@ import { LineChart } from 'react-native-chart-kit';
 
 const formatNotificationTime = (timestamp?: any) => {
   if (!timestamp) return 'Baru saja';
-  
+
   // Jika timestamp sudah berupa teks terformat (misal: "Hari ini, 14:30")
   if (typeof timestamp === 'string' && (timestamp.includes('Hari ini') || timestamp.includes('Kemarin') || timestamp.includes(':') && timestamp.length < 25)) {
     return timestamp;
@@ -74,12 +74,12 @@ const formatNotificationTime = (timestamp?: any) => {
   const now = new Date();
   const dDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
   const dNow = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  
+
   const diffTime = dNow.getTime() - dDate.getTime();
   const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
-  
+
   const timeStr = date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace('.', ':');
-  
+
   if (diffDays === 0) {
     return `Hari ini, ${timeStr}`;
   } else if (diffDays === 1) {
@@ -115,7 +115,7 @@ const DashboardScreen = ({ navigation }: any) => {
     activeAlerts: 0
   });
   const [user, setUser] = useState<any>(null);
-  
+
   // Performance Chart State
   const [performanceData, setPerformanceData] = useState<any[]>([]);
   const [performanceSummaries, setPerformanceSummaries] = useState<any[]>([]);
@@ -137,16 +137,16 @@ const DashboardScreen = ({ navigation }: any) => {
     weightTask: { done: false, pendingCows: 0, title: 'Penimbangan Sapi', subtitle: 'Memuat...' }
   });
   const [recentInputs, setRecentInputs] = useState<any[]>([]);
-  
+
   const [activityModalVisible, setActivityModalVisible] = useState(false);
   const [activities, setActivities] = useState<any[]>([]);
   const [loadingActivities, setLoadingActivities] = useState(false);
-  
+
   // Notification States
   const [notificationModalVisible, setNotificationModalVisible] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadNotifCount, setUnreadNotifCount] = useState(0);
-  
+
   // Environment & Waste States
   const [wasteStats, setWasteStats] = useState({ fecesKg: 0, urineL: 0 });
   const [wasteFilter, setWasteFilter] = useState('daily');
@@ -166,10 +166,10 @@ const DashboardScreen = ({ navigation }: any) => {
       };
       setNotifications(prev => [newNotif, ...prev].slice(0, 15));
       setUnreadNotifCount(prev => prev + 1);
-      
+
       // Pemicu Notifikasi Spanduk Sistem (Heads-Up Banner) dengan Suara & Getaran
       triggerLocalNotification(payload.title, payload.body || payload.message);
-      
+
       // Reset socket data to prevent infinite loop
       socketData['websocket:alert'] = null;
     }
@@ -263,7 +263,7 @@ const DashboardScreen = ({ navigation }: any) => {
     } catch (err) {
       console.warn('Error fetching dashboard summary:', err);
     }
-    
+
     try {
       const storedUser = await getUser();
       if (storedUser) {
@@ -280,7 +280,7 @@ const DashboardScreen = ({ navigation }: any) => {
     } catch (err) {
       console.warn('Error getting user / syncing push token:', err);
     }
-    
+
     try {
       const cowsRes = await apiClient.get('/livestock');
       if (cowsRes.data) setLivestock(cowsRes.data);
@@ -313,7 +313,7 @@ const DashboardScreen = ({ navigation }: any) => {
         }));
         setLastWindTimestamp(Date.now());
       }
-    } catch (err) {}
+    } catch (err) { }
 
     // Fetch Waste
     try {
@@ -321,7 +321,7 @@ const DashboardScreen = ({ navigation }: any) => {
       if (wasteRes.data) {
         setWasteStats({ fecesKg: wasteRes.data.fecesKg || 0, urineL: wasteRes.data.urineL || 0 });
       }
-    } catch (e) {}
+    } catch (e) { }
 
     // Fetch Trend Environment
     try {
@@ -331,7 +331,7 @@ const DashboardScreen = ({ navigation }: any) => {
         const chronological = [...trendRes.data].reverse();
         setSensorTrendData(chronological.slice(-15));
       }
-    } catch (e) {}
+    } catch (e) { }
 
     // Fetch Trend Wind
     try {
@@ -340,14 +340,14 @@ const DashboardScreen = ({ navigation }: any) => {
         const chronologicalWind = [...windRes.data].reverse();
         setWindTrendData(chronologicalWind.slice(-15));
       } else {
-          // fallback if wind trend fails or uses different path
-          const windResFallback = await apiClient.get(`/environment/wind/trend/1?range=${sensorTrendRange}`);
-          if (windResFallback.data && Array.isArray(windResFallback.data)) {
-              const chronologicalWind = [...windResFallback.data].reverse();
-              setWindTrendData(chronologicalWind.slice(-15));
-          }
+        // fallback if wind trend fails or uses different path
+        const windResFallback = await apiClient.get(`/environment/wind/trend/1?range=${sensorTrendRange}`);
+        if (windResFallback.data && Array.isArray(windResFallback.data)) {
+          const chronologicalWind = [...windResFallback.data].reverse();
+          setWindTrendData(chronologicalWind.slice(-15));
+        }
       }
-    } catch (e) {}
+    } catch (e) { }
 
     // Fetch Notifications History
     try {
@@ -416,7 +416,7 @@ const DashboardScreen = ({ navigation }: any) => {
       } else if (selectedItemForEdit.type === 'LIMBAH_KANDANG') {
         await apiClient.patch(`/livestock/waste/zone/${id}`, { fecesKg: parseFloat(editValue), urineL: parseFloat(editValue2) });
       }
-      
+
       Alert.alert('Sukses', 'Data berhasil diperbarui!');
       setIsEditModalVisible(false);
       fetchRecentInputs();
@@ -511,7 +511,7 @@ const DashboardScreen = ({ navigation }: any) => {
         if (wasteRes.data) {
           setWasteStats({ fecesKg: wasteRes.data.fecesKg || 0, urineL: wasteRes.data.urineL || 0 });
         }
-      } catch (e) {}
+      } catch (e) { }
     };
     fetchWaste();
   }, [wasteFilter]);
@@ -565,7 +565,7 @@ const DashboardScreen = ({ navigation }: any) => {
   };
 
   const StatCard = ({ title, value, icon: Icon, color, target, infoDesc }: any) => (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={[styles.statCard, { borderLeftColor: color }]}
       onPress={() => infoDesc && setInfoModalContent({ title, desc: infoDesc, target })}
       activeOpacity={0.7}
@@ -594,105 +594,105 @@ const DashboardScreen = ({ navigation }: any) => {
         <View>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Text style={styles.greeting}>Halo, {user?.name || 'Peternak'}!</Text>
-            <View 
-              style={[styles.statusDot, { backgroundColor: isDataLive ? COLORS.success : COLORS.danger }]} 
+            <View
+              style={[styles.statusDot, { backgroundColor: isDataLive ? COLORS.success : COLORS.danger }]}
             />
           </View>
           <Text style={styles.date}>{new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })}</Text>
         </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-            <TouchableOpacity onPress={() => { setNotificationModalVisible(true); setUnreadNotifCount(0); }}>
-              <View>
-                <Bell size={20} color={COLORS.textLight} />
-                {unreadNotifCount > 0 && (
-                  <View style={{ position: 'absolute', top: -5, right: -5, backgroundColor: COLORS.danger, borderRadius: 10, width: 14, height: 14, justifyContent: 'center', alignItems: 'center' }}>
-                    <Text style={{ color: 'white', fontSize: 8, fontWeight: 'bold' }}>{unreadNotifCount}</Text>
-                  </View>
-                )}
-              </View>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => { setActivityModalVisible(true); fetchActivities(); }}>
-              <Clock size={20} color={COLORS.textLight} />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={toggleReadingMode}>
-              {isReadingMode ? <Sun size={20} color={COLORS.primary} /> : <Moon size={20} color={COLORS.textLight} />}
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-              <LogOut size={20} color={COLORS.danger} />
-            </TouchableOpacity>
-          </View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+          <TouchableOpacity onPress={() => { setNotificationModalVisible(true); setUnreadNotifCount(0); }}>
+            <View>
+              <Bell size={20} color={COLORS.textLight} />
+              {unreadNotifCount > 0 && (
+                <View style={{ position: 'absolute', top: -5, right: -5, backgroundColor: COLORS.danger, borderRadius: 10, width: 14, height: 14, justifyContent: 'center', alignItems: 'center' }}>
+                  <Text style={{ color: 'white', fontSize: 8, fontWeight: 'bold' }}>{unreadNotifCount}</Text>
+                </View>
+              )}
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => { setActivityModalVisible(true); fetchActivities(); }}>
+            <Clock size={20} color={COLORS.textLight} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={toggleReadingMode}>
+            {isReadingMode ? <Sun size={20} color={COLORS.primary} /> : <Moon size={20} color={COLORS.textLight} />}
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <LogOut size={20} color={COLORS.danger} />
+          </TouchableOpacity>
+        </View>
       </View>
 
-      <ScrollView 
+      <ScrollView
         contentContainerStyle={styles.scrollContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         <Text style={styles.sectionTitle}>Ringkasan Kandang</Text>
-        
+
         <View style={styles.statsGrid}>
-          <StatCard 
-            title="Total Sapi" 
-            value={stats.totalCattle} 
-            icon={Beef} 
-            color="#3b82f6" 
+          <StatCard
+            title="Total Sapi"
+            value={stats.totalCattle}
+            icon={Beef}
+            color="#3b82f6"
             infoDesc="Jumlah keseluruhan ekor sapi yang terdaftar dalam sistem peternakan saat ini."
           />
-          <StatCard 
-            title="Kondisi Sehat" 
-            value={stats.totalCattle - stats.activeAlerts} 
-            icon={HeartPulse} 
-            color="#10b981" 
+          <StatCard
+            title="Kondisi Sehat"
+            value={stats.totalCattle - stats.activeAlerts}
+            icon={HeartPulse}
+            color="#10b981"
             infoDesc="Jumlah sapi yang dalam kondisi sehat dan tidak memiliki catatan medis aktif."
           />
-          <StatCard 
-            title="Kondisi Sakit" 
-            value={stats.activeAlerts} 
-            icon={Activity} 
-            color="#ef4444" 
+          <StatCard
+            title="Kondisi Sakit"
+            value={stats.activeAlerts}
+            icon={Activity}
+            color="#ef4444"
             infoDesc="Jumlah sapi yang sedang mengalami gangguan kesehatan / dalam penanganan medis dokter hewan."
           />
         </View>
 
         <Text style={[styles.sectionTitle, { marginTop: SPACING.md }]}>Monitoring Lingkungan (Tekan untuk Info)</Text>
         <View style={styles.statsGrid}>
-          <StatCard 
-            title="Suhu Ruangan" 
-            value={stats.avgTemp !== null ? `${stats.avgTemp}°C` : '--'} 
+          <StatCard
+            title="Suhu Ruangan"
+            value={stats.avgTemp !== null ? `${stats.avgTemp}°C` : '--'}
             target="Target: 25-28°C"
-            icon={Thermometer} 
-            color="#f97316" 
+            icon={Thermometer}
+            color="#f97316"
             infoDesc="Suhu ambient udara sekitar area kandang. Target ideal: 25 - 28°C. Suhu udara tinggi dapat memicu stres panas pada sapi."
           />
-          <StatCard 
-            title="Kelembapan" 
-            value={stats.avgHumidity !== null ? `${stats.avgHumidity}%` : '--'} 
+          <StatCard
+            title="Kelembapan"
+            value={stats.avgHumidity !== null ? `${stats.avgHumidity}%` : '--'}
             target="Target: 60-80%"
-            icon={Droplets} 
-            color="#3b82f6" 
+            icon={Droplets}
+            color="#3b82f6"
             infoDesc="Persentase kelembapan relatif udara (RH) kandang. Target ideal: 60 - 80%. Kelembapan tinggi berisiko memicu pertumbuhan jamur & bakteri."
           />
-          <StatCard 
-            title="Sirkulasi Angin" 
-            value={stats.windSpeed !== null ? `${stats.windSpeed} m/s` : '--'} 
+          <StatCard
+            title="Sirkulasi Angin"
+            value={stats.windSpeed !== null ? `${stats.windSpeed} m/s` : '--'}
             target="Target: > 1 m/s"
-            icon={Wind} 
-            color="#0d9488" 
+            icon={Wind}
+            color="#0d9488"
             infoDesc="Kecepatan aliran udara kandang. Target ideal: > 1 m/s. Sirkulasi baik membantu menetralkan hawa panas & membuang amonia racun."
           />
-          <StatCard 
-            title="Amonia (NH3)" 
-            value={stats.ammonia !== null ? `${stats.ammonia} ppm` : '--'} 
+          <StatCard
+            title="Amonia (NH3)"
+            value={stats.ammonia !== null ? `${stats.ammonia} ppm` : '--'}
             target="Batas: < 20 ppm"
-            icon={Leaf} 
-            color="#ef4444" 
+            icon={Leaf}
+            color="#ef4444"
             infoDesc="Gas racun hasil penguraian feses & urine sapi. Batas aman: < 20 ppm. Amonia > 20 ppm mengiritasi mata & saluran pernapasan sapi."
           />
-          <StatCard 
-            title="Heat Stress (THI)" 
-            value={stats.thi !== null ? (typeof stats.thi === 'number' ? stats.thi.toFixed(1) : stats.thi) : '--'} 
+          <StatCard
+            title="Heat Stress (THI)"
+            value={stats.thi !== null ? (typeof stats.thi === 'number' ? stats.thi.toFixed(1) : stats.thi) : '--'}
             target="Target: ≤ 74"
-            icon={CheckCircle} 
-            color="#ec4899" 
+            icon={CheckCircle}
+            color="#ec4899"
             infoDesc="Temperature Humidity Index (THI) NRC (1971): Zona Nyaman (≤74), Zona Waspada (75-78), Zona Bahaya (79-83), Zona Darurat (≥84)."
           />
         </View>
@@ -748,22 +748,22 @@ const DashboardScreen = ({ navigation }: any) => {
             <View>
               {/* Legend Gabungan */}
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 12, marginTop: 8, marginBottom: 8 }}>
-                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                   <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#f97316' }} />
-                   <Text style={{ fontSize: 10, color: COLORS.textLight }}>Suhu (°C)</Text>
-                 </View>
-                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                   <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#3b82f6' }} />
-                   <Text style={{ fontSize: 10, color: COLORS.textLight }}>Kelembapan (%)</Text>
-                 </View>
-                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                   <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#ef4444' }} />
-                   <Text style={{ fontSize: 10, color: COLORS.textLight }}>Amonia (ppm)</Text>
-                 </View>
-                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                   <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#06b6d4' }} />
-                   <Text style={{ fontSize: 10, color: COLORS.textLight }}>Kecepatan Angin (m/s)</Text>
-                 </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#f97316' }} />
+                  <Text style={{ fontSize: 10, color: COLORS.textLight }}>Suhu (°C)</Text>
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#3b82f6' }} />
+                  <Text style={{ fontSize: 10, color: COLORS.textLight }}>Kelembapan (%)</Text>
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#ef4444' }} />
+                  <Text style={{ fontSize: 10, color: COLORS.textLight }}>Amonia (ppm)</Text>
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#06b6d4' }} />
+                  <Text style={{ fontSize: 10, color: COLORS.textLight }}>Kecepatan Angin (m/s)</Text>
+                </View>
               </View>
 
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -774,7 +774,7 @@ const DashboardScreen = ({ navigation }: any) => {
                       if (sensorTrendRange === '1h' || sensorTrendRange === '24h') {
                         return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
                       }
-                      return `${date.getDate()}/${date.getMonth()+1}`;
+                      return `${date.getDate()}/${date.getMonth() + 1}`;
                     }),
                     datasets: [
                       {
@@ -841,8 +841,8 @@ const DashboardScreen = ({ navigation }: any) => {
               <Text style={styles.chartSubtitle}>Bahan Kering (BK) Konsumsi vs Pertambahan Bobot</Text>
             </View>
             <View style={{ flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
-              <TouchableOpacity 
-                style={styles.cowSelectFilterBtn} 
+              <TouchableOpacity
+                style={styles.cowSelectFilterBtn}
                 onPress={() => {
                   setSearchChartText('');
                   setIsCowSelectModalVisible(true);
@@ -875,7 +875,7 @@ const DashboardScreen = ({ navigation }: any) => {
                   const isAll = cowId === 'ALL';
                   const bkColor = colors[(index * 2) % colors.length];
                   const adgColor = colors[(index * 2 + 1) % colors.length];
-                  
+
                   return (
                     <React.Fragment key={cowId}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
@@ -896,7 +896,7 @@ const DashboardScreen = ({ navigation }: any) => {
                   data={{
                     labels: performanceData.map(d => {
                       const date = new Date(d.date);
-                      return `${date.getDate()}/${date.getMonth()+1}`;
+                      return `${date.getDate()}/${date.getMonth() + 1}`;
                     }),
                     datasets: selectedCowsForChart.flatMap((cowId, index) => {
                       const colors = ['rgba(139, 92, 246, opacity)', 'rgba(16, 185, 129, opacity)', 'rgba(245, 158, 11, opacity)', 'rgba(239, 68, 68, opacity)', 'rgba(59, 130, 246, opacity)', 'rgba(236, 72, 153, opacity)', 'rgba(99, 102, 241, opacity)', 'rgba(20, 184, 166, opacity)'];
@@ -945,8 +945,8 @@ const DashboardScreen = ({ navigation }: any) => {
           <View style={styles.tableContainer}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.sm }}>
               <Text style={styles.tableTitle}>Ringkasan Performa (Avg)</Text>
-              <TouchableOpacity 
-                style={styles.cowSelectFilterBtn} 
+              <TouchableOpacity
+                style={styles.cowSelectFilterBtn}
                 onPress={() => {
                   setSearchTableText('');
                   setIsTableSelectModalVisible(true);
@@ -969,11 +969,11 @@ const DashboardScreen = ({ navigation }: any) => {
                     <Text style={[styles.tableHeaderText, { width: 50, textAlign: 'center' }]}>FCR</Text>
                   </View>
                   {performanceSummaries.map((sum, index) => (
-                    <TouchableOpacity 
-                      key={index} 
+                    <TouchableOpacity
+                      key={index}
                       style={styles.tableRow}
                       onPress={() => {
-                        const weighInfo = sum.lastWeighDate 
+                        const weighInfo = sum.lastWeighDate
                           ? new Date(sum.lastWeighDate).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
                           : 'Belum pernah ditimbang';
                         const updateInfo = sum.lastUpdatedDate
@@ -1026,7 +1026,7 @@ const DashboardScreen = ({ navigation }: any) => {
           <Text style={styles.sectionTitle}>Menu Lanjutan</Text>
           <View style={styles.menuGrid}>
             {user?.role !== 'VETERINER' && (
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.menuItem}
                 onPress={() => navigation.navigate('Health')}
               >
@@ -1037,7 +1037,7 @@ const DashboardScreen = ({ navigation }: any) => {
               </TouchableOpacity>
             )}
             {user?.role === 'STAFF' && (
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.menuItem}
                 onPress={() => {
                   fetchRecentInputs();
@@ -1051,7 +1051,7 @@ const DashboardScreen = ({ navigation }: any) => {
               </TouchableOpacity>
             )}
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.menuItem}
               onPress={() => navigation.navigate('Reports')}
             >
@@ -1062,7 +1062,7 @@ const DashboardScreen = ({ navigation }: any) => {
             </TouchableOpacity>
 
             {user?.role === 'SUPER_ADMIN' && (
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.menuItem}
                 onPress={() => navigation.navigate('UserManagement')}
               >
@@ -1074,544 +1074,544 @@ const DashboardScreen = ({ navigation }: any) => {
             )}
           </View>
         </View>
-      {/* ========================================== */}
-      {/* 1. MODAL RIWAYAT INPUT TERBARU (HISTORY) */}
-      {/* ========================================== */}
-      <Modal
-        visible={isHistoryModalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setIsHistoryModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.historyModalContent, { paddingBottom: Math.max(insets.bottom, SPACING.lg) }]}>
-            <View style={styles.modalHeader}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <History size={22} color={COLORS.primary} />
-                <Text style={styles.modalTitle}>Histori & Koreksi Input 24 Jam</Text>
-              </View>
-              <TouchableOpacity onPress={() => setIsHistoryModalVisible(false)} style={styles.closeBtn}>
-                <X size={20} color={COLORS.text} />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.modalSubtitle}>Daftar input pakan, timbangan, & limbah terbaru. Klik koreksi/hapus untuk membetulkan.</Text>
-
-            {loadingHistory ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color={COLORS.primary} />
-                <Text style={{ marginTop: 8, color: COLORS.textLight }}>Memuat riwayat...</Text>
-              </View>
-            ) : recentInputs.length === 0 ? (
-              <View style={styles.emptyContainer}>
-                <History size={40} color="#cbd5e1" style={{ marginBottom: 8 }} />
-                <Text style={{ color: COLORS.textLight, textAlign: 'center' }}>Belum ada data input terbaru.</Text>
-              </View>
-            ) : (
-              <ScrollView style={styles.historyList}>
-                {recentInputs.map((item, idx) => (
-                  <View key={`${item.type}-${item.id}-${idx}`} style={styles.historyCard}>
-                    <View style={styles.historyCardBody}>
-                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                         <View style={[
-                           styles.badge,
-                           item.type === 'PAKAN' && { backgroundColor: '#e0f2fe' },
-                           item.type === 'TIMBANGAN' && { backgroundColor: '#dcfce7' },
-                           (item.type === 'LIMBAH' || item.type === 'LIMBAH_KANDANG') && { backgroundColor: '#ffedd5' }
-                         ]}>
-                           <Text style={[
-                             styles.badgeText,
-                             item.type === 'PAKAN' && { color: '#0369a1' },
-                             item.type === 'TIMBANGAN' && { color: '#15803d' },
-                             (item.type === 'LIMBAH' || item.type === 'LIMBAH_KANDANG') && { color: '#c2410c' }
-                           ]}>
-                             {item.type === 'LIMBAH_KANDANG' ? 'LIMBAH KANDANG' : item.type}
-                           </Text>
-                         </View>
-                         <Text style={styles.historyCattleId}>
-                           {item.type === 'LIMBAH_KANDANG' ? `Kandang: ${item.zoneName}` : `Sapi: ${item.cattleId}`}
-                         </Text>
-                       </View>
-                      
-                      <Text style={styles.historyDetails}>{item.details}</Text>
-                      <Text style={styles.historyDate}>
-                        {new Date(item.date).toLocaleDateString('id-ID', { hour: '2-digit', minute: '2-digit' } as any)}
-                      </Text>
-                    </View>
-
-                    <View style={styles.historyActions}>
-                      <TouchableOpacity 
-                        style={[styles.actionBtn, styles.editActionBtn]} 
-                        onPress={() => handleEditItem(item)}
-                      >
-                        <Edit size={14} color="#0369a1" />
-                        <Text style={[styles.actionBtnText, { color: '#0369a1' }]}>Koreksi</Text>
-                      </TouchableOpacity>
-                      
-                      <TouchableOpacity 
-                        style={[styles.actionBtn, styles.deleteActionBtn]} 
-                        onPress={() => handleDeleteItem(item)}
-                      >
-                        <Trash2 size={14} color={COLORS.danger} />
-                        <Text style={[styles.actionBtnText, { color: COLORS.danger }]}>
-                          Hapus
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                ))}
-              </ScrollView>
-            )}
-          </View>
-        </View>
-      </Modal>
-
-      {/* ========================================== */}
-      {/* 2. MODAL FORM EDIT / KOREKSI DATA */}
-      {/* ========================================== */}
-      <Modal
-        visible={isEditModalVisible}
-        animationType="fade"
-        transparent={true}
-        onRequestClose={() => setIsEditModalVisible(false)}
-      >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={{ flex: 1 }}
+        {/* ========================================== */}
+        {/* 1. MODAL RIWAYAT INPUT TERBARU (HISTORY) */}
+        {/* ========================================== */}
+        <Modal
+          visible={isHistoryModalVisible}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setIsHistoryModalVisible(false)}
         >
           <View style={styles.modalOverlay}>
-            <View style={[styles.editModalContent, { paddingBottom: Math.max(insets.bottom, SPACING.xl) }]}>
+            <View style={[styles.historyModalContent, { paddingBottom: Math.max(insets.bottom, SPACING.lg) }]}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Koreksi Data {selectedItemForEdit?.type === 'LIMBAH_KANDANG' ? 'Limbah Kandang' : selectedItemForEdit?.type}</Text>
-                <TouchableOpacity onPress={() => setIsEditModalVisible(false)}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <History size={22} color={COLORS.primary} />
+                  <Text style={styles.modalTitle}>Histori & Koreksi Input 24 Jam</Text>
+                </View>
+                <TouchableOpacity onPress={() => setIsHistoryModalVisible(false)} style={styles.closeBtn}>
                   <X size={20} color={COLORS.text} />
                 </TouchableOpacity>
               </View>
 
-              <View style={styles.editForm}>
-                <Text style={styles.editLabel}>
-                  {selectedItemForEdit?.type === 'LIMBAH_KANDANG' ? `Kandang: ${selectedItemForEdit?.zoneName}` : `Sapi: ${selectedItemForEdit?.cattleId}`}
-                </Text>
-                
-                {selectedItemForEdit?.type === 'PAKAN' && (
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>Berat Pakan (kg)</Text>
-                    <TextInput
-                      style={styles.input}
-                      value={editValue}
-                      onChangeText={setEditValue}
-                      keyboardType="decimal-pad"
-                      placeholder="Masukkan berat pakan baru"
-                    />
-                  </View>
-                )}
+              <Text style={styles.modalSubtitle}>Daftar input pakan, timbangan, & limbah terbaru. Klik koreksi/hapus untuk membetulkan.</Text>
 
-                {selectedItemForEdit?.type === 'TIMBANGAN' && (
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>Berat Sapi (kg)</Text>
-                    <TextInput
-                      style={styles.input}
-                      value={editValue}
-                      onChangeText={setEditValue}
-                      keyboardType="decimal-pad"
-                      placeholder="Masukkan berat sapi baru"
-                    />
-                  </View>
-                )}
+              {loadingHistory ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="large" color={COLORS.primary} />
+                  <Text style={{ marginTop: 8, color: COLORS.textLight }}>Memuat riwayat...</Text>
+                </View>
+              ) : recentInputs.length === 0 ? (
+                <View style={styles.emptyContainer}>
+                  <History size={40} color="#cbd5e1" style={{ marginBottom: 8 }} />
+                  <Text style={{ color: COLORS.textLight, textAlign: 'center' }}>Belum ada data input terbaru.</Text>
+                </View>
+              ) : (
+                <ScrollView style={styles.historyList}>
+                  {recentInputs.map((item, idx) => (
+                    <View key={`${item.type}-${item.id}-${idx}`} style={styles.historyCard}>
+                      <View style={styles.historyCardBody}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                          <View style={[
+                            styles.badge,
+                            item.type === 'PAKAN' && { backgroundColor: '#e0f2fe' },
+                            item.type === 'TIMBANGAN' && { backgroundColor: '#dcfce7' },
+                            (item.type === 'LIMBAH' || item.type === 'LIMBAH_KANDANG') && { backgroundColor: '#ffedd5' }
+                          ]}>
+                            <Text style={[
+                              styles.badgeText,
+                              item.type === 'PAKAN' && { color: '#0369a1' },
+                              item.type === 'TIMBANGAN' && { color: '#15803d' },
+                              (item.type === 'LIMBAH' || item.type === 'LIMBAH_KANDANG') && { color: '#c2410c' }
+                            ]}>
+                              {item.type === 'LIMBAH_KANDANG' ? 'LIMBAH KANDANG' : item.type}
+                            </Text>
+                          </View>
+                          <Text style={styles.historyCattleId}>
+                            {item.type === 'LIMBAH_KANDANG' ? `Kandang: ${item.zoneName}` : `Sapi: ${item.cattleId}`}
+                          </Text>
+                        </View>
 
-                {(selectedItemForEdit?.type === 'LIMBAH' || selectedItemForEdit?.type === 'LIMBAH_KANDANG') && (
-                  <View>
+                        <Text style={styles.historyDetails}>{item.details}</Text>
+                        <Text style={styles.historyDate}>
+                          {new Date(item.date).toLocaleDateString('id-ID', { hour: '2-digit', minute: '2-digit' } as any)}
+                        </Text>
+                      </View>
+
+                      <View style={styles.historyActions}>
+                        <TouchableOpacity
+                          style={[styles.actionBtn, styles.editActionBtn]}
+                          onPress={() => handleEditItem(item)}
+                        >
+                          <Edit size={14} color="#0369a1" />
+                          <Text style={[styles.actionBtnText, { color: '#0369a1' }]}>Koreksi</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          style={[styles.actionBtn, styles.deleteActionBtn]}
+                          onPress={() => handleDeleteItem(item)}
+                        >
+                          <Trash2 size={14} color={COLORS.danger} />
+                          <Text style={[styles.actionBtnText, { color: COLORS.danger }]}>
+                            Hapus
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ))}
+                </ScrollView>
+              )}
+            </View>
+          </View>
+        </Modal>
+
+        {/* ========================================== */}
+        {/* 2. MODAL FORM EDIT / KOREKSI DATA */}
+        {/* ========================================== */}
+        <Modal
+          visible={isEditModalVisible}
+          animationType="fade"
+          transparent={true}
+          onRequestClose={() => setIsEditModalVisible(false)}
+        >
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={{ flex: 1 }}
+          >
+            <View style={styles.modalOverlay}>
+              <View style={[styles.editModalContent, { paddingBottom: Math.max(insets.bottom, SPACING.xl) }]}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Koreksi Data {selectedItemForEdit?.type === 'LIMBAH_KANDANG' ? 'Limbah Kandang' : selectedItemForEdit?.type}</Text>
+                  <TouchableOpacity onPress={() => setIsEditModalVisible(false)}>
+                    <X size={20} color={COLORS.text} />
+                  </TouchableOpacity>
+                </View>
+
+                <View style={styles.editForm}>
+                  <Text style={styles.editLabel}>
+                    {selectedItemForEdit?.type === 'LIMBAH_KANDANG' ? `Kandang: ${selectedItemForEdit?.zoneName}` : `Sapi: ${selectedItemForEdit?.cattleId}`}
+                  </Text>
+
+                  {selectedItemForEdit?.type === 'PAKAN' && (
                     <View style={styles.inputGroup}>
-                      <Text style={styles.inputLabel}>Feces (kg)</Text>
+                      <Text style={styles.inputLabel}>Berat Pakan (kg)</Text>
                       <TextInput
                         style={styles.input}
                         value={editValue}
                         onChangeText={setEditValue}
                         keyboardType="decimal-pad"
-                        placeholder="Feces baru"
+                        placeholder="Masukkan berat pakan baru"
                       />
                     </View>
+                  )}
+
+                  {selectedItemForEdit?.type === 'TIMBANGAN' && (
                     <View style={styles.inputGroup}>
-                      <Text style={styles.inputLabel}>Urine (L)</Text>
+                      <Text style={styles.inputLabel}>Berat Sapi (kg)</Text>
                       <TextInput
                         style={styles.input}
-                        value={editValue2}
-                        onChangeText={setEditValue2}
+                        value={editValue}
+                        onChangeText={setEditValue}
                         keyboardType="decimal-pad"
-                        placeholder="Urine baru"
+                        placeholder="Masukkan berat sapi baru"
                       />
                     </View>
+                  )}
+
+                  {(selectedItemForEdit?.type === 'LIMBAH' || selectedItemForEdit?.type === 'LIMBAH_KANDANG') && (
+                    <View>
+                      <View style={styles.inputGroup}>
+                        <Text style={styles.inputLabel}>Feces (kg)</Text>
+                        <TextInput
+                          style={styles.input}
+                          value={editValue}
+                          onChangeText={setEditValue}
+                          keyboardType="decimal-pad"
+                          placeholder="Feces baru"
+                        />
+                      </View>
+                      <View style={styles.inputGroup}>
+                        <Text style={styles.inputLabel}>Urine (L)</Text>
+                        <TextInput
+                          style={styles.input}
+                          value={editValue2}
+                          onChangeText={setEditValue2}
+                          keyboardType="decimal-pad"
+                          placeholder="Urine baru"
+                        />
+                      </View>
+                    </View>
+                  )}
+
+                  <View style={styles.modalFooter}>
+                    <TouchableOpacity
+                      style={[styles.modalBtn, styles.modalCancelBtn]}
+                      onPress={() => setIsEditModalVisible(false)}
+                    >
+                      <Text style={styles.modalCancelBtnText}>Batal</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.modalBtn, styles.modalSaveBtn]}
+                      onPress={saveEdit}
+                    >
+                      <Text style={styles.modalSaveBtnText}>Simpan</Text>
+                    </TouchableOpacity>
                   </View>
-                )}
+                </View>
+              </View>
+            </View>
+          </KeyboardAvoidingView>
+        </Modal>
+
+        {/* ========================================== */}
+        {/* 3. MODAL FILTER SAPI (MULTI-SELECT) */}
+        {/* ========================================== */}
+        <Modal
+          visible={isCowSelectModalVisible}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => {
+            setSearchChartText('');
+            setIsCowSelectModalVisible(false);
+          }}
+        >
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={{ flex: 1 }}
+          >
+            <View style={styles.modalOverlay}>
+              <View style={[styles.editModalContent, { paddingBottom: Math.max(insets.bottom, SPACING.xl) }]}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Pilih Sapi (Maksimal 5)</Text>
+                  <TouchableOpacity onPress={() => {
+                    setSearchChartText('');
+                    setIsCowSelectModalVisible(false);
+                  }}>
+                    <X size={20} color={COLORS.text} />
+                  </TouchableOpacity>
+                </View>
+                <Text style={styles.modalSubtitle}>Pilih sapi yang ingin dibandingkan performanya di grafik.</Text>
+
+                <TextInput
+                  style={[styles.input, { marginBottom: 12, backgroundColor: '#f1f5f9', borderWidth: 0 }]}
+                  placeholder="Cari ID Sapi..."
+                  value={searchChartText}
+                  onChangeText={setSearchChartText}
+                  placeholderTextColor={COLORS.textLight}
+                />
+
+                <ScrollView style={{ maxHeight: 300, marginBottom: SPACING.md }}>
+                  <View style={styles.cowSelectGrid}>
+                    {livestock.filter(cow => cow.cattleId.toLowerCase().includes(searchChartText.toLowerCase())).slice(0, 5).map(cow => {
+                      const isSelected = selectedChartCows.includes(cow.cattleId);
+                      return (
+                        <TouchableOpacity
+                          key={cow.id}
+                          style={[styles.cowSelectCard, isSelected && styles.cowSelectCardActive]}
+                          onPress={() => {
+                            if (isSelected) {
+                              setSelectedChartCows(prev => prev.filter(id => id !== cow.cattleId));
+                            } else {
+                              if (selectedChartCows.length >= 5) {
+                                Alert.alert('Batas Maksimal', 'Anda hanya dapat memilih maksimal 5 sapi.');
+                                return;
+                              }
+                              setSelectedChartCows(prev => [...prev, cow.cattleId]);
+                            }
+                          }}
+                        >
+                          <Text style={[styles.cowSelectId, isSelected && styles.cowSelectIdActive]}>
+                            {cow.cattleId}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                    {livestock.length === 0 && (
+                      <Text style={{ color: COLORS.textLight, fontStyle: 'italic' }}>Tidak ada data sapi.</Text>
+                    )}
+                  </View>
+                </ScrollView>
 
                 <View style={styles.modalFooter}>
-                  <TouchableOpacity 
-                    style={[styles.modalBtn, styles.modalCancelBtn]} 
-                    onPress={() => setIsEditModalVisible(false)}
+                  <TouchableOpacity
+                    style={[styles.modalBtn, styles.modalCancelBtn]}
+                    onPress={() => {
+                      setSelectedChartCows([]);
+                      setSearchChartText('');
+                      setIsCowSelectModalVisible(false);
+                    }}
                   >
-                    <Text style={styles.modalCancelBtnText}>Batal</Text>
+                    <Text style={styles.modalCancelBtnText}>Reset Semua</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity 
-                    style={[styles.modalBtn, styles.modalSaveBtn]} 
-                    onPress={saveEdit}
+                  <TouchableOpacity
+                    style={[styles.modalBtn, styles.modalSaveBtn]}
+                    onPress={() => {
+                      setSearchChartText('');
+                      setIsCowSelectModalVisible(false);
+                    }}
                   >
-                    <Text style={styles.modalSaveBtnText}>Simpan</Text>
+                    <Text style={styles.modalSaveBtnText}>Terapkan Filter</Text>
                   </TouchableOpacity>
                 </View>
               </View>
             </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
+          </KeyboardAvoidingView>
+        </Modal>
 
-      {/* ========================================== */}
-      {/* 3. MODAL FILTER SAPI (MULTI-SELECT) */}
-      {/* ========================================== */}
-      <Modal
-        visible={isCowSelectModalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => {
-          setSearchChartText('');
-          setIsCowSelectModalVisible(false);
-        }}
-      >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={{ flex: 1 }}
+        {/* ========================================== */}
+        {/* 4. MODAL FILTER SAPI UNTUK TABEL (Maks 10) */}
+        {/* ========================================== */}
+        <Modal
+          visible={isTableSelectModalVisible}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => {
+            setSearchTableText('');
+            setIsTableSelectModalVisible(false);
+          }}
+        >
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={{ flex: 1 }}
+          >
+            <View style={styles.modalOverlay}>
+              <View style={[styles.editModalContent, { paddingBottom: Math.max(insets.bottom, SPACING.xl) }]}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Pilih Sapi untuk Tabel (Maksimal 10)</Text>
+                  <TouchableOpacity onPress={() => {
+                    setSearchTableText('');
+                    setIsTableSelectModalVisible(false);
+                  }}>
+                    <X size={20} color={COLORS.text} />
+                  </TouchableOpacity>
+                </View>
+                <Text style={styles.modalSubtitle}>Pilih sapi yang ingin dibandingkan ringkasan performanya di tabel.</Text>
+
+                <TextInput
+                  style={[styles.input, { marginBottom: 12, backgroundColor: '#f1f5f9', borderWidth: 0 }]}
+                  placeholder="Cari ID Sapi..."
+                  value={searchTableText}
+                  onChangeText={setSearchTableText}
+                  placeholderTextColor={COLORS.textLight}
+                />
+
+                <ScrollView style={{ maxHeight: 300, marginBottom: SPACING.md }}>
+                  <View style={styles.cowSelectGrid}>
+                    {livestock.filter(cow => cow.cattleId.toLowerCase().includes(searchTableText.toLowerCase())).slice(0, 10).map(cow => {
+                      const isSelected = selectedTableCows.includes(cow.cattleId);
+                      return (
+                        <TouchableOpacity
+                          key={cow.id}
+                          style={[styles.cowSelectCard, isSelected && styles.cowSelectCardActive]}
+                          onPress={() => {
+                            if (isSelected) {
+                              setSelectedTableCows(prev => prev.filter(id => id !== cow.cattleId));
+                            } else {
+                              if (selectedTableCows.length >= 10) {
+                                Alert.alert('Batas Maksimal', 'Anda hanya dapat memilih maksimal 10 sapi untuk tabel.');
+                                return;
+                              }
+                              setSelectedTableCows(prev => [...prev, cow.cattleId]);
+                            }
+                          }}
+                        >
+                          <Text style={[styles.cowSelectId, isSelected && styles.cowSelectIdActive]}>
+                            {cow.cattleId}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                    {livestock.length === 0 && (
+                      <Text style={{ color: COLORS.textLight, fontStyle: 'italic' }}>Tidak ada data sapi.</Text>
+                    )}
+                  </View>
+                </ScrollView>
+
+                <View style={styles.modalFooter}>
+                  <TouchableOpacity
+                    style={[styles.modalBtn, styles.modalCancelBtn]}
+                    onPress={() => {
+                      setSelectedTableCows([]);
+                      setSearchTableText('');
+                      setIsTableSelectModalVisible(false);
+                    }}
+                  >
+                    <Text style={styles.modalCancelBtnText}>Reset Semua</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.modalBtn, styles.modalSaveBtn]}
+                    onPress={() => {
+                      setSearchTableText('');
+                      setIsTableSelectModalVisible(false);
+                    }}
+                  >
+                    <Text style={styles.modalSaveBtnText}>Terapkan Filter</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </KeyboardAvoidingView>
+        </Modal>
+
+        {/* ========================================== */}
+        {/* MODAL AKTIVITAS 24 JAM */}
+        {/* ========================================== */}
+        <Modal
+          visible={activityModalVisible}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setActivityModalVisible(false)}
         >
           <View style={styles.modalOverlay}>
-            <View style={[styles.editModalContent, { paddingBottom: Math.max(insets.bottom, SPACING.xl) }]}>
+            <View style={[styles.historyModalContent, { paddingBottom: Math.max(insets.bottom, SPACING.lg) }]}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Pilih Sapi (Maksimal 5)</Text>
-                <TouchableOpacity onPress={() => {
-                  setSearchChartText('');
-                  setIsCowSelectModalVisible(false);
-                }}>
+                <Text style={styles.modalTitle}>Aktivitas 24 Jam Terakhir</Text>
+                <TouchableOpacity onPress={() => setActivityModalVisible(false)}>
                   <X size={20} color={COLORS.text} />
                 </TouchableOpacity>
               </View>
-              <Text style={styles.modalSubtitle}>Pilih sapi yang ingin dibandingkan performanya di grafik.</Text>
-              
-              <TextInput
-                style={[styles.input, { marginBottom: 12, backgroundColor: '#f1f5f9', borderWidth: 0 }]}
-                placeholder="Cari ID Sapi..."
-                value={searchChartText}
-                onChangeText={setSearchChartText}
-                placeholderTextColor={COLORS.textLight}
-              />
+              <Text style={styles.modalSubtitle}>Riwayat log sistem dan peringatan dalam 24 jam terakhir.</Text>
 
-              <ScrollView style={{ maxHeight: 300, marginBottom: SPACING.md }}>
-                <View style={styles.cowSelectGrid}>
-                  {livestock.filter(cow => cow.cattleId.toLowerCase().includes(searchChartText.toLowerCase())).slice(0, 5).map(cow => {
-                    const isSelected = selectedChartCows.includes(cow.cattleId);
-                    return (
-                      <TouchableOpacity
-                        key={cow.id}
-                        style={[styles.cowSelectCard, isSelected && styles.cowSelectCardActive]}
-                        onPress={() => {
-                          if (isSelected) {
-                            setSelectedChartCows(prev => prev.filter(id => id !== cow.cattleId));
-                          } else {
-                            if (selectedChartCows.length >= 5) {
-                              Alert.alert('Batas Maksimal', 'Anda hanya dapat memilih maksimal 5 sapi.');
-                              return;
-                            }
-                            setSelectedChartCows(prev => [...prev, cow.cattleId]);
-                          }
-                        }}
-                      >
-                        <Text style={[styles.cowSelectId, isSelected && styles.cowSelectIdActive]}>
-                          {cow.cattleId}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                  {livestock.length === 0 && (
-                    <Text style={{ color: COLORS.textLight, fontStyle: 'italic' }}>Tidak ada data sapi.</Text>
-                  )}
+              {loadingActivities ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="large" color={COLORS.primary} />
                 </View>
-              </ScrollView>
+              ) : activities.length > 0 ? (
+                <FlatList
+                  data={activities}
+                  keyExtractor={(item: any) => item.id.toString()}
+                  renderItem={({ item }: { item: any }) => (
+                    <View style={styles.historyCard}>
+                      <View style={styles.historyCardBody}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                          <Text style={styles.historyCattleId}>{item.userName || 'Sistem'} - {item.action || 'Info'}</Text>
+                          <Text style={styles.historyDate}>{new Date(item.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</Text>
+                        </View>
+                        <Text style={styles.historyDetails}>{item.details || item.body || ''}</Text>
+                      </View>
+                    </View>
+                  )}
+                  style={styles.historyList}
+                />
+              ) : (
+                <View style={styles.emptyContainer}>
+                  <Text style={{ color: COLORS.textLight }}>Belum ada aktivitas tercatat hari ini.</Text>
+                </View>
+              )}
 
-              <View style={styles.modalFooter}>
-                <TouchableOpacity 
-                  style={[styles.modalBtn, styles.modalCancelBtn]} 
+              {user?.role === 'STAFF' && (
+                <TouchableOpacity
+                  style={[styles.modalBtn, styles.modalSaveBtn, { marginTop: 16 }]}
                   onPress={() => {
-                    setSelectedChartCows([]);
-                    setSearchChartText('');
-                    setIsCowSelectModalVisible(false);
+                    setActivityModalVisible(false);
+                    fetchRecentInputs();
+                    setIsHistoryModalVisible(true);
                   }}
                 >
-                  <Text style={styles.modalCancelBtnText}>Reset Semua</Text>
+                  <Text style={styles.modalSaveBtnText}>Koreksi Input Data</Text>
                 </TouchableOpacity>
-                <TouchableOpacity 
-                  style={[styles.modalBtn, styles.modalSaveBtn]} 
-                  onPress={() => {
-                    setSearchChartText('');
-                    setIsCowSelectModalVisible(false);
-                  }}
-                >
-                  <Text style={styles.modalSaveBtnText}>Terapkan Filter</Text>
-                </TouchableOpacity>
-              </View>
+              )}
             </View>
           </View>
-        </KeyboardAvoidingView>
-      </Modal>
+        </Modal>
 
-      {/* ========================================== */}
-      {/* 4. MODAL FILTER SAPI UNTUK TABEL (Maks 10) */}
-      {/* ========================================== */}
-      <Modal
-        visible={isTableSelectModalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => {
-          setSearchTableText('');
-          setIsTableSelectModalVisible(false);
-        }}
-      >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={{ flex: 1 }}
+        {/* ========================================== */}
+        {/* MODAL NOTIFIKASI */}
+        {/* ========================================== */}
+        <Modal
+          visible={notificationModalVisible}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setNotificationModalVisible(false)}
         >
           <View style={styles.modalOverlay}>
-            <View style={[styles.editModalContent, { paddingBottom: Math.max(insets.bottom, SPACING.xl) }]}>
+            <View style={[styles.historyModalContent, { maxHeight: '80%', paddingBottom: Math.max(insets.bottom, SPACING.lg) }]}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Pilih Sapi untuk Tabel (Maksimal 10)</Text>
-                <TouchableOpacity onPress={() => {
-                  setSearchTableText('');
-                  setIsTableSelectModalVisible(false);
-                }}>
+                <Text style={styles.modalTitle}>Peringatan Sistem</Text>
+                <TouchableOpacity onPress={() => setNotificationModalVisible(false)}>
                   <X size={20} color={COLORS.text} />
                 </TouchableOpacity>
               </View>
-              <Text style={styles.modalSubtitle}>Pilih sapi yang ingin dibandingkan ringkasan performanya di tabel.</Text>
-              
-              <TextInput
-                style={[styles.input, { marginBottom: 12, backgroundColor: '#f1f5f9', borderWidth: 0 }]}
-                placeholder="Cari ID Sapi..."
-                value={searchTableText}
-                onChangeText={setSearchTableText}
-                placeholderTextColor={COLORS.textLight}
-              />
 
-              <ScrollView style={{ maxHeight: 300, marginBottom: SPACING.md }}>
-                <View style={styles.cowSelectGrid}>
-                  {livestock.filter(cow => cow.cattleId.toLowerCase().includes(searchTableText.toLowerCase())).slice(0, 10).map(cow => {
-                    const isSelected = selectedTableCows.includes(cow.cattleId);
-                    return (
-                      <TouchableOpacity
-                        key={cow.id}
-                        style={[styles.cowSelectCard, isSelected && styles.cowSelectCardActive]}
-                        onPress={() => {
-                          if (isSelected) {
-                            setSelectedTableCows(prev => prev.filter(id => id !== cow.cattleId));
-                          } else {
-                            if (selectedTableCows.length >= 10) {
-                              Alert.alert('Batas Maksimal', 'Anda hanya dapat memilih maksimal 10 sapi untuk tabel.');
-                              return;
-                            }
-                            setSelectedTableCows(prev => [...prev, cow.cattleId]);
-                          }
-                        }}
-                      >
-                        <Text style={[styles.cowSelectId, isSelected && styles.cowSelectIdActive]}>
-                          {cow.cattleId}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                  {livestock.length === 0 && (
-                    <Text style={{ color: COLORS.textLight, fontStyle: 'italic' }}>Tidak ada data sapi.</Text>
+              {notifications.length > 0 ? (
+                <FlatList
+                  data={notifications}
+                  keyExtractor={(item: any) => item.id.toString()}
+                  renderItem={({ item }: { item: any }) => (
+                    <View style={{ paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f1f5f9', flexDirection: 'row', alignItems: 'flex-start' }}>
+                      <View style={{ marginTop: 2, marginRight: 12, backgroundColor: '#fee2e2', padding: 6, borderRadius: 8 }}>
+                        <AlertTriangle size={16} color="#ef4444" />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                          <Text style={{ fontSize: 13, fontWeight: 'bold', color: COLORS.danger }}>{item.title}</Text>
+                          <Text style={{ fontSize: 11, color: COLORS.textLight }}>{item.time}</Text>
+                        </View>
+                        <Text style={{ fontSize: 12, color: COLORS.text }}>{item.body}</Text>
+                      </View>
+                    </View>
                   )}
+                  style={styles.historyList}
+                />
+              ) : (
+                <View style={{ padding: 40, alignItems: 'center' }}>
+                  <Bell size={40} color={COLORS.textLight} />
+                  <Text style={{ marginTop: 12, color: COLORS.textLight, textAlign: 'center' }}>Tidak ada peringatan. Kondisi aman terkendali.</Text>
                 </View>
-              </ScrollView>
-
-              <View style={styles.modalFooter}>
-                <TouchableOpacity 
-                  style={[styles.modalBtn, styles.modalCancelBtn]} 
-                  onPress={() => {
-                    setSelectedTableCows([]);
-                    setSearchTableText('');
-                    setIsTableSelectModalVisible(false);
-                  }}
-                >
-                  <Text style={styles.modalCancelBtnText}>Reset Semua</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  style={[styles.modalBtn, styles.modalSaveBtn]} 
-                  onPress={() => {
-                    setSearchTableText('');
-                    setIsTableSelectModalVisible(false);
-                  }}
-                >
-                  <Text style={styles.modalSaveBtnText}>Terapkan Filter</Text>
-                </TouchableOpacity>
-              </View>
+              )}
             </View>
           </View>
-        </KeyboardAvoidingView>
-      </Modal>
+        </Modal>
 
-      {/* ========================================== */}
-      {/* MODAL AKTIVITAS 24 JAM */}
-      {/* ========================================== */}
-      <Modal
-        visible={activityModalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setActivityModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.historyModalContent, { paddingBottom: Math.max(insets.bottom, SPACING.lg) }]}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Aktivitas 24 Jam Terakhir</Text>
-              <TouchableOpacity onPress={() => setActivityModalVisible(false)}>
-                <X size={20} color={COLORS.text} />
-              </TouchableOpacity>
-            </View>
-            <Text style={styles.modalSubtitle}>Riwayat log sistem dan peringatan dalam 24 jam terakhir.</Text>
-
-            {loadingActivities ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color={COLORS.primary} />
-              </View>
-            ) : activities.length > 0 ? (
-              <FlatList
-                data={activities}
-                keyExtractor={(item: any) => item.id.toString()}
-                renderItem={({ item }: { item: any }) => (
-                  <View style={styles.historyCard}>
-                    <View style={styles.historyCardBody}>
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                        <Text style={styles.historyCattleId}>{item.userName || 'Sistem'} - {item.action || 'Info'}</Text>
-                        <Text style={styles.historyDate}>{new Date(item.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</Text>
-                      </View>
-                      <Text style={styles.historyDetails}>{item.details || item.body || ''}</Text>
-                    </View>
-                  </View>
-                )}
-                style={styles.historyList}
-              />
-            ) : (
-              <View style={styles.emptyContainer}>
-                <Text style={{ color: COLORS.textLight }}>Belum ada aktivitas tercatat hari ini.</Text>
-              </View>
-            )}
-            
-            {user?.role === 'STAFF' && (
-              <TouchableOpacity
-                style={[styles.modalBtn, styles.modalSaveBtn, { marginTop: 16 }]}
-                onPress={() => {
-                  setActivityModalVisible(false);
-                  fetchRecentInputs();
-                  setIsHistoryModalVisible(true);
-                }}
-              >
-                <Text style={styles.modalSaveBtnText}>Koreksi Input Data</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-      </Modal>
-
-      {/* ========================================== */}
-      {/* MODAL NOTIFIKASI */}
-      {/* ========================================== */}
-      <Modal 
-        visible={notificationModalVisible} 
-        animationType="slide" 
-        transparent={true} 
-        onRequestClose={() => setNotificationModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.historyModalContent, { maxHeight: '80%', paddingBottom: Math.max(insets.bottom, SPACING.lg) }]}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Peringatan Sistem</Text>
-              <TouchableOpacity onPress={() => setNotificationModalVisible(false)}>
-                <X size={20} color={COLORS.text} />
-              </TouchableOpacity>
-            </View>
-            
-            {notifications.length > 0 ? (
-              <FlatList
-                data={notifications}
-                keyExtractor={(item: any) => item.id.toString()}
-                renderItem={({ item }: { item: any }) => (
-                  <View style={{ paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f1f5f9', flexDirection: 'row', alignItems: 'flex-start' }}>
-                    <View style={{ marginTop: 2, marginRight: 12, backgroundColor: '#fee2e2', padding: 6, borderRadius: 8 }}>
-                      <AlertTriangle size={16} color="#ef4444" />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                        <Text style={{ fontSize: 13, fontWeight: 'bold', color: COLORS.danger }}>{item.title}</Text>
-                        <Text style={{ fontSize: 11, color: COLORS.textLight }}>{item.time}</Text>
-                      </View>
-                      <Text style={{ fontSize: 12, color: COLORS.text }}>{item.body}</Text>
-                    </View>
-                  </View>
-                )}
-                style={styles.historyList}
-              />
-            ) : (
-              <View style={{ padding: 40, alignItems: 'center' }}>
-                <Bell size={40} color={COLORS.textLight} />
-                <Text style={{ marginTop: 12, color: COLORS.textLight, textAlign: 'center' }}>Tidak ada peringatan. Kondisi aman terkendali.</Text>
-              </View>
-            )}
-          </View>
-        </View>
-      </Modal>
-
-      {/* ========================================== */}
-      {/* MODAL KETERANGAN PENJELASAN ISTILAH (INFO) */}
-      {/* ========================================== */}
-      <Modal
-        visible={!!infoModalContent}
-        animationType="fade"
-        transparent={true}
-        onRequestClose={() => setInfoModalContent(null)}
-      >
-        <TouchableOpacity 
-          style={styles.modalOverlay} 
-          activeOpacity={1} 
-          onPress={() => setInfoModalContent(null)}
+        {/* ========================================== */}
+        {/* MODAL KETERANGAN PENJELASAN ISTILAH (INFO) */}
+        {/* ========================================== */}
+        <Modal
+          visible={!!infoModalContent}
+          animationType="fade"
+          transparent={true}
+          onRequestClose={() => setInfoModalContent(null)}
         >
-          <View style={[styles.editModalContent, { padding: SPACING.lg, borderRadius: 20 }]}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-              <View style={{ padding: 8, borderRadius: 10, backgroundColor: '#ecfdf5' }}>
-                <Info size={22} color={COLORS.primary} />
-              </View>
-              <Text style={{ fontSize: 16, fontWeight: 'bold', color: COLORS.text, flex: 1 }}>
-                {infoModalContent?.title}
-              </Text>
-              <TouchableOpacity onPress={() => setInfoModalContent(null)}>
-                <X size={20} color={COLORS.textLight} />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={{ fontSize: 13, color: COLORS.text, lineHeight: 20, marginBottom: 14 }}>
-              {infoModalContent?.desc}
-            </Text>
-
-            {infoModalContent?.target && (
-              <View style={{ backgroundColor: '#f1f5f9', padding: 10, borderRadius: 8, marginBottom: 16 }}>
-                <Text style={{ fontSize: 11, fontWeight: 'bold', color: COLORS.primary }}>
-                  {infoModalContent.target}
+          <TouchableOpacity
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            onPress={() => setInfoModalContent(null)}
+          >
+            <View style={[styles.editModalContent, { padding: SPACING.lg, borderRadius: 20 }]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                <View style={{ padding: 8, borderRadius: 10, backgroundColor: '#ecfdf5' }}>
+                  <Info size={22} color={COLORS.primary} />
+                </View>
+                <Text style={{ fontSize: 16, fontWeight: 'bold', color: COLORS.text, flex: 1 }}>
+                  {infoModalContent?.title}
                 </Text>
+                <TouchableOpacity onPress={() => setInfoModalContent(null)}>
+                  <X size={20} color={COLORS.textLight} />
+                </TouchableOpacity>
               </View>
-            )}
 
-            <TouchableOpacity 
-              style={{ backgroundColor: COLORS.primary, paddingVertical: 12, borderRadius: 12, alignItems: 'center' }}
-              onPress={() => setInfoModalContent(null)}
-            >
-              <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 14 }}>Mengerti</Text>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      </Modal>
+              <Text style={{ fontSize: 13, color: COLORS.text, lineHeight: 20, marginBottom: 14 }}>
+                {infoModalContent?.desc}
+              </Text>
+
+              {infoModalContent?.target && (
+                <View style={{ backgroundColor: '#f1f5f9', padding: 10, borderRadius: 8, marginBottom: 16 }}>
+                  <Text style={{ fontSize: 11, fontWeight: 'bold', color: COLORS.primary }}>
+                    {infoModalContent.target}
+                  </Text>
+                </View>
+              )}
+
+              <TouchableOpacity
+                style={{ backgroundColor: COLORS.primary, paddingVertical: 12, borderRadius: 12, alignItems: 'center' }}
+                onPress={() => setInfoModalContent(null)}
+              >
+                <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 14 }}>Mengerti</Text>
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </Modal>
 
       </ScrollView>
     </SafeAreaView>

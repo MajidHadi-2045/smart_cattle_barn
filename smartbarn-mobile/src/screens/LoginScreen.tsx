@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { 
-  StyleSheet, 
-  View, 
-  Text, 
-  TextInput, 
-  TouchableOpacity, 
-  KeyboardAvoidingView, 
+import {
+  StyleSheet,
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  KeyboardAvoidingView,
   Platform,
   Image,
   ActivityIndicator,
@@ -39,21 +39,29 @@ const LoginScreen = ({ navigation }: any) => {
 
     setLoading(true);
     try {
-      // Meminta token unik HP dari Expo/Firebase
-      const pushToken = await registerForPushNotificationsAsync();
-      
-      // Kirim token tersebut bersamaan dengan email & password
-      const response = await apiClient.post('/auth/login', { 
-        email: usernameOrEmail, 
-        password, 
+      // Ambil push token HP tanpa memblokir alur login jika Expo jaringan lambat
+      let pushToken = undefined;
+      try {
+        pushToken = await Promise.race([
+          registerForPushNotificationsAsync(),
+          new Promise<undefined>((resolve) => setTimeout(() => resolve(undefined), 2000))
+        ]);
+      } catch (tokenErr) {
+        console.warn('Push token register timeout/error:', tokenErr);
+      }
+
+      // Kirim data login ke backend
+      const response = await apiClient.post('/auth/login', {
+        email: usernameOrEmail,
+        password,
         role,
         pushToken // <-- Ditambahkan ke backend
       });
       const { access_token, user } = response.data;
-      
+
       await saveToken(access_token);
       await saveUser(user);
-      
+
       navigation.replace('Dashboard');
     } catch (error: any) {
       console.error(error);
@@ -65,17 +73,17 @@ const LoginScreen = ({ navigation }: any) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.content}
       >
         <View style={styles.header}>
-          <TouchableOpacity 
-            style={styles.logoContainer} 
+          <TouchableOpacity
+            style={styles.logoContainer}
             onPress={() => navigation.navigate('Welcome')}
           >
-            <Image 
-              source={require('../../assets/icon.png')} 
+            <Image
+              source={require('../../assets/icon.png')}
               style={{ width: 80, height: 80, borderRadius: 20 }}
               resizeMode="contain"
             />
@@ -117,10 +125,10 @@ const LoginScreen = ({ navigation }: any) => {
             <Text style={styles.roleLabel}>Pilih Peran Anda:</Text>
             <View style={styles.roleGrid}>
               {ROLES.map((r) => (
-                <TouchableOpacity 
+                <TouchableOpacity
                   key={r.value}
                   style={[
-                    styles.roleItem, 
+                    styles.roleItem,
                     role === r.value && styles.roleItemActive
                   ]}
                   onPress={() => setRole(r.value)}
@@ -134,8 +142,8 @@ const LoginScreen = ({ navigation }: any) => {
             </View>
           </View>
 
-          <TouchableOpacity 
-            style={styles.loginButton} 
+          <TouchableOpacity
+            style={styles.loginButton}
             onPress={handleLogin}
             disabled={loading}
           >
@@ -146,7 +154,7 @@ const LoginScreen = ({ navigation }: any) => {
             )}
           </TouchableOpacity>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={{ marginTop: SPACING.md, alignItems: 'center' }}
             onPress={async () => {
               if (!usernameOrEmail) {

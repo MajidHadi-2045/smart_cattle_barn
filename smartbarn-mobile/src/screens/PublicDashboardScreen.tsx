@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { 
-  StyleSheet, 
-  View, 
-  Text, 
-  ScrollView, 
+import {
+  StyleSheet,
+  View,
+  Text,
+  ScrollView,
   TouchableOpacity,
   RefreshControl,
   Dimensions,
@@ -17,13 +17,13 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { COLORS, SPACING, SHADOWS, RADIUS, FONT_SIZE, FONT_WEIGHT, TYPOGRAPHY } from '../theme';
 import apiClient from '../api/client';
 import { useSocket } from '../hooks/useSocket';
-import { 
-  ChevronLeft, 
-  Thermometer, 
-  Droplets, 
-  Wind, 
-  Beef, 
-  HeartPulse, 
+import {
+  ChevronLeft,
+  Thermometer,
+  Droplets,
+  Wind,
+  Beef,
+  HeartPulse,
   Activity,
   X,
   Trash2,
@@ -55,7 +55,7 @@ const PublicDashboardScreen = ({ navigation }: any) => {
     thi: null,
     activeAlerts: 0
   });
-  
+
   // Performance Chart State
   const [performanceData, setPerformanceData] = useState<any[]>([]);
   const [performanceSummaries, setPerformanceSummaries] = useState<any[]>([]);
@@ -156,7 +156,7 @@ const PublicDashboardScreen = ({ navigation }: any) => {
     } catch (err) {
       console.warn('Error fetching dashboard summary:', err);
     }
-    
+
     try {
       const cowsRes = await apiClient.get('/livestock');
       if (cowsRes.data) setLivestock(cowsRes.data);
@@ -223,7 +223,7 @@ const PublicDashboardScreen = ({ navigation }: any) => {
         const chronological = [...trendRes.data].reverse();
         setSensorTrendData(chronological.slice(-15));
       }
-    } catch (e) {}
+    } catch (e) { }
 
     // Fetch Trend Wind
     try {
@@ -238,7 +238,7 @@ const PublicDashboardScreen = ({ navigation }: any) => {
           setWindTrendData(chronologicalWind.slice(-15));
         }
       }
-    } catch (e) {}
+    } catch (e) { }
   };
 
   useEffect(() => {
@@ -252,7 +252,7 @@ const PublicDashboardScreen = ({ navigation }: any) => {
         if (wasteRes.data) {
           setWasteStats({ fecesKg: wasteRes.data.fecesKg || 0, urineL: wasteRes.data.urineL || 0 });
         }
-      } catch (e) {}
+      } catch (e) { }
     };
     fetchWaste();
   }, [wasteFilter]);
@@ -293,7 +293,7 @@ const PublicDashboardScreen = ({ navigation }: any) => {
         <View style={{ width: 24 }} />
       </View>
 
-      <ScrollView 
+      <ScrollView
         contentContainerStyle={styles.scrollContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
@@ -364,22 +364,22 @@ const PublicDashboardScreen = ({ navigation }: any) => {
             <View>
               {/* Legend Gabungan */}
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 12, marginTop: 8, marginBottom: 8 }}>
-                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                   <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#f97316' }} />
-                   <Text style={{ fontSize: 10, color: COLORS.textLight }}>Suhu (°C)</Text>
-                 </View>
-                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                   <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#3b82f6' }} />
-                   <Text style={{ fontSize: 10, color: COLORS.textLight }}>Kelembapan (%)</Text>
-                 </View>
-                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                   <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#ef4444' }} />
-                   <Text style={{ fontSize: 10, color: COLORS.textLight }}>Amonia (ppm)</Text>
-                 </View>
-                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                   <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#06b6d4' }} />
-                   <Text style={{ fontSize: 10, color: COLORS.textLight }}>Kecepatan Angin (m/s)</Text>
-                 </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#f97316' }} />
+                  <Text style={{ fontSize: 10, color: COLORS.textLight }}>Suhu (°C)</Text>
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#3b82f6' }} />
+                  <Text style={{ fontSize: 10, color: COLORS.textLight }}>Kelembapan (%)</Text>
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#ef4444' }} />
+                  <Text style={{ fontSize: 10, color: COLORS.textLight }}>Amonia (ppm)</Text>
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#06b6d4' }} />
+                  <Text style={{ fontSize: 10, color: COLORS.textLight }}>Kecepatan Angin (m/s)</Text>
+                </View>
               </View>
 
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -390,7 +390,7 @@ const PublicDashboardScreen = ({ navigation }: any) => {
                       if (sensorTrendRange === '1h' || sensorTrendRange === '24h') {
                         return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
                       }
-                      return `${date.getDate()}/${date.getMonth()+1}`;
+                      return `${date.getDate()}/${date.getMonth() + 1}`;
                     }),
                     datasets: [
                       {
@@ -450,8 +450,8 @@ const PublicDashboardScreen = ({ navigation }: any) => {
               <Text style={styles.chartSubtitle}>Bahan Kering (BK) Konsumsi vs Pertambahan Bobot</Text>
             </View>
             <View style={{ flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
-              <TouchableOpacity 
-                style={styles.cowSelectFilterBtn} 
+              <TouchableOpacity
+                style={styles.cowSelectFilterBtn}
                 onPress={() => {
                   setSearchChartText('');
                   setIsCowSelectModalVisible(true);
@@ -476,7 +476,7 @@ const PublicDashboardScreen = ({ navigation }: any) => {
                   const isAll = cowId === 'ALL';
                   const bkColor = colors[(index * 2) % colors.length];
                   const adgColor = colors[(index * 2 + 1) % colors.length];
-                  
+
                   return (
                     <React.Fragment key={cowId}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
@@ -497,7 +497,7 @@ const PublicDashboardScreen = ({ navigation }: any) => {
                   data={{
                     labels: performanceData.map(d => {
                       const date = new Date(d.date);
-                      return `${date.getDate()}/${date.getMonth()+1}`;
+                      return `${date.getDate()}/${date.getMonth() + 1}`;
                     }),
                     datasets: selectedCowsForChart.flatMap((cowId, index) => {
                       const colors = ['rgba(139, 92, 246, opacity)', 'rgba(16, 185, 129, opacity)', 'rgba(245, 158, 11, opacity)', 'rgba(239, 68, 68, opacity)', 'rgba(59, 130, 246, opacity)', 'rgba(236, 72, 153, opacity)', 'rgba(99, 102, 241, opacity)', 'rgba(20, 184, 166, opacity)'];
@@ -541,13 +541,13 @@ const PublicDashboardScreen = ({ navigation }: any) => {
               <Text style={styles.chartSubtitle}>Belum ada data performa</Text>
             </View>
           )}
- 
+
           {/* TABLE KOMPARASI PERFORMA */}
           <View style={styles.tableContainer}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.sm }}>
               <Text style={styles.tableTitle}>Ringkasan Performa (Avg)</Text>
-              <TouchableOpacity 
-                style={styles.cowSelectFilterBtn} 
+              <TouchableOpacity
+                style={styles.cowSelectFilterBtn}
                 onPress={() => {
                   setSearchTableText('');
                   setIsTableSelectModalVisible(true);
@@ -568,11 +568,11 @@ const PublicDashboardScreen = ({ navigation }: any) => {
                     <Text style={[styles.tableHeaderText, { width: 50, textAlign: 'center' }]}>FCR</Text>
                   </View>
                   {performanceSummaries.map((sum, index) => (
-                    <TouchableOpacity 
-                      key={index} 
+                    <TouchableOpacity
+                      key={index}
                       style={styles.tableRow}
                       onPress={() => {
-                        const weighInfo = sum.lastWeighDate 
+                        const weighInfo = sum.lastWeighDate
                           ? new Date(sum.lastWeighDate).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
                           : 'Belum pernah ditimbang';
                         const updateInfo = sum.lastUpdatedDate
@@ -650,7 +650,7 @@ const PublicDashboardScreen = ({ navigation }: any) => {
               <Text style={{ fontSize: 12, color: COLORS.textLight, marginBottom: SPACING.md }}>
                 Pilih sapi yang ingin dibandingkan performanya di grafik.
               </Text>
-              
+
               <TextInput
                 style={{
                   backgroundColor: '#f1f5f9',
@@ -696,9 +696,9 @@ const PublicDashboardScreen = ({ navigation }: any) => {
                   )}
                 </View>
               </ScrollView>
-              
+
               <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 12, marginTop: SPACING.sm }}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={{
                     backgroundColor: '#f1f5f9',
                     paddingVertical: 10,
@@ -706,7 +706,7 @@ const PublicDashboardScreen = ({ navigation }: any) => {
                     borderRadius: 10,
                     alignItems: 'center',
                     minWidth: 90
-                  }} 
+                  }}
                   onPress={() => {
                     setSelectedChartCows([]);
                     setSearchChartText('');
@@ -715,7 +715,7 @@ const PublicDashboardScreen = ({ navigation }: any) => {
                 >
                   <Text style={{ fontWeight: 'bold', color: COLORS.textLight }}>Reset Semua</Text>
                 </TouchableOpacity>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={{
                     backgroundColor: COLORS.primary,
                     paddingVertical: 10,
@@ -723,7 +723,7 @@ const PublicDashboardScreen = ({ navigation }: any) => {
                     borderRadius: 10,
                     alignItems: 'center',
                     minWidth: 90
-                  }} 
+                  }}
                   onPress={() => {
                     setSearchChartText('');
                     setIsCowSelectModalVisible(false);
@@ -765,7 +765,7 @@ const PublicDashboardScreen = ({ navigation }: any) => {
               <Text style={{ fontSize: 12, color: COLORS.textLight, marginBottom: SPACING.md }}>
                 Pilih sapi yang ingin dibandingkan ringkasan performanya di tabel.
               </Text>
-              
+
               <TextInput
                 style={{
                   backgroundColor: '#f1f5f9',
@@ -811,9 +811,9 @@ const PublicDashboardScreen = ({ navigation }: any) => {
                   )}
                 </View>
               </ScrollView>
-              
+
               <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 12, marginTop: SPACING.sm }}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={{
                     backgroundColor: '#f1f5f9',
                     paddingVertical: 10,
@@ -821,7 +821,7 @@ const PublicDashboardScreen = ({ navigation }: any) => {
                     borderRadius: 10,
                     alignItems: 'center',
                     minWidth: 90
-                  }} 
+                  }}
                   onPress={() => {
                     setSelectedTableCows([]);
                     setSearchTableText('');
@@ -830,7 +830,7 @@ const PublicDashboardScreen = ({ navigation }: any) => {
                 >
                   <Text style={{ fontWeight: 'bold', color: COLORS.textLight }}>Reset Semua</Text>
                 </TouchableOpacity>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={{
                     backgroundColor: COLORS.primary,
                     paddingVertical: 10,
@@ -838,7 +838,7 @@ const PublicDashboardScreen = ({ navigation }: any) => {
                     borderRadius: 10,
                     alignItems: 'center',
                     minWidth: 90
-                  }} 
+                  }}
                   onPress={() => {
                     setSearchTableText('');
                     setIsTableSelectModalVisible(false);
