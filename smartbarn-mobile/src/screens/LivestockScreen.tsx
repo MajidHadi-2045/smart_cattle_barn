@@ -465,7 +465,7 @@ const LivestockScreen = ({ navigation }: any) => {
   const LivestockCard = ({ item }: { item: any }) => (
     <TouchableOpacity 
       style={styles.card}
-      onPress={() => navigation.navigate('LivestockDetail', { id: item.dbId })}
+      onPress={() => navigation.navigate('LivestockDetail', { id: item.dbId || item.id || item.cattleId })}
     >
       <View style={styles.cardHeader}>
         <View style={styles.idContainer}>
@@ -507,7 +507,7 @@ const LivestockScreen = ({ navigation }: any) => {
       <View style={[styles.actionButtons, { flexDirection: 'row', gap: 8 }]}>
         <TouchableOpacity 
           style={[styles.actionBtnOutlineFull, { flex: 1 }]}
-          onPress={() => navigation.navigate('LivestockDetail', { id: item.dbId })}
+          onPress={() => navigation.navigate('LivestockDetail', { id: item.dbId || item.id || item.cattleId })}
         >
           <Beef size={14} color={COLORS.primary} />
           <Text style={[styles.actionBtnText, {color: COLORS.primary}]}>Detail</Text>
@@ -516,7 +516,7 @@ const LivestockScreen = ({ navigation }: any) => {
         {userRole === 'STAFF' && (
           <TouchableOpacity 
             style={[styles.actionBtnOutlineFull, { flex: 1, borderColor: '#d97706', backgroundColor: '#fffbeb' }]}
-            onPress={() => navigation.navigate('LivestockDetail', { id: item.dbId, autoOpenNutrition: true })}
+            onPress={() => navigation.navigate('LivestockDetail', { id: item.dbId || item.id || item.cattleId, autoOpenNutrition: true })}
           >
             <Settings size={14} color="#d97706" />
             <Text style={[styles.actionBtnText, {color: '#d97706'}]}>Atur Nutrisi</Text>

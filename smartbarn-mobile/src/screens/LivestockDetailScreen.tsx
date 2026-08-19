@@ -91,6 +91,7 @@ const LivestockDetailScreen = ({ route, navigation }: any) => {
       // Small timeout to allow the UI to render the detail page first
       const timer = setTimeout(() => {
         openNutritionConfigModal();
+        navigation.setParams({ autoOpenNutrition: undefined });
       }, 500);
       return () => clearTimeout(timer);
     }

@@ -260,14 +260,19 @@ export class LivestockService {
   /**
    * 5. LIHAT DETAIL 1 SAPI & HISTORI KESEHATAN (Untuk Modal EKG)
    */
-  async findOne(id: number) {
-    if (isNaN(id) || id === undefined || id === null) {
-      console.warn('Invalid ID passed to findOne (NaN/null/undefined). Skipping database query.');
+  async findOne(idOrCattleId: string | number) {
+    if (idOrCattleId === undefined || idOrCattleId === null || String(idOrCattleId).trim() === '') {
+      console.warn('Invalid ID passed to findOne. Skipping database query.');
       return null;
     }
+    const isNumeric = !isNaN(Number(idOrCattleId));
+    const whereClause: any = isNumeric
+      ? { id: Number(idOrCattleId) }
+      : { cattleId: String(idOrCattleId) };
+
     try {
       return await this.prisma.livestock.findUnique({
-        where: { id },
+        where: whereClause,
         include: {
           vitals: {
             orderBy: { timestamp: 'desc' },
@@ -279,7 +284,7 @@ export class LivestockService {
         },
       });
     } catch (err) {
-      console.warn(`Database Connection Down or error in findOne for id ${id}. Returning null.`);
+      console.warn(`Database error in findOne for id ${idOrCattleId}. Returning null.`);
       return null;
     }
   }

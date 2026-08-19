@@ -287,7 +287,7 @@ export class LivestockController {
   // ==========================================
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.livestockService.findOne(+id);
+    return this.livestockService.findOne(id);
   }
 
   @Patch('bulk/nutrition')

@@ -537,6 +537,28 @@ const Livestock = () => {
         };
     };
 
+    const getCowCardAsFed = (cow) => {
+        const weight = cow.weight || 300;
+        const bkReq = weight * ((cow.targetBkPercent ?? 2.5) / 100);
+        const forageRatio = cow.forageRatio ?? 60;
+        const concentrateRatio = cow.concentrateRatio ?? 40;
+        const forageDM = cow.forageDM ?? 20;
+        const concentrateDM = cow.concentrateDM ?? 86;
+        
+        if (concentrateRatio === 999) {
+            const tmrDM = cow.forageDM ?? 50;
+            return (bkReq / (tmrDM / 100)).toFixed(2);
+        } else if (concentrateRatio === 0) {
+            return (bkReq / (forageDM / 100)).toFixed(2);
+        } else if (forageRatio === 0) {
+            return (bkReq / (concentrateDM / 100)).toFixed(2);
+        } else {
+            const forageAsFed = (bkReq * (forageRatio / 100)) / (forageDM / 100);
+            const concentrateAsFed = (bkReq * (concentrateRatio / 100)) / (concentrateDM / 100);
+            return (forageAsFed + concentrateAsFed).toFixed(2);
+        }
+    };
+
     const handleBulkNutritionSubmit = async (e) => {
         e.preventDefault();
         if (selectedFeedWeightCows.length === 0) return toast.error('Pilih sapi terlebih dahulu');
@@ -1169,7 +1191,7 @@ const Livestock = () => {
                         <div className="mb-3 bg-amber-50/50 dark:bg-amber-900/10 p-2 rounded-lg border border-amber-100 dark:border-amber-900/20">
                             <div className="flex justify-between text-[11px] text-slate-600 dark:text-slate-400 mb-1.5">
                                 <span>Target BK: <strong className="text-amber-700 dark:text-amber-500">{(cow.weight * ((cow.targetBkPercent ?? 2.5) / 100)).toFixed(2)} kg</strong></span>
-                                <span>As-Fed: <strong className="text-amber-700 dark:text-amber-500">{(((cow.weight * ((cow.targetBkPercent ?? 2.5) / 100)) * ((cow.forageRatio ?? 60) / 100)) / ((cow.forageDM ?? 20) / 100) + ((cow.weight * ((cow.targetBkPercent ?? 2.5) / 100)) * ((cow.concentrateRatio ?? 40) / 100)) / ((cow.concentrateDM ?? 86) / 100)).toFixed(2)} kg</strong></span>
+                                <span>As-Fed: <strong className="text-amber-700 dark:text-amber-500">{getCowCardAsFed(cow)} kg</strong></span>
                             </div>
                             <div className="flex justify-between items-center text-[11px] pt-1.5 border-t border-amber-100/50 dark:border-amber-900/10 text-slate-600 dark:text-slate-400">
                                 <span>Pemberian Pakan: <strong className="text-indigo-700 dark:text-indigo-400">{cow.fedCountToday ?? 0} / {cow.feedingFrequency ?? 2} Kali</strong></span>
