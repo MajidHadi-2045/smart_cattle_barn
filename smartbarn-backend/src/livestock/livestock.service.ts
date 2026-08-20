@@ -84,9 +84,9 @@ export class LivestockService {
       ? Math.floor((new Date().getTime() - new Date(cattle.birthDate).getTime()) / (1000 * 60 * 60 * 24 * 30))
       : 0;
 
-    // Cari data HR dan Suhu terbaru yang tidak null dari batch vitals
-    const latestHeartRate = cattle.vitals?.find((v: any) => v.heartRate !== null)?.heartRate || 0;
-    const latestTemp = cattle.vitals?.find((v: any) => v.bodyTemperature !== null)?.bodyTemperature || 0;
+    // Cari data HR dan Suhu terbaru yang tidak null dan valid (> 0) dari batch vitals
+    const latestHeartRate = cattle.vitals?.find((v: any) => v.heartRate !== null && v.heartRate > 0)?.heartRate || null;
+    const latestTemp = cattle.vitals?.find((v: any) => v.bodyTemperature !== null && v.bodyTemperature > 0)?.bodyTemperature || null;
 
     const fedCountToday = cattle.feedRecords?.length || 0;
     const feedingFrequency = cattle.feedingFrequency || config?.feed?.goal || config?.feedGoal || 2;

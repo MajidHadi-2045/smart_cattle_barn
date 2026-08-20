@@ -146,6 +146,7 @@ const DashboardScreen = ({ navigation }: any) => {
   const [notificationModalVisible, setNotificationModalVisible] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadNotifCount, setUnreadNotifCount] = useState(0);
+  const [lastReadNotifTimestamp, setLastReadNotifTimestamp] = useState<number>(0);
 
   // Environment & Waste States
   const [wasteStats, setWasteStats] = useState({ fecesKg: 0, urineL: 0 });
@@ -264,10 +265,17 @@ const DashboardScreen = ({ navigation }: any) => {
       console.warn('Error fetching dashboard summary:', err);
     }
 
+    let userLastReadTs = 0;
     try {
       const storedUser = await getUser();
       if (storedUser) {
         setUser(storedUser);
+        const userId = storedUser.id || storedUser.username || 'default';
+        const lastReadStr = await AsyncStorage.getItem(`@last_read_notif_${userId}`);
+        if (lastReadStr) {
+          userLastReadTs = parseInt(lastReadStr, 10);
+          setLastReadNotifTimestamp(userLastReadTs);
+        }
         // Otomatis minta & daftarkan push token HP pengguna ke database backend
         const pushToken = await registerForPushNotificationsAsync();
         if (pushToken && storedUser.id) {
@@ -357,10 +365,14 @@ const DashboardScreen = ({ navigation }: any) => {
           id: n.id || Date.now(),
           title: n.title,
           body: n.body,
+          timestamp: n.timestamp ? new Date(n.timestamp).getTime() : Date.now(),
           time: formatNotificationTime(n.timestamp || Date.now())
         }));
         setNotifications(formattedNotifs);
-        setUnreadNotifCount(formattedNotifs.length);
+        
+        // Hitung berapa notifikasi yang timestamp-nya LEBIH BARU dari waktu terakhir user INI membaca notifikasi
+        const unreadCount = formattedNotifs.filter((n: any) => n.timestamp > userLastReadTs).length;
+        setUnreadNotifCount(unreadCount);
       }
     } catch (err) {
       console.warn('Error fetching notifications:', err);
@@ -378,11 +390,21 @@ const DashboardScreen = ({ navigation }: any) => {
   };
 
 
+  const [hasUnreadActivity, setHasUnreadActivity] = useState<boolean>(false);
+
   const fetchRecentInputs = async () => {
     setLoadingHistory(true);
     try {
+      const userId = user?.id || user?.username || 'default';
+      const lastReadStr = await AsyncStorage.getItem(`@last_read_activity_${userId}`);
+      const lastReadTs = lastReadStr ? parseInt(lastReadStr, 10) : 0;
+
       const res = await apiClient.get('/livestock/recent-inputs');
-      if (res.data) setRecentInputs(res.data);
+      if (res.data && Array.isArray(res.data)) {
+        setRecentInputs(res.data);
+        const unreadExists = res.data.some((act: any) => new Date(act.createdAt).getTime() > lastReadTs);
+        setHasUnreadActivity(unreadExists);
+      }
     } catch (err) {
       console.warn('Error fetching recent inputs:', err);
     } finally {
@@ -588,6 +610,27 @@ const DashboardScreen = ({ navigation }: any) => {
     </TouchableOpacity>
   );
 
+  const handleOpenNotifications = async () => {
+    setNotificationModalVisible(true);
+    setUnreadNotifCount(0);
+    const now = Date.now();
+    setLastReadNotifTimestamp(now);
+    try {
+      const userId = user?.id || user?.username || 'default';
+      await AsyncStorage.setItem(`@last_read_notif_${userId}`, now.toString());
+    } catch (e) {}
+  };
+
+  const handleOpenRecentInputs = async () => {
+    setActivityModalVisible(true);
+    setHasUnreadActivity(false);
+    fetchRecentInputs();
+    try {
+      const userId = user?.id || user?.username || 'default';
+      await AsyncStorage.setItem(`@last_read_activity_${userId}`, Date.now().toString());
+    } catch (e) {}
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -601,18 +644,23 @@ const DashboardScreen = ({ navigation }: any) => {
           <Text style={styles.date}>{new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })}</Text>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-          <TouchableOpacity onPress={() => { setNotificationModalVisible(true); setUnreadNotifCount(0); }}>
+          <TouchableOpacity onPress={handleOpenNotifications}>
             <View>
               <Bell size={20} color={COLORS.textLight} />
               {unreadNotifCount > 0 && (
-                <View style={{ position: 'absolute', top: -5, right: -5, backgroundColor: COLORS.danger, borderRadius: 10, width: 14, height: 14, justifyContent: 'center', alignItems: 'center' }}>
-                  <Text style={{ color: 'white', fontSize: 8, fontWeight: 'bold' }}>{unreadNotifCount}</Text>
+                <View style={{ position: 'absolute', top: -5, right: -6, backgroundColor: COLORS.danger, borderRadius: 10, minWidth: 16, height: 16, paddingHorizontal: 3, justifyContent: 'center', alignItems: 'center', borderWidth: 1.5, borderColor: COLORS.white }}>
+                  <Text style={{ color: 'white', fontSize: 9, fontWeight: 'bold' }}>{unreadNotifCount > 99 ? '99+' : unreadNotifCount}</Text>
                 </View>
               )}
             </View>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => { setActivityModalVisible(true); fetchActivities(); }}>
-            <Clock size={20} color={COLORS.textLight} />
+          <TouchableOpacity onPress={handleOpenRecentInputs}>
+            <View>
+              <Clock size={20} color={COLORS.textLight} />
+              {hasUnreadActivity && (
+                <View style={{ position: 'absolute', top: -2, right: -2, width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.danger, borderWidth: 1.5, borderColor: COLORS.white }} />
+              )}
+            </View>
           </TouchableOpacity>
           <TouchableOpacity onPress={toggleReadingMode}>
             {isReadingMode ? <Sun size={20} color={COLORS.primary} /> : <Moon size={20} color={COLORS.textLight} />}

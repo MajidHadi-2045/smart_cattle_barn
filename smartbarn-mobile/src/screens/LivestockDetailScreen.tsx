@@ -45,8 +45,8 @@ const LivestockDetailScreen = ({ route, navigation }: any) => {
   const [item, setItem] = useState<any>(null);
   const [feedNeeds, setFeedNeeds] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [heartRateData, setHeartRateData] = useState<number[]>(new Array(20).fill(70));
-  const [tempData, setTempData] = useState<number[]>(new Array(20).fill(38));
+  const [heartRateData, setHeartRateData] = useState<number[]>([]);
+  const [tempData, setTempData] = useState<number[]>([]);
   const [vitalModalVisible, setVitalModalVisible] = useState(false);
   const [vitalModalType, setVitalModalType] = useState<'heartRate'|'temp'>('heartRate');
   const [editVisible, setEditVisible] = useState(false);
@@ -151,7 +151,13 @@ const LivestockDetailScreen = ({ route, navigation }: any) => {
   const fetchDetail = async () => {
     try {
       const response = await apiClient.get(`/livestock/${id}`);
-      setItem(response.data);
+      const latestHr = response.data.vitals?.find((v: any) => v.heartRate !== null && v.heartRate > 0)?.heartRate || null;
+      const latestTm = response.data.vitals?.find((v: any) => v.bodyTemperature !== null && v.bodyTemperature > 0)?.bodyTemperature || null;
+      setItem({
+        ...response.data,
+        lastHeartRate: latestHr,
+        lastTemp: latestTm
+      });
 
       // Fetch live calculated nutrition feed needs from backend
       try {
@@ -607,11 +613,11 @@ const LivestockDetailScreen = ({ route, navigation }: any) => {
             onPress={() => { setVitalModalType('heartRate'); setVitalModalVisible(true); }}
           >
             <Heart size={24} color="#ef4444" />
-            <Text style={styles.vitalValue}>{item.lastHeartRate || '--'}</Text>
-            <Text style={styles.vitalUnit}>BPM</Text>
+            <Text style={styles.vitalValue}>{item?.lastHeartRate && item.lastHeartRate > 0 ? item.lastHeartRate : '--'}</Text>
+            <Text style={styles.vitalUnit}>{item?.lastHeartRate && item.lastHeartRate > 0 ? 'BPM' : '--'}</Text>
             <Text style={styles.vitalLabel}>Detak Jantung</Text>
             <Text style={{ fontSize: 10, color: COLORS.textLight, marginTop: 4 }}>
-              {item.lastHeartRate ? new Date(lastVitalTimestamp).toLocaleTimeString('id-ID') : '--:--'}
+              {item?.lastHeartRate && item.lastHeartRate > 0 ? new Date(lastVitalTimestamp).toLocaleTimeString('id-ID') : '--:--'}
             </Text>
           </TouchableOpacity>
 
@@ -620,11 +626,11 @@ const LivestockDetailScreen = ({ route, navigation }: any) => {
             onPress={() => { setVitalModalType('temp'); setVitalModalVisible(true); }}
           >
             <Thermometer size={24} color="#10b981" />
-            <Text style={styles.vitalValue}>{item.lastTemp || '--'}</Text>
-            <Text style={styles.vitalUnit}>°C</Text>
+            <Text style={styles.vitalValue}>{item?.lastTemp && item.lastTemp > 0 ? item.lastTemp : '--'}</Text>
+            <Text style={styles.vitalUnit}>{item?.lastTemp && item.lastTemp > 0 ? '°C' : '--'}</Text>
             <Text style={styles.vitalLabel}>Suhu Tubuh</Text>
             <Text style={{ fontSize: 10, color: COLORS.textLight, marginTop: 4 }}>
-              {item.lastTemp ? new Date(lastVitalTimestamp).toLocaleTimeString('id-ID') : '--:--'}
+              {item?.lastTemp && item.lastTemp > 0 ? new Date(lastVitalTimestamp).toLocaleTimeString('id-ID') : '--:--'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -1086,19 +1092,31 @@ const LivestockDetailScreen = ({ route, navigation }: any) => {
               </TouchableOpacity>
             </View>
 
-            <View style={[styles.svgContainer, { padding: 0 }]}>
-              <Svg height="120" width={width - 80}>
-                <Path
-                  d={generatePath(vitalModalType)}
-                  fill="none"
-                  stroke={vitalModalType === 'heartRate' ? '#ef4444' : '#10b981'}
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </Svg>
-            </View>
-            <Text style={[styles.graphFooter, { textAlign: 'center', marginTop: 12 }]}>Sinkronisasi data otomatis via WebSocket</Text>
+            {(vitalModalType === 'heartRate' ? heartRateData : tempData).length > 0 ? (
+              <View style={[styles.svgContainer, { padding: 0 }]}>
+                <Svg height="120" width={width - 80}>
+                  <Path
+                    d={generatePath(vitalModalType)}
+                    fill="none"
+                    stroke={vitalModalType === 'heartRate' ? '#ef4444' : '#10b981'}
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </Svg>
+              </View>
+            ) : (
+              <View style={{ paddingVertical: 24, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ fontSize: 13, color: COLORS.textLight, textAlign: 'center' }}>
+                  ⚠️ Belum ada data sensor {vitalModalType === 'heartRate' ? 'detak jantung' : 'suhu tubuh'} yang masuk untuk sapi ini.
+                </Text>
+              </View>
+            )}
+            <Text style={[styles.graphFooter, { textAlign: 'center', marginTop: 12 }]}>
+              {(vitalModalType === 'heartRate' ? heartRateData : tempData).length > 0
+                ? 'Sinkronisasi data otomatis via WebSocket'
+                : 'Status: Menunggu Sinyal Sensor'}
+            </Text>
           </View>
         </View>
       </Modal>

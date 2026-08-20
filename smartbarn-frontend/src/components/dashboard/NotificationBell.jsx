@@ -62,7 +62,22 @@ const NotificationBell = () => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
+  const getUserKey = () => {
+    try {
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        const u = JSON.parse(userStr);
+        return u.id || u.username || 'default';
+      }
+    } catch (e) {}
+    return 'default';
+  };
+
   useEffect(() => {
+    const userId = getUserKey();
+    const lastReadStr = localStorage.getItem(`user_last_read_notif_${userId}`);
+    const lastReadTs = lastReadStr ? parseInt(lastReadStr, 10) : 0;
+
     // Gunakan VITE_API_BASE_URL yang standar (misal: http://localhost:3000/api)
     const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
     
@@ -76,13 +91,19 @@ const NotificationBell = () => {
       .then(res => res.json())
       .then(data => {
         if (data && Array.isArray(data)) {
-          const formatted = data.map((item, idx) => ({
-            id: item.id || Date.now() + idx,
-            title: item.title,
-            body: item.body,
-            time: formatNotificationTime(item.timestamp)
-          }));
+          const formatted = data.map((item, idx) => {
+            const itemTs = item.timestamp ? new Date(item.timestamp).getTime() : Date.now();
+            return {
+              id: item.id || Date.now() + idx,
+              title: item.title,
+              body: item.body,
+              timestamp: itemTs,
+              time: formatNotificationTime(item.timestamp)
+            };
+          });
           setNotifications(formatted);
+          const unread = formatted.filter(n => n.timestamp > lastReadTs).length;
+          setUnreadCount(unread);
         }
       })
       .catch(err => console.log('Gagal memuat history notifikasi', err));
@@ -107,15 +128,19 @@ const NotificationBell = () => {
       );
 
       // 2. Tambahkan ke daftar riwayat lonceng
+      const notifTs = payload.timestamp ? new Date(payload.timestamp).getTime() : Date.now();
       const newNotif = {
         id: Date.now(),
         title: payload.title,
         body: payload.body,
+        timestamp: notifTs,
         time: formatNotificationTime(payload.timestamp || new Date().toISOString())
       };
       
       setNotifications(prev => [newNotif, ...prev].slice(0, 10)); // Simpan 10 terakhir
-      setUnreadCount(prev => prev + 1);
+      if (notifTs > lastReadTs) {
+        setUnreadCount(prev => prev + 1);
+      }
     });
 
     return () => {
@@ -124,9 +149,12 @@ const NotificationBell = () => {
   }, []);
 
   const handleOpenDropdown = () => {
-    setShowDropdown(!showDropdown);
-    if (!showDropdown) {
+    const nextState = !showDropdown;
+    setShowDropdown(nextState);
+    if (nextState) {
       setUnreadCount(0); // Reset badge saat dibuka
+      const userId = getUserKey();
+      localStorage.setItem(`user_last_read_notif_${userId}`, Date.now().toString());
     }
   };
 
@@ -142,10 +170,10 @@ const NotificationBell = () => {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
         </svg>
         
-        {/* Badge Merah jika ada yang belum dibaca */}
+        {/* Badge Merah jika ada notifikasi baru yang belum dibaca */}
         {unreadCount > 0 && (
-          <span className="absolute top-0 right-0 -mt-1 -mr-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm ring-2 ring-white dark:ring-slate-900">
-            {unreadCount}
+          <span className="absolute top-0 right-0 -mt-1 -mr-1 flex h-4 min-w-[1rem] px-1 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm ring-2 ring-white dark:ring-slate-900">
+            {unreadCount > 99 ? '99+' : unreadCount}
           </span>
         )}
       </button>

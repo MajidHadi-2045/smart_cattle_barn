@@ -5,13 +5,36 @@ const ActivityFeed = () => {
     const [activities, setActivities] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isOpen, setIsOpen] = useState(false);
+    const [hasUnreadActivity, setHasUnreadActivity] = useState(false);
     const dropdownRef = useRef(null);
+
+    const getUserKey = () => {
+        try {
+            const userStr = localStorage.getItem('user');
+            if (userStr) {
+                const u = JSON.parse(userStr);
+                return u.id || u.username || 'default';
+            }
+        } catch (e) {}
+        return 'default';
+    };
 
     const fetchActivities = async () => {
         try {
+            const userId = getUserKey();
+            const lastReadStr = localStorage.getItem(`user_last_read_activity_${userId}`);
+            const lastReadTs = lastReadStr ? parseInt(lastReadStr, 10) : 0;
+
             const res = await fetchApi('/activities/recent');
             if (res.ok) {
-                setActivities(await res.json());
+                const data = await res.json();
+                setActivities(data);
+                if (Array.isArray(data) && data.length > 0) {
+                    const unreadExists = data.some(act => new Date(act.createdAt).getTime() > lastReadTs);
+                    setHasUnreadActivity(unreadExists);
+                } else {
+                    setHasUnreadActivity(false);
+                }
             }
         } catch (err) {
             console.error('Failed to fetch activities:', err);
@@ -25,6 +48,16 @@ const ActivityFeed = () => {
         const interval = setInterval(fetchActivities, 60000);
         return () => clearInterval(interval);
     }, []);
+
+    const handleToggleOpen = () => {
+        const nextState = !isOpen;
+        setIsOpen(nextState);
+        if (nextState) {
+            setHasUnreadActivity(false); // Hilangkan titik merah saat dibuka
+            const userId = getUserKey();
+            localStorage.setItem(`user_last_read_activity_${userId}`, Date.now().toString());
+        }
+    };
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -50,12 +83,13 @@ const ActivityFeed = () => {
         <div className="relative" ref={dropdownRef}>
             {/* Toggle Button */}
             <button 
-                onClick={() => setIsOpen(!isOpen)}
+                onClick={handleToggleOpen}
                 className={`p-2 rounded-lg transition-all duration-200 relative ${isOpen ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/30' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
                 title="Riwayat Aktivitas 24 Jam"
             >
                 <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                {activities.length > 0 && (
+                {/* Titik Merah Murni Tanpa Angka (Hilang jika sudah dibaca, muncul jika ada yang baru) */}
+                {hasUnreadActivity && (
                     <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 border-2 border-white dark:border-slate-800 rounded-full"></span>
                 )}
             </button>

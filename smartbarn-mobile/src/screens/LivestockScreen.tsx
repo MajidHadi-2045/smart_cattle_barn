@@ -528,11 +528,11 @@ const LivestockScreen = ({ navigation }: any) => {
         <View style={styles.vitals}>
           <View style={styles.vitalItem}>
             <Heart size={14} color={COLORS.danger} />
-            <Text style={styles.vitalText}>{item.lastHeartRate ? `${item.lastHeartRate} bpm` : '--'}</Text>
+            <Text style={styles.vitalText}>{item.lastHeartRate && item.lastHeartRate > 0 ? `${item.lastHeartRate} bpm` : '--'}</Text>
           </View>
           <View style={styles.vitalItem}>
             <Thermometer size={14} color={COLORS.primary} />
-            <Text style={styles.vitalText}>{item.lastTemp ? `${item.lastTemp}°C` : '--'}</Text>
+            <Text style={styles.vitalText}>{item.lastTemp && item.lastTemp > 0 ? `${item.lastTemp}°C` : '--'}</Text>
           </View>
         </View>
         <ChevronRight size={20} color={COLORS.textLight} />
