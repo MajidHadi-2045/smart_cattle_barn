@@ -1,4 +1,5 @@
 import React, { useState, useEffect, Suspense } from 'react';
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from 'recharts';
 import { fetchApi } from '../../utils/api';
 import { socket } from '../../utils/socket';
 import toast from 'react-hot-toast';
