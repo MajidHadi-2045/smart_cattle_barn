@@ -1318,7 +1318,9 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                                     <Legend verticalAlign="top" align="center" wrapperStyle={{ paddingBottom: '16px', fontSize: '11px' }} />
                                     <Tooltip content={<CustomPerformanceTooltip />} wrapperStyle={{ zIndex: 1000 }} />
 
-                                    {selectedCowsForChart.map((cowId, idx) => {
+                                    {selectedCowsForChart.flatMap((cowIdItem, idx) => {
+                                        const cowId = typeof cowIdItem === 'object' ? (cowIdItem.id || cowIdItem.cattleId) : cowIdItem;
+                                        if (!cowId) return [];
                                         const colors = ['#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#3b82f6', '#ec4899', '#6366f1', '#14b8a6', '#f97316', '#84cc16'];
                                         const colorBk = colors[(idx * 2) % colors.length];
                                         const colorAdg = colors[(idx * 2 + 1) % colors.length];
