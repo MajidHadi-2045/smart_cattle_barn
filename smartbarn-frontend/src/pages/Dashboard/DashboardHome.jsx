@@ -6,18 +6,22 @@ import { Beef, HeartPulse, Activity } from 'lucide-react';
 
 const SensorTrendChart = React.lazy(() => import('../../components/dashboard/SensorTrendChart'));
 
-const MultiSelectDropdown = ({ options, selectedIds, onChange, maxSelection, placeholder }) => {
+const MultiSelectDropdown = ({ options = [], selectedIds = [], onChange, maxSelection, placeholder }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
 
-    const filteredOptions = options.filter(opt => opt.cattleId.toLowerCase().includes(searchTerm.toLowerCase())).slice(0, 15); // Batasi 15 sapi agar tidak terlalu berat
+    const safeOptions = Array.isArray(options) ? options : [];
+    const safeSelectedIds = Array.isArray(selectedIds) ? selectedIds : [];
+
+    const filteredOptions = safeOptions.filter(opt => opt && opt.cattleId && String(opt.cattleId).toLowerCase().includes((searchTerm || '').toLowerCase())).slice(0, 15);
 
     const handleToggle = (id) => {
-        if (selectedIds.includes(id)) {
-            onChange(selectedIds.filter(v => v !== id));
+        if (!id) return;
+        if (safeSelectedIds.includes(id)) {
+            onChange(safeSelectedIds.filter(v => v !== id));
         } else {
-            if (selectedIds.length < maxSelection) {
-                onChange([...selectedIds, id]);
+            if (safeSelectedIds.length < maxSelection) {
+                onChange([...safeSelectedIds, id]);
             } else {
                 toast.error(`Maksimal ${maxSelection} sapi dapat dipilih.`);
             }
@@ -30,7 +34,7 @@ const MultiSelectDropdown = ({ options, selectedIds, onChange, maxSelection, pla
                 onClick={() => setIsOpen(!isOpen)}
                 className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-800 dark:text-slate-200 cursor-pointer flex justify-between items-center shadow-sm"
             >
-                <span className="truncate font-semibold">{selectedIds.length > 0 ? `${selectedIds.length} Sapi Terpilih` : placeholder}</span>
+                <span className="truncate font-semibold">{safeSelectedIds.length > 0 ? `${safeSelectedIds.length} Sapi Terpilih` : placeholder}</span>
                 <svg className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
             </div>
             
@@ -50,11 +54,11 @@ const MultiSelectDropdown = ({ options, selectedIds, onChange, maxSelection, pla
                             <div className="p-2 text-xs text-center text-slate-500">Tidak ditemukan</div>
                         ) : (
                             filteredOptions.map(opt => (
-                                <label key={opt.id} className="flex items-center gap-2 px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer rounded-md transition-colors">
+                                <label key={opt.id || opt.cattleId} className="flex items-center gap-2 px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer rounded-md transition-colors">
                                     <input 
                                         type="checkbox" 
                                         className="rounded text-amber-500 focus:ring-amber-500"
-                                        checked={selectedIds.includes(opt.cattleId)}
+                                        checked={safeSelectedIds.includes(opt.cattleId)}
                                         onChange={() => handleToggle(opt.cattleId)}
                                     />
                                     <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{opt.cattleId}</span>
@@ -63,7 +67,7 @@ const MultiSelectDropdown = ({ options, selectedIds, onChange, maxSelection, pla
                         )}
                     </div>
                     <div className="p-2 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 flex justify-between items-center">
-                        <span className="text-[10px] font-bold text-slate-400">{selectedIds.length}/{maxSelection} Dipilih</span>
+                        <span className="text-[10px] font-bold text-slate-400">{safeSelectedIds.length}/{maxSelection} Dipilih</span>
                         <button onClick={() => setIsOpen(false)} className="px-3 py-1 text-xs font-bold bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded hover:bg-slate-300 dark:hover:bg-slate-600 transition">Tutup</button>
                     </div>
                 </div>
@@ -73,20 +77,30 @@ const MultiSelectDropdown = ({ options, selectedIds, onChange, maxSelection, pla
 };
 
 const CustomPerformanceTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-        return (
-            <div className="bg-slate-900/95 text-white p-3 rounded-xl border border-slate-700 shadow-2xl backdrop-blur-md text-xs max-h-60 overflow-y-auto space-y-1.5 z-50 min-w-[200px]">
-                <p className="font-bold text-amber-400 border-b border-slate-700/80 pb-1 mb-1.5">{label}</p>
-                <div className="space-y-1">
-                    {payload.map((entry, index) => (
-                        <div key={`item-${index}`} className="flex items-center justify-between gap-4">
-                            <span style={{ color: entry.color }} className="font-semibold">{entry.name}:</span>
-                            <span className="font-bold text-slate-100">{entry.value}</span>
-                        </div>
-                    ))}
+    try {
+        if (active && Array.isArray(payload) && payload.length > 0) {
+            return (
+                <div className="bg-slate-900/95 text-white p-3 rounded-xl border border-slate-700 shadow-2xl backdrop-blur-md text-xs max-h-60 overflow-y-auto space-y-1.5 z-50 min-w-[200px]">
+                    <p className="font-bold text-amber-400 border-b border-slate-700/80 pb-1 mb-1.5">{label || '-'}</p>
+                    <div className="space-y-1">
+                        {payload.map((entry, index) => {
+                            if (!entry) return null;
+                            const color = entry.color || entry.stroke || '#f59e0b';
+                            const name = entry.name || 'Nilai';
+                            const val = entry.value !== undefined && entry.value !== null ? entry.value : '-';
+                            return (
+                                <div key={`item-${index}`} className="flex items-center justify-between gap-4">
+                                    <span style={{ color }} className="font-semibold">{name}:</span>
+                                    <span className="font-bold text-slate-100">{val}</span>
+                                </div>
+                            );
+                        })}
+                    </div>
                 </div>
-            </div>
-        );
+            );
+        }
+    } catch (e) {
+        return null;
     }
     return null;
 };
@@ -1306,7 +1320,7 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                     </div>
                     
                     <div className="h-[400px] w-full bg-slate-50/50 dark:bg-slate-900/30 rounded-2xl p-4 border border-slate-100 dark:border-slate-800">
-                        {performanceData.length > 0 ? (
+                        {Array.isArray(performanceData) && performanceData.length > 0 ? (
                             <ResponsiveContainer width="100%" height="100%">
                                 <LineChart data={performanceData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
@@ -1318,16 +1332,17 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                                     <Legend verticalAlign="top" align="center" wrapperStyle={{ paddingBottom: '16px', fontSize: '11px' }} />
                                     <Tooltip content={<CustomPerformanceTooltip />} wrapperStyle={{ zIndex: 1000 }} />
 
-                                    {selectedCowsForChart.flatMap((cowIdItem, idx) => {
-                                        const cowId = typeof cowIdItem === 'object' ? (cowIdItem.id || cowIdItem.cattleId) : cowIdItem;
+                                    {Array.isArray(selectedCowsForChart) && selectedCowsForChart.flatMap((cowIdItem, idx) => {
+                                        if (!cowIdItem) return [];
+                                        const cowId = typeof cowIdItem === 'object' ? (cowIdItem.cattleId || cowIdItem.id || String(cowIdItem)) : String(cowIdItem);
                                         if (!cowId) return [];
                                         const colors = ['#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#3b82f6', '#ec4899', '#6366f1', '#14b8a6', '#f97316', '#84cc16'];
                                         const colorBk = colors[(idx * 2) % colors.length];
                                         const colorAdg = colors[(idx * 2 + 1) % colors.length];
                                         const isAll = cowId === 'ALL';
                                         return [
-                                            <Line key={`${cowId}_bk`} yAxisId="left" type="monotone" dataKey={isAll ? 'bk' : `${cowId}_bk`} name={`DMI BK (kg) ${!isAll ? cowId : ''}`} stroke={colorBk} strokeWidth={3} dot={{r:4}} isAnimationActive={false} />,
-                                            <Line key={`${cowId}_adg`} yAxisId="left" type="monotone" dataKey={isAll ? 'adg' : `${cowId}_adg`} name={`ADG (kg) ${!isAll ? cowId : ''}`} stroke={colorAdg} strokeWidth={3} dot={{r:4}} isAnimationActive={false} />
+                                            <Line key={`${cowId}_bk_${idx}`} yAxisId="left" type="monotone" dataKey={isAll ? 'bk' : `${cowId}_bk`} name={`DMI BK (kg) ${!isAll ? cowId : ''}`} stroke={colorBk} strokeWidth={3} dot={{r:4}} isAnimationActive={false} connectNulls={true} />,
+                                            <Line key={`${cowId}_adg_${idx}`} yAxisId="left" type="monotone" dataKey={isAll ? 'adg' : `${cowId}_adg`} name={`ADG (kg) ${!isAll ? cowId : ''}`} stroke={colorAdg} strokeWidth={3} dot={{r:4}} isAnimationActive={false} connectNulls={true} />
                                         ];
                                     })}
                                 </LineChart>
