@@ -937,6 +937,8 @@ const Livestock = () => {
                 success: () => {
                     setShowNutritionConfig(false);
                     mutate(`/livestock/feed-needs/${selectedCow.id}`);
+                    if (typeof mutateCows === 'function') mutateCows();
+                    fetchLivestock();
                     openCowDetail(selectedCow); // Reload feed needs
                     return 'Konfigurasi nutrisi berhasil disimpan!';
                 },
@@ -1800,7 +1802,7 @@ const Livestock = () => {
                                 <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">
                                     <div className="flex justify-between items-center mb-1">
                                         <p className="text-[10px] text-slate-400 font-bold uppercase">Kebutuhan Nutrisi</p>
-                                        {userRole === 'STAFF' && (
+                                        {(userRole === 'STAFF' || userRole === 'VETERINER' || userRole === 'SUPER_ADMIN') && (
                                             <button onClick={() => setShowNutritionConfig(!showNutritionConfig)} className="text-[10px] text-primary-600 font-bold hover:underline">
                                                 {showNutritionConfig ? 'Batal' : 'Pengaturan Manual'}
                                             </button>

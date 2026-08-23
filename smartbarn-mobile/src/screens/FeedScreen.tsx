@@ -228,7 +228,7 @@ const FeedScreen = () => {
     const nameStr = (silo.name || '').toLowerCase();
     
     const isHijauan = typeStr.includes('hijauan') || typeStr.includes('silase') || nameStr.includes('silase') || nameStr.includes('rumput') || nameStr.includes('tebon');
-    const isKonsentrat = typeStr.includes('konsentrat') || nameStr.includes('konsentrat') || nameStr.includes('dedak') || nameStr.includes('ampas');
+    const isKonsentrat = typeStr.includes('konsentrat') || nameStr.includes('konsentrat') || nameStr.includes('kosentrat') || nameStr.includes('dedak') || nameStr.includes('ampas');
     const isVitamin = typeStr.includes('vitamin') || typeStr.includes('suplemen') || nameStr.includes('vitamin');
     const isTmr = typeStr.includes('tmr') || nameStr.includes('tmr');
     
@@ -240,25 +240,29 @@ const FeedScreen = () => {
         if (weight === 0) return;
         
         // Ambil parameter nutrisi sapi atau gunakan default
-        const targetBkPercent = cow.targetBkPercent ?? 2.5;
+        const targetBkPercent = (cow.targetBkPercent && cow.targetBkPercent > 0) ? cow.targetBkPercent : 2.5;
         const bkRequirement = weight * (targetBkPercent / 100);
         
         if (isHijauan) {
           calcCategory = 'Hijauan';
-          const forageRatio = cow.forageRatio ?? 60;
-          const forageDM = cow.forageDM ?? 20;
-          dailyConsumption += (bkRequirement * (forageRatio / 100)) / (forageDM / 100);
+          const forageDM = (cow.forageDM && cow.forageDM > 0) ? cow.forageDM : 20;
+          dailyConsumption += bkRequirement / (forageDM / 100);
         } else if (isKonsentrat) {
           calcCategory = 'Konsentrat';
-          const concentrateRatio = cow.concentrateRatio ?? 40;
-          const concentrateDM = cow.concentrateDM ?? 86;
-          dailyConsumption += (bkRequirement * (concentrateRatio / 100)) / (concentrateDM / 100);
+          const concentrateDM = (cow.concentrateDM && cow.concentrateDM > 0) ? cow.concentrateDM : 86;
+          dailyConsumption += bkRequirement / (concentrateDM / 100);
         } else if (isTmr) {
           calcCategory = 'TMR';
-          const tmrDM = cow.forageDM ?? 50; 
+          const tmrDM = (cow.forageDM && cow.forageDM > 0) ? cow.forageDM : 50; 
           dailyConsumption += bkRequirement / (tmrDM / 100);
         }
       });
+
+      if (dailyConsumption === 0 && totalWeight > 0) {
+        if (isHijauan) dailyConsumption = (totalWeight * 0.025) / 0.20;
+        else if (isKonsentrat) dailyConsumption = (totalWeight * 0.025) / 0.86;
+        else if (isTmr) dailyConsumption = (totalWeight * 0.025) / 0.50;
+      }
     } else if (isVitamin) {
       calcCategory = 'Vitamin';
       dailyConsumption = cowCount * 0.05; // 50g per cow
@@ -502,16 +506,18 @@ const FeedScreen = () => {
                   onPress={() => handleToggleStatus(item)}
                   style={[styles.statusBadge, { 
                     backgroundColor: item.status === 'SUDAH' ? '#dcfce7' : 
+                                     item.status === 'SUDAH_TELAT' ? '#fef3c7' : 
                                      item.status === 'LEBIH_AWAL' ? '#e0f2fe' : 
                                      item.status === 'TELAT' ? '#fee2e2' : '#f1f5f9' 
                   }]}
                 >
                   <Text style={[styles.statusText, { 
                     color: item.status === 'SUDAH' ? COLORS.success : 
+                           item.status === 'SUDAH_TELAT' ? '#d97706' : 
                            item.status === 'LEBIH_AWAL' ? '#0369a1' : 
                            item.status === 'TELAT' ? COLORS.danger : COLORS.textLight 
                   }]}>
-                    {item.status === 'LEBIH_AWAL' ? 'LEBIH AWAL' : item.status}
+                    {item.status === 'LEBIH_AWAL' ? 'LEBIH AWAL' : item.status === 'SUDAH_TELAT' ? 'SUDAH (TELAT)' : item.status}
                   </Text>
                 </TouchableOpacity>
               </View>

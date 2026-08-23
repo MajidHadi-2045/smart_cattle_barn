@@ -381,7 +381,7 @@ const Feed = () => {
                                 const nameStr = (silo.name || '').toLowerCase();
                                 
                                 const isHijauan = typeStr.includes('hijauan') || typeStr.includes('silase') || nameStr.includes('silase') || nameStr.includes('rumput') || nameStr.includes('tebon');
-                                const isKonsentrat = typeStr.includes('konsentrat') || nameStr.includes('konsentrat') || nameStr.includes('dedak') || nameStr.includes('ampas');
+                                const isKonsentrat = typeStr.includes('konsentrat') || nameStr.includes('konsentrat') || nameStr.includes('kosentrat') || nameStr.includes('dedak') || nameStr.includes('ampas');
                                 const isVitamin = typeStr.includes('vitamin') || typeStr.includes('suplemen') || nameStr.includes('vitamin');
                                 const isTmr = typeStr.includes('tmr') || nameStr.includes('tmr');
                                 
@@ -393,26 +393,31 @@ const Feed = () => {
                                         const weight = cow.weight || 0;
                                         if (weight === 0) return;
                                         
-                                        // Ambil parameter nutrisi sapi atau gunakan default
-                                        const targetBkPercent = cow.targetBkPercent ?? 2.5;
+                                        // Ambil parameter nutrisi sapi atau gunakan default jika bernilai 0/null
+                                        const targetBkPercent = (cow.targetBkPercent && cow.targetBkPercent > 0) ? cow.targetBkPercent : 2.5;
                                         const bkRequirement = weight * (targetBkPercent / 100);
                                         
                                         if (isHijauan) {
                                             calcCategory = 'Hijauan';
-                                            const forageRatio = cow.forageRatio ?? 60;
-                                            const forageDM = cow.forageDM ?? 20;
-                                            dailyConsumption += (bkRequirement * (forageRatio / 100)) / (forageDM / 100);
+                                            const forageDM = (cow.forageDM && cow.forageDM > 0) ? cow.forageDM : 20;
+                                            dailyConsumption += bkRequirement / (forageDM / 100);
                                         } else if (isKonsentrat) {
                                             calcCategory = 'Konsentrat';
-                                            const concentrateRatio = cow.concentrateRatio ?? 40;
-                                            const concentrateDM = cow.concentrateDM ?? 86;
-                                            dailyConsumption += (bkRequirement * (concentrateRatio / 100)) / (concentrateDM / 100);
+                                            const concentrateDM = (cow.concentrateDM && cow.concentrateDM > 0) ? cow.concentrateDM : 86;
+                                            dailyConsumption += bkRequirement / (concentrateDM / 100);
                                         } else if (isTmr) {
                                             calcCategory = 'TMR';
-                                            const tmrDM = cow.forageDM ?? 50; 
+                                            const tmrDM = (cow.forageDM && cow.forageDM > 0) ? cow.forageDM : 50; 
                                             dailyConsumption += bkRequirement / (tmrDM / 100);
                                         }
                                     });
+
+                                    // Fallback jika dailyConsumption masih 0 padahal ada sapi (100% kebutuhan penuh)
+                                    if (dailyConsumption === 0 && totalWeight > 0) {
+                                        if (isHijauan) dailyConsumption = (totalWeight * 0.025) / 0.20;
+                                        else if (isKonsentrat) dailyConsumption = (totalWeight * 0.025) / 0.86;
+                                        else if (isTmr) dailyConsumption = (totalWeight * 0.025) / 0.50;
+                                    }
                                 } else if (isVitamin) {
                                     calcCategory = 'Vitamin';
                                     dailyConsumption = cowCount * 0.05; // 50g per cow
@@ -582,12 +587,13 @@ const Feed = () => {
                                                     onClick={() => handleToggleStatus(sch)}
                                                     className={`px-3 py-1 text-xs font-bold rounded-full transition ${
                                                         sch.status === 'SUDAH' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 hover:bg-green-200' :
+                                                        sch.status === 'SUDAH_TELAT' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 hover:bg-amber-200' :
                                                         sch.status === 'LEBIH_AWAL' ? 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400 hover:bg-sky-200' :
                                                         sch.status === 'TELAT' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 hover:bg-red-200' :
                                                         'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300 hover:bg-slate-300'
                                                     }`}
                                                 >
-                                                    {sch.status === 'LEBIH_AWAL' ? 'LEBIH AWAL' : sch.status}
+                                                    {sch.status === 'LEBIH_AWAL' ? 'LEBIH AWAL' : sch.status === 'SUDAH_TELAT' ? 'SUDAH (TELAT)' : sch.status}
                                                 </button>
                                                 {userRole === 'STAFF' && (
                                                     <div className="flex gap-1 ml-2">

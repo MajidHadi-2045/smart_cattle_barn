@@ -315,13 +315,21 @@ export class LivestockService {
       throw new (require('@nestjs/common').ForbiddenException)('Hanya Dokter Hewan (VETERINER) yang berhak memperbarui status kesehatan ternak.');
     }
 
-    const isNumeric = !isNaN(Number(idOrCattleId)) && String(idOrCattleId).trim() !== '';
-    const whereClause = isNumeric
-      ? { id: Number(idOrCattleId) }
-      : { cattleId: String(idOrCattleId) };
+    let targetCow = await this.prisma.livestock.findFirst({
+      where: {
+        OR: [
+          { cattleId: String(idOrCattleId) },
+          ...(!isNaN(Number(idOrCattleId)) ? [{ id: Number(idOrCattleId) }] : [])
+        ]
+      }
+    });
+
+    if (!targetCow) {
+      throw new (require('@nestjs/common').BadRequestException)(`Sapi dengan ID ${idOrCattleId} tidak ditemukan.`);
+    }
 
     const updated = await (this.prisma.livestock as any).update({
-      where: whereClause,
+      where: { id: targetCow.id },
       data: {
         cattleId: data.cattleId,
         breed: data.breed,
@@ -623,7 +631,7 @@ export class LivestockService {
         if (diffMinutes < -30) {
           newStatus = 'LEBIH_AWAL';
         } else if (diffMinutes > 30) {
-          newStatus = 'TELAT';
+          newStatus = 'SUDAH';
           isLate = true;
         }
 
