@@ -112,10 +112,11 @@ const LivestockScreen = ({ navigation }: any) => {
 
   useEffect(() => {
     if (swrData) {
-      const now = Date.now();
       const mappedLivestock = (swrData.livestock || []).map((item: any) => ({
         ...item,
-        lastVitalTimestamp: item.lastHeartRate || item.lastTemp ? now : null
+        lastHeartRate: null,
+        lastTemp: null,
+        lastVitalTimestamp: null
       }));
       setLivestock(mappedLivestock);
       setZones(swrData.zones);
@@ -147,20 +148,21 @@ const LivestockScreen = ({ navigation }: any) => {
     }
   }, [socketData]);
 
-  // Efek staleness check: jika sensor mati > 5 menit (300.000 ms), reset nilai ke null agar otomatis tampil '--'
+  // Efek staleness check: jika sensor mati > 20 detik (20.000 ms), reset nilai ke null agar otomatis tampil '--' seperti di website
   useEffect(() => {
     const stalenessInterval = setInterval(() => {
       const now = Date.now();
       setLivestock((prev: any[]) => {
         let hasChanged = false;
         const nextList = prev.map((item: any) => {
-          if (item.lastVitalTimestamp && now - item.lastVitalTimestamp > 300000) {
+          if (!item.lastVitalTimestamp || (now - item.lastVitalTimestamp > 20000)) {
             if (item.lastHeartRate !== null || item.lastTemp !== null) {
               hasChanged = true;
               return {
                 ...item,
                 lastHeartRate: null,
                 lastTemp: null,
+                lastVitalTimestamp: null,
               };
             }
           }
@@ -168,7 +170,7 @@ const LivestockScreen = ({ navigation }: any) => {
         });
         return hasChanged ? nextList : prev;
       });
-    }, 5000);
+    }, 3000);
 
     return () => clearInterval(stalenessInterval);
   }, []);

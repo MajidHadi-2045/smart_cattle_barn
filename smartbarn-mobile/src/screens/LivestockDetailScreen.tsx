@@ -74,7 +74,7 @@ const LivestockDetailScreen = ({ route, navigation }: any) => {
     concentrateDM: '86'
   });
   
-  const [lastVitalTimestamp, setLastVitalTimestamp] = useState<number>(Date.now());
+  const [lastVitalTimestamp, setLastVitalTimestamp] = useState<number | null>(null);
   
   // Listen ke data vital sapi spesifik ini (Gunakan cattleId RFID untuk sinkronisasi sensor)
   const { data: socketData } = useSocket(item ? [`vital-update-${item.cattleId}`] : []);
@@ -128,13 +128,12 @@ const LivestockDetailScreen = ({ route, navigation }: any) => {
     }
   }, [socketData]);
 
-  // Efek interval untuk mendeteksi data sensor mati (stale) setelah 5 menit (300.000 ms)
+  // Efek interval untuk mendeteksi data sensor mati (stale) setelah 20 detik (20.000 ms) persis seperti di website
   useEffect(() => {
     const checkStale = setInterval(() => {
-      if (Date.now() - lastVitalTimestamp > 300000) {
+      if (!lastVitalTimestamp || (Date.now() - lastVitalTimestamp > 20000)) {
         setItem((prev: any) => {
           if (!prev) return prev;
-          // Hanya hapus jika nilainya saat ini bukan null untuk mencegah looping render yang tidak perlu
           if (prev.lastHeartRate === null && prev.lastTemp === null) return prev;
           return {
             ...prev,
@@ -143,7 +142,7 @@ const LivestockDetailScreen = ({ route, navigation }: any) => {
           };
         });
       }
-    }, 10000);
+    }, 3000);
 
     return () => clearInterval(checkStale);
   }, [lastVitalTimestamp]);
@@ -151,12 +150,10 @@ const LivestockDetailScreen = ({ route, navigation }: any) => {
   const fetchDetail = async () => {
     try {
       const response = await apiClient.get(`/livestock/${id}`);
-      const latestHr = response.data.vitals?.find((v: any) => v.heartRate !== null && v.heartRate > 0)?.heartRate || null;
-      const latestTm = response.data.vitals?.find((v: any) => v.bodyTemperature !== null && v.bodyTemperature > 0)?.bodyTemperature || null;
       setItem({
         ...response.data,
-        lastHeartRate: latestHr,
-        lastTemp: latestTm
+        lastHeartRate: null,
+        lastTemp: null
       });
 
       // Fetch live calculated nutrition feed needs from backend
@@ -617,7 +614,7 @@ const LivestockDetailScreen = ({ route, navigation }: any) => {
             <Text style={styles.vitalUnit}>{item?.lastHeartRate && item.lastHeartRate > 0 ? 'BPM' : '--'}</Text>
             <Text style={styles.vitalLabel}>Detak Jantung</Text>
             <Text style={{ fontSize: 10, color: COLORS.textLight, marginTop: 4 }}>
-              {item?.lastHeartRate && item.lastHeartRate > 0 ? new Date(lastVitalTimestamp).toLocaleTimeString('id-ID') : '--:--'}
+              {item?.lastHeartRate && item.lastHeartRate > 0 && lastVitalTimestamp ? new Date(lastVitalTimestamp).toLocaleTimeString('id-ID') : '--:--:--'}
             </Text>
           </TouchableOpacity>
 
@@ -630,7 +627,7 @@ const LivestockDetailScreen = ({ route, navigation }: any) => {
             <Text style={styles.vitalUnit}>{item?.lastTemp && item.lastTemp > 0 ? '°C' : '--'}</Text>
             <Text style={styles.vitalLabel}>Suhu Tubuh</Text>
             <Text style={{ fontSize: 10, color: COLORS.textLight, marginTop: 4 }}>
-              {item?.lastTemp && item.lastTemp > 0 ? new Date(lastVitalTimestamp).toLocaleTimeString('id-ID') : '--:--'}
+              {item?.lastTemp && item.lastTemp > 0 && lastVitalTimestamp ? new Date(lastVitalTimestamp).toLocaleTimeString('id-ID') : '--:--:--'}
             </Text>
           </TouchableOpacity>
         </View>
