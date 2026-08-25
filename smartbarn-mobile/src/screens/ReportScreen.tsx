@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, SPACING, SHADOWS } from '../theme';
-import { ChevronLeft, FileText, Download, TrendingUp, PieChart, Info, Calendar, CheckCircle } from 'lucide-react-native';
+import { ChevronLeft, FileText, Download, TrendingUp, PieChart, Info, Calendar, CheckCircle, ChevronDown } from 'lucide-react-native';
 import apiClient, { BASE_URL } from '../api/client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getToken } from '../utils/storage';
@@ -28,6 +28,7 @@ const ReportScreen = ({ navigation }: any) => {
   
   // States for New Report Generator
   const [jenisLaporan, setJenisLaporan] = useState('Lingkungan');
+  const [dropdownVisible, setDropdownVisible] = useState(false);
   const [startDate, setStartDate] = useState(new Date(new Date().setDate(1)).toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -80,7 +81,8 @@ const ReportScreen = ({ navigation }: any) => {
   };
 
   const REPORT_TYPES = [
-    { id: 'Lingkungan', title: 'Laporan Lingkungan Kandang (Sensor)' },
+    { id: 'Lingkungan', title: 'Laporan Lingkungan Kandang (Suhu, Kelembapan, Angin, Amonia)' },
+    { id: 'Vital', title: 'Laporan Vital Sign Sapi (Suhu Tubuh & Detak Jantung)' },
     { id: 'Kesehatan', title: 'Laporan Kesehatan & Medis Ternak' },
     { id: 'Populasi', title: 'Laporan Total Populasi Ternak' },
     { id: 'Pakan', title: 'Laporan Konsumsi Pakan (As-Fed & BK)' },
@@ -129,7 +131,7 @@ const ReportScreen = ({ navigation }: any) => {
         <Text style={styles.cardTitle}>{title}</Text>
       </View>
       <View style={styles.cardBody}>
-        <Text style={styles.valueText}>{value} <Text style={styles.unitText}>{unit}</Text></Text>
+        <Text style={[styles.valueText, { color }]}>{value} <Text style={styles.unitText}>{unit}</Text></Text>
         <Text style={styles.descText}>{description}</Text>
       </View>
     </View>
@@ -160,22 +162,17 @@ const ReportScreen = ({ navigation }: any) => {
           
           <View style={styles.formContainer}>
             <Text style={styles.label}>Pilih Kategori Laporan</Text>
-            <View style={{ marginBottom: SPACING.md }}>
-              {REPORT_TYPES.map((type) => (
-                <TouchableOpacity 
-                  key={type.id} 
-                  style={[styles.optionBtn, jenisLaporan === type.id && styles.optionBtnActive]}
-                  onPress={() => setJenisLaporan(type.id)}
-                >
-                  <Text style={[styles.optionText, jenisLaporan === type.id && styles.optionTextActive]}>
-                    {type.title}
-                  </Text>
-                  <View style={[styles.radioCircle, jenisLaporan === type.id && styles.radioCircleActive]}>
-                    {jenisLaporan === type.id && <View style={styles.radioDot} />}
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </View>
+            <TouchableOpacity 
+              style={styles.dropdownBox}
+              onPress={() => setDropdownVisible(true)}
+            >
+              <View style={{ flex: 1, paddingRight: 8 }}>
+                <Text style={styles.dropdownSelectedTitle}>
+                  {REPORT_TYPES.find(r => r.id === jenisLaporan)?.title || 'Pilih Kategori Laporan'}
+                </Text>
+              </View>
+              <ChevronDown size={20} color={COLORS.primary} />
+            </TouchableOpacity>
 
             <View style={styles.dateRow}>
               <View style={styles.dateInputContainer}>
@@ -207,6 +204,48 @@ const ReportScreen = ({ navigation }: any) => {
           </TouchableOpacity>
         </ScrollView>
       )}
+
+      {/* ========================================== */}
+      {/* MODAL DROPDOWN KATEGORI LAPORAN */}
+      {/* ========================================== */}
+      <Modal
+        visible={dropdownVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setDropdownVisible(false)}
+      >
+        <TouchableOpacity 
+          style={styles.pickerOverlay} 
+          activeOpacity={1} 
+          onPress={() => setDropdownVisible(false)}
+        >
+          <View style={styles.pickerContent}>
+            <View style={styles.pickerHeader}>
+              <Text style={styles.pickerTitle}>Pilih Kategori Laporan</Text>
+              <TouchableOpacity onPress={() => setDropdownVisible(false)}>
+                <Text style={styles.pickerCloseBtn}>Tutup</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={{ maxHeight: 320 }}>
+              {REPORT_TYPES.map((item) => (
+                <TouchableOpacity
+                  key={item.id}
+                  style={[styles.dropdownItem, jenisLaporan === item.id && styles.dropdownItemActive]}
+                  onPress={() => {
+                    setJenisLaporan(item.id);
+                    setDropdownVisible(false);
+                  }}
+                >
+                  <Text style={[styles.dropdownItemText, jenisLaporan === item.id && styles.dropdownItemTextActive]}>
+                    {item.title}
+                  </Text>
+                  {jenisLaporan === item.id && <CheckCircle size={18} color={COLORS.primary} />}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       {/* ========================================== */}
       {/* MODAL DATE PICKER */}
@@ -359,6 +398,47 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.sm
   },
   label: { fontSize: 14, fontWeight: 'bold', color: COLORS.text, marginBottom: 10 },
+  dropdownBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: '#f8fafc',
+    borderWidth: 1.5,
+    borderColor: '#0ea5e9',
+    marginBottom: SPACING.md,
+  },
+  dropdownSelectedTitle: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: COLORS.primary,
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+    borderRadius: 8,
+  },
+  dropdownItemActive: {
+    backgroundColor: '#ecfdf5',
+  },
+  dropdownItemText: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginRight: 8,
+  },
+  dropdownItemTextActive: {
+    color: COLORS.primary,
+    fontWeight: 'bold',
+  },
   optionBtn: {
     flexDirection: 'row',
     alignItems: 'center',

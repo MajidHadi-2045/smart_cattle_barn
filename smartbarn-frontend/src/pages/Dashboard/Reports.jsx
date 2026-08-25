@@ -97,7 +97,8 @@ const Reports = () => {
                                 onChange={(e) => setReportType(e.target.value)}
                                 className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:outline-none transition text-slate-900 dark:text-slate-100"
                             >
-                                <option value="Lingkungan">Laporan Lingkungan Kandang (Sensor)</option>
+                                <option value="Lingkungan">Laporan Lingkungan Kandang (Suhu, Kelembapan, Angin, Amonia)</option>
+                                <option value="Vital">Laporan Vital Sign Sapi (Suhu Tubuh & Detak Jantung)</option>
                                 <option value="Kesehatan">Laporan Kesehatan & Medis Ternak</option>
                                 <option value="Populasi">Laporan Total Populasi Ternak</option>
                                 <option value="Pakan">Laporan Konsumsi Pakan (As-Fed & BK)</option>

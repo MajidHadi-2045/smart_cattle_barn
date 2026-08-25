@@ -40,26 +40,71 @@ export class ReportsService {
           include: { zone: true },
           orderBy: { timestamp: 'asc' },
         });
+
+        const rawWind = await this.prisma.airCirculation.findMany({
+          where: { timestamp: { gte: start, lte: end } },
+          orderBy: { timestamp: 'asc' },
+        });
         
-        data = rawEnv.map((item) => ({
-          timestamp: item.timestamp.toLocaleString('id-ID'),
-          zone: item.zone?.name || '-',
-          temperature: item.temperature + ' °C',
-          humidity: item.humidity + ' %',
-          ammonia: item.ammonia + ' ppm',
-          thi: item.thi ? item.thi.toFixed(2) : '-'
-        }));
+        data = rawEnv.map((item) => {
+          const matchingWind = rawWind.find(w => w.zoneId === item.zoneId && Math.abs(new Date(w.timestamp).getTime() - new Date(item.timestamp).getTime()) < 600000);
+          const windVal = matchingWind ? matchingWind.windspeed : (rawWind.length > 0 ? rawWind[rawWind.length - 1].windspeed : 0);
+          return {
+            timestamp: item.timestamp.toLocaleString('id-ID'),
+            zone: item.zone?.name || '-',
+            temperature: item.temperature + ' °C',
+            humidity: item.humidity + ' %',
+            ammonia: item.ammonia + ' ppm',
+            windspeed: (windVal ? windVal.toFixed(2) : '0.00') + ' m/s',
+            thi: item.thi ? item.thi.toFixed(2) : '-'
+          };
+        });
+
+        columns = [
+          { header: 'Waktu', key: 'timestamp', width: 110 },
+          { header: 'Zona', key: 'zone', width: 75 },
+          { header: 'Suhu', key: 'temperature', width: 55 },
+          { header: 'Kelembapan', key: 'humidity', width: 65 },
+          { header: 'Amonia', key: 'ammonia', width: 55 },
+          { header: 'Kecepatan Angin', key: 'windspeed', width: 75 },
+          { header: 'THI', key: 'thi', width: 55 },
+        ];
+
+        ringkasanTeks = 'Laporan Lingkungan Kandang memuat data sensor real-time (suhu, kelembapan, amonia, kecepatan angin, dan THI) dari berbagai zona selama periode yang dipilih. Rata-rata parameter lingkungan membantu mendeteksi tingkat stres panas (heat stress) pada ternak secara dini guna menjaga kenyamanan termal sapi.';
+        break;
+
+      case 'Vital':
+        const rawVitals = await this.prisma.livestockVital.findMany({
+          where: { timestamp: { gte: start, lte: end } },
+          include: { livestock: true },
+          orderBy: { timestamp: 'asc' },
+        });
+
+        data = rawVitals.map((item) => {
+          const hr = item.heartRate && item.heartRate > 0 ? item.heartRate : '-';
+          const temp = item.bodyTemperature && item.bodyTemperature > 0 ? item.bodyTemperature : '-';
+          let status = 'NORMAL';
+          if (item.heartRate && (item.heartRate < 48 || item.heartRate > 100)) status = 'ABNORMAL';
+          if (item.bodyTemperature && (item.bodyTemperature < 37.5 || item.bodyTemperature > 39.5)) status = 'ABNORMAL';
+
+          return {
+            timestamp: item.timestamp.toLocaleString('id-ID'),
+            cattleId: item.cattleId,
+            heartRate: hr !== '-' ? `${hr} BPM` : '-',
+            bodyTemperature: temp !== '-' ? `${temp} °C` : '-',
+            status: status
+          };
+        });
 
         columns = [
           { header: 'Waktu', key: 'timestamp', width: 120 },
-          { header: 'Zona', key: 'zone', width: 95 },
-          { header: 'Suhu', key: 'temperature', width: 70 },
-          { header: 'Kelembapan', key: 'humidity', width: 70 },
-          { header: 'Amonia', key: 'ammonia', width: 70 },
-          { header: 'THI', key: 'thi', width: 70 },
+          { header: 'ID Sapi', key: 'cattleId', width: 80 },
+          { header: 'Detak Jantung', key: 'heartRate', width: 95 },
+          { header: 'Suhu Tubuh', key: 'bodyTemperature', width: 95 },
+          { header: 'Status Vital', key: 'status', width: 100 },
         ];
 
-        ringkasanTeks = 'Laporan Lingkungan Kandang memuat data sensor real-time (suhu, kelembapan, amonia, dan THI) dari berbagai zona selama periode yang dipilih. Rata-rata parameter lingkungan membantu mendeteksi tingkat stres panas (heat stress) pada ternak secara dini guna menjaga kenyamanan termal sapi.';
+        ringkasanTeks = `Laporan Vital Sign Sapi merekap data sensor detak jantung (BPM) dan suhu tubuh (°C) seluruh populasi ternak secara real-time. Memantau sinyal vital secara berkala membantu deteksi dini penyakit dan memastikan kesehatan sapi selalu dalam batas normal.`;
         break;
 
       case 'Kesehatan':
