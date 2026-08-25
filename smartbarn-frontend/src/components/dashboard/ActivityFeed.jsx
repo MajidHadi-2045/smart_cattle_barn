@@ -84,7 +84,11 @@ const ActivityFeed = () => {
             {/* Toggle Button */}
             <button 
                 onClick={handleToggleOpen}
-                className={`p-2 rounded-lg transition-all duration-200 relative ${isOpen ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/30' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
+                className={`p-2 rounded-lg transition-all duration-200 relative ${
+                    isOpen 
+                        ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400' 
+                        : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
                 title="Riwayat Aktivitas 24 Jam"
             >
                 <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>

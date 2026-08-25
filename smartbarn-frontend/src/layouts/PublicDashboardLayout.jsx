@@ -42,8 +42,9 @@ const PublicDashboardLayout = () => {
 
             {/* Dark Mode Toggle */}
             <button 
+              aria-label={isDarkMode ? 'Ganti ke Mode Terang' : 'Ganti ke Mode Gelap'}
               onClick={() => setIsDarkMode(!isDarkMode)}
-              className={`p-2 rounded-lg transition-all duration-300 ${isDarkMode ? 'bg-slate-700 text-yellow-400' : 'bg-slate-100 text-slate-500 hover:text-primary-600 shadow-inner'}`}
+              className="p-2 rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-200"
               title={isDarkMode ? 'Ganti ke Mode Terang' : 'Ganti ke Mode Gelap'}
             >
               {isDarkMode ? (

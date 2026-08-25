@@ -163,7 +163,11 @@ const NotificationBell = () => {
       {/* Tombol Lonceng */}
       <button 
         onClick={handleOpenDropdown}
-        className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-primary-600 dark:text-slate-300 transition-all relative shadow-inner"
+        className={`p-2 rounded-lg transition-all duration-200 relative ${
+          showDropdown 
+            ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400' 
+            : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800'
+        }`}
         title="Notifikasi Sistem"
       >
         <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -60,3 +60,9 @@ clean_database_remote.js
 clearSchedules.js
 desktop.ini
 Hasil_skripsi_Majid Solihin Hadi_2_rev - Copy.docx
+
+# PDF Files & Scripts
+generate_pdf.py
+generate_5_pdfs.py
+*.pdf
+
