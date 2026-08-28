@@ -30,12 +30,12 @@ const PageSkeleton = () => (
     </div>
     {/* Body Skeleton */}
     <div className="flex-1 p-4 md:p-8 space-y-6 animate-pulse">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="h-[108px] md:h-14 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <div className="h-8 w-48 bg-slate-200 dark:bg-slate-800 rounded-lg mb-2"></div>
-          <div className="h-4 w-64 bg-slate-200 dark:bg-slate-800 rounded"></div>
+          <div className="h-7 w-48 bg-slate-200 dark:bg-slate-800 rounded-lg mb-1"></div>
+          <div className="h-4 w-80 bg-slate-200 dark:bg-slate-800 rounded"></div>
         </div>
-        <div className="h-10 w-40 bg-slate-200 dark:bg-slate-800 rounded-lg"></div>
+        <div className="h-9 w-44 bg-slate-200 dark:bg-slate-800 rounded-lg"></div>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="h-[106px] bg-slate-200 dark:bg-slate-800 rounded-2xl animate-shimmer"></div>
