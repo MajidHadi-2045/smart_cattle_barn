@@ -1,0 +1,4 @@
+# W3C / Standard robots.txt for Smart Cattle Barn
+User-agent: *
+Allow: /
+Sitemap: https://smartcattlebarn.site/sitemap.xml
