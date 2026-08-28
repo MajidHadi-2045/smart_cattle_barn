@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, UseInterceptors } from '@nestjs/common';
+import { CacheInterceptor } from '@nestjs/cache-manager';
 import { ZoneService } from './zone.service';
 import { AuthGuard } from '../auth/auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
@@ -9,6 +10,7 @@ export class ZoneController {
   constructor(private readonly zoneService: ZoneService) {}
 
   @Get()
+  @UseInterceptors(CacheInterceptor)
   findAll() {
     return this.zoneService.findAll();
   }

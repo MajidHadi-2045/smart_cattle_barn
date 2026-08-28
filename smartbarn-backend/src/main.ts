@@ -6,11 +6,13 @@ import * as fs from 'fs';
 import { PrismaClientExceptionFilter } from './prisma/prisma-client-exception.filter';
 
 import { json, urlencoded } from 'express';
+import compression from 'compression';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // 0. PERBESAR LIMIT PAYLOAD: Agar bisa upload foto Base64 yang besar (Max 5MB)
+  // 0. PERBESAR LIMIT PAYLOAD & AKTIFKAN HTTP COMPRESSION
+  app.use(compression());
   app.use(json({ limit: '5mb' }));
   app.use(urlencoded({ limit: '5mb', extended: true }));
 
