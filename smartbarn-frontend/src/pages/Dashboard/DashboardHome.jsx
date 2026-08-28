@@ -719,7 +719,7 @@ const DashboardHome = ({ isPublicRoute = false }) => {
         return (
             <div className="space-y-6 pb-20">
                 {/* Header Skeleton */}
-                <div className="h-[108px] md:h-14 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div className="h-[116px] md:h-14 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
                         <div className="h-7 animate-shimmer rounded w-48 mb-1"></div>
                         <div className="h-4 animate-shimmer rounded w-80"></div>
@@ -789,7 +789,7 @@ const DashboardHome = ({ isPublicRoute = false }) => {
     return (
         <div className="space-y-6 pb-20 animate-fade-in">
             {/* Header Dashboard / Beranda */}
-            <div className="h-[108px] md:h-14 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div className="h-[116px] md:h-14 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h2 className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-slate-100 leading-tight">{isPublicRoute ? 'Beranda Publik' : 'Beranda Utama'}</h2>
                     <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-none mt-1">Pantau kondisi lingkungan dan ternak secara real-time</p>

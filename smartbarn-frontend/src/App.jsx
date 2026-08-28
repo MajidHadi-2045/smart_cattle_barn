@@ -40,7 +40,7 @@ const PageSkeleton = () => (
       </div>
       {/* Body Skeleton */}
       <div className="flex-1 p-4 md:p-8 space-y-6 animate-pulse">
-        <div className="h-[108px] md:h-14 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="h-[116px] md:h-14 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <div className="h-7 w-48 bg-slate-200 dark:bg-slate-800 rounded-lg mb-1"></div>
             <div className="h-4 w-80 bg-slate-200 dark:bg-slate-800 rounded"></div>
@@ -61,7 +61,7 @@ const PageSkeleton = () => (
 // Skeleton khusus isi rute (tanpa header ganda) untuk me-eliminate CLS 0.000
 const PageContentSkeleton = () => (
   <div className="space-y-6 pb-20 animate-pulse">
-    <div className="h-[108px] md:h-14 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div className="h-[116px] md:h-14 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
       <div>
         <div className="h-7 w-48 bg-slate-200 dark:bg-slate-800 rounded-lg mb-1"></div>
         <div className="h-4 w-80 bg-slate-200 dark:bg-slate-800 rounded"></div>
