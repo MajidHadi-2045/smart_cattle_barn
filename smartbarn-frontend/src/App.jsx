@@ -40,12 +40,12 @@ const PageSkeleton = () => (
       </div>
       {/* Body Skeleton */}
       <div className="flex-1 p-4 md:p-8 space-y-6 animate-pulse">
-        <div className="h-[116px] md:h-14 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="h-14 flex flex-row justify-between items-center gap-4">
           <div>
-            <div className="h-7 w-48 bg-slate-200 dark:bg-slate-800 rounded-lg mb-1"></div>
-            <div className="h-4 w-80 bg-slate-200 dark:bg-slate-800 rounded"></div>
+            <div className="h-6 w-36 sm:w-48 bg-slate-200 dark:bg-slate-800 rounded-lg mb-1"></div>
+            <div className="h-3.5 w-48 sm:w-80 bg-slate-200 dark:bg-slate-800 rounded hidden sm:block"></div>
           </div>
-          <div className="h-9 w-44 bg-slate-200 dark:bg-slate-800 rounded-lg"></div>
+          <div className="h-9 w-32 sm:w-44 bg-slate-200 dark:bg-slate-800 rounded-lg"></div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="h-[106px] bg-slate-200 dark:bg-slate-800 rounded-2xl animate-shimmer"></div>
@@ -61,12 +61,12 @@ const PageSkeleton = () => (
 // Skeleton khusus isi rute (tanpa header ganda) untuk me-eliminate CLS 0.000
 const PageContentSkeleton = () => (
   <div className="space-y-6 pb-20 animate-pulse">
-    <div className="h-[116px] md:h-14 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div className="h-14 flex flex-row justify-between items-center gap-4">
       <div>
-        <div className="h-7 w-48 bg-slate-200 dark:bg-slate-800 rounded-lg mb-1"></div>
-        <div className="h-4 w-80 bg-slate-200 dark:bg-slate-800 rounded"></div>
+        <div className="h-6 w-36 sm:w-48 bg-slate-200 dark:bg-slate-800 rounded-lg mb-1"></div>
+        <div className="h-3.5 w-48 sm:w-80 bg-slate-200 dark:bg-slate-800 rounded hidden sm:block"></div>
       </div>
-      <div className="h-9 w-44 bg-slate-200 dark:bg-slate-800 rounded-lg"></div>
+      <div className="h-9 w-32 sm:w-44 bg-slate-200 dark:bg-slate-800 rounded-lg"></div>
     </div>
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
       <div className="h-[106px] bg-slate-200 dark:bg-slate-800 rounded-2xl animate-shimmer"></div>
