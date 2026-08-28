@@ -91,8 +91,10 @@ const Reports = () => {
                     <form onSubmit={handleDownload} className="space-y-6">
                         {/* Pilihan Jenis Laporan */}
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Jenis Laporan</label>
+                            <label htmlFor="reportTypeSelect" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Jenis Laporan</label>
                             <select
+                                id="reportTypeSelect"
+                                aria-label="Jenis Laporan"
                                 value={reportType}
                                 onChange={(e) => setReportType(e.target.value)}
                                 className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:outline-none transition text-slate-900 dark:text-slate-100"
@@ -109,8 +111,10 @@ const Reports = () => {
                         {/* Pilihan Tanggal */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Dari Tanggal</label>
+                                <label htmlFor="startDateInput" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Dari Tanggal</label>
                                 <input 
+                                    id="startDateInput"
+                                    aria-label="Dari Tanggal"
                                     type="date" 
                                     value={startDate}
                                     onChange={(e) => setStartDate(e.target.value)}
@@ -118,8 +122,10 @@ const Reports = () => {
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Sampai Tanggal</label>
+                                <label htmlFor="endDateInput" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Sampai Tanggal</label>
                                 <input 
+                                    id="endDateInput"
+                                    aria-label="Sampai Tanggal"
                                     type="date" 
                                     value={endDate}
                                     onChange={(e) => setEndDate(e.target.value)}

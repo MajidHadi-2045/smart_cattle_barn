@@ -443,48 +443,48 @@ const UserManagement = () => {
                             <form onSubmit={handleFormSubmit} className="space-y-5">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                     <div>
-                                        <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Nama Lengkap</label>
-                                        <input type="text" className="w-full px-4 py-2 border rounded-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
+                                        <label htmlFor="userNameInput" className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Nama Lengkap</label>
+                                        <input id="userNameInput" aria-label="Nama Lengkap" type="text" className="w-full px-4 py-2 border rounded-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
                                     </div>
                                     {userRole === 'SUPER_ADMIN' && (
                                         <div>
-                                            <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Username (Tanpa Spasi)</label>
-                                            <input type="text" className="w-full px-4 py-2 border rounded-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white" required value={formData.username} onChange={e => setFormData({ ...formData, username: e.target.value.replace(/\s/g, '') })} placeholder="budi_123" />
+                                            <label htmlFor="userUsernameInput" className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Username (Tanpa Spasi)</label>
+                                            <input id="userUsernameInput" aria-label="Username" type="text" className="w-full px-4 py-2 border rounded-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white" required value={formData.username} onChange={e => setFormData({ ...formData, username: e.target.value.replace(/\s/g, '') })} placeholder="budi_123" />
                                         </div>
                                     )}
                                     <div>
-                                        <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Email Utama</label>
-                                        <input type="email" className="w-full px-4 py-2 border rounded-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white" required value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
+                                        <label htmlFor="userEmailInput" className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Email Utama</label>
+                                        <input id="userEmailInput" aria-label="Email Utama" type="email" className="w-full px-4 py-2 border rounded-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white" required value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Nomor Kontak / HP</label>
-                                        <input type="text" placeholder="0812xxxxxx" className="w-full px-4 py-2 border rounded-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white" required value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
+                                        <label htmlFor="userPhoneInput" className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Nomor Kontak / HP</label>
+                                        <input id="userPhoneInput" aria-label="Nomor Kontak / HP" type="text" placeholder="0812xxxxxx" className="w-full px-4 py-2 border rounded-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white" required value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
                                     </div>
                                 </div>
                                 {userRole === 'SUPER_ADMIN' && (
                                     <div>
-                                        <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Password Sementara</label>
-                                        <input type="password" placeholder="Min. 6 karakter" className="w-full px-4 py-2 border rounded-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white" required value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} />
+                                        <label htmlFor="userPasswordInput" className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Password Sementara</label>
+                                        <input id="userPasswordInput" aria-label="Password Sementara" type="password" placeholder="Min. 6 karakter" className="w-full px-4 py-2 border rounded-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white" required value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} />
                                     </div>
                                 )}
                                 <div>
-                                    <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Pilih Role Akses</label>
+                                    <label htmlFor="userRoleSelect" className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Pilih Role Akses</label>
                                     {userRole === 'SUPER_ADMIN' ? (
-                                        <select className="w-full px-4 py-2 border rounded-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value })}>
+                                        <select id="userRoleSelect" aria-label="Pilih Role Akses" className="w-full px-4 py-2 border rounded-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value })}>
                                             <option value="super_admin">Super Admin (Manajer)</option>
                                             <option value="veteriner">Dokter Hewan (Veteriner)</option>
                                             <option value="staff">Staff (Operator Kandang)</option>
                                         </select>
                                     ) : (
-                                        <select disabled className="w-full px-4 py-2 border rounded-lg bg-slate-105 dark:bg-slate-700 dark:text-white" value={formData.role}>
+                                        <select id="userRoleSelect" aria-label="Pilih Role Akses" disabled className="w-full px-4 py-2 border rounded-lg bg-slate-105 dark:bg-slate-700 dark:text-white" value={formData.role}>
                                             <option value="veteriner">Dokter Hewan (Veteriner)</option>
                                             <option value="staff">Staff (Operator Kandang)</option>
                                         </select>
                                     )}
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Alasan Penambahan</label>
-                                    <textarea className="w-full px-4 py-2 border rounded-lg h-24 dark:bg-slate-700 dark:border-slate-600 dark:text-white" placeholder="Mengapa akun ini diperlukan?" required value={formData.reason} onChange={e => setFormData({ ...formData, reason: e.target.value })}></textarea>
+                                    <label htmlFor="userReasonInput" className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Alasan Penambahan</label>
+                                    <textarea id="userReasonInput" aria-label="Alasan Penambahan" className="w-full px-4 py-2 border rounded-lg h-24 dark:bg-slate-700 dark:border-slate-600 dark:text-white" placeholder="Mengapa akun ini diperlukan?" required value={formData.reason} onChange={e => setFormData({ ...formData, reason: e.target.value })}></textarea>
                                 </div>
                                 <div className="flex gap-3 pt-4">
                                     <button 

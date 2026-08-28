@@ -719,12 +719,12 @@ const DashboardHome = ({ isPublicRoute = false }) => {
         return (
             <div className="space-y-6 pb-20">
                 {/* Header Skeleton */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div className="h-[104px] md:h-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
-                        <div className="h-8 animate-shimmer rounded w-64 mb-2"></div>
-                        <div className="h-4 animate-shimmer rounded w-96"></div>
+                        <div className="h-7 animate-shimmer rounded w-48 mb-1"></div>
+                        <div className="h-4 animate-shimmer rounded w-80"></div>
                     </div>
-                    <div className="h-10 w-40 animate-shimmer rounded-lg"></div>
+                    <div className="h-9 w-44 animate-shimmer rounded-lg"></div>
                 </div>
 
                 {/* Cards Skeleton */}
@@ -787,9 +787,9 @@ const DashboardHome = ({ isPublicRoute = false }) => {
     const isDataLive = isWsConnected && lastSensorUpdate > 0 && (currentTime - lastSensorUpdate < 120000);
 
     return (
-        <div className="space-y-6 animate-fade-in">
+        <div className="space-y-6 pb-20 animate-fade-in">
             {/* Header Dashboard / Beranda */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div className="h-[104px] md:h-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{isPublicRoute ? 'Beranda Publik' : 'Beranda Utama'}</h2>
                     <p className="text-slate-500 dark:text-slate-400 text-sm">Pantau kondisi lingkungan dan ternak secara real-time</p>

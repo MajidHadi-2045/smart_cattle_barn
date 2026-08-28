@@ -1082,7 +1082,7 @@ const Livestock = () => {
                                 setFormSelectedZoneId('');
                                 setShowCowModal(true); 
                             }} 
-                            className="flex-1 lg:flex-none px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold text-sm transition shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2"
+                            className="flex-1 lg:flex-none px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl font-bold text-sm transition shadow-md shadow-emerald-700/20 flex items-center justify-center gap-2"
                         >
                             <span>+ Tambah Sapi</span>
                         </button>
@@ -1103,6 +1103,7 @@ const Livestock = () => {
                         type="text" 
                         placeholder="Cari ID Sapi, Breed, atau Kandang..." 
                         value={searchTerm}
+                        aria-label="Cari Sapi"
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full pl-10 pr-4 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-emerald-500/30 transition text-sm font-medium shadow-sm"
                     />
@@ -1112,6 +1113,7 @@ const Livestock = () => {
                 <div className="w-full md:w-56">
                     <select 
                         value={filterStatus}
+                        aria-label="Filter Status Kesehatan Sapi"
                         onChange={(e) => setFilterStatus(e.target.value)}
                         className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-emerald-500/30 transition text-sm font-semibold shadow-sm cursor-pointer"
                     >
@@ -1178,11 +1180,11 @@ const Livestock = () => {
 
                         <div className="grid grid-cols-2 gap-3 mb-3">
                             <div className="bg-slate-50 dark:bg-slate-700/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-600">
-                                <p className="text-[10px] text-slate-400 uppercase font-bold mb-0.5">Berat</p>
+                                <p className="text-[10px] text-slate-600 dark:text-slate-300 uppercase font-bold mb-0.5">Berat</p>
                                 <p className="font-semibold text-slate-700 dark:text-slate-200">{cow.weight} <span className="text-xs">kg</span></p>
                             </div>
                             <div className="bg-slate-50 dark:bg-slate-700/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-600">
-                                <p className="text-[10px] text-slate-400 uppercase font-bold mb-0.5">Lokasi</p>
+                                <p className="text-[10px] text-slate-600 dark:text-slate-300 uppercase font-bold mb-0.5">Lokasi</p>
                                 <p className="font-semibold text-slate-700 dark:text-slate-200 truncate" title={`${cow.section?.zone?.name} - ${cow.section?.name}`}>
                                     {cow.section?.zone?.name || 'Kandang'} / {cow.section?.name || 'Section'}
                                 </p>

@@ -84,12 +84,11 @@ $ npm run build
 $ sudo cp -r dist/* /var/www/smartcattlebarn.site/html/
 # Restrat ngnix
 $ sudo systemctl restart nginx
-# 1. Tarik informasi terbaru dari GitHub tanpa mengubah file
-git fetch origin
-# 2. Paksa kode di VPS agar 100% sama dengan branch 'main' di GitHub
-git reset --hard origin/main
-# (Opsional tapi disarankan) 3. Bersihkan file-file sementara/sampah yang tidak ada di GitHub
-git clean -fd
+# 1-Line Super Fast Auto Deploy (Jalankan ini di VPS untuk Update Otomatis 10 Detik)
+$ git fetch origin && git reset --hard origin/main && npm run build && sudo cp -r dist/* /var/www/smartcattlebarn.site/html/ && sudo systemctl restart nginx
+
+# (Opsional) 3. Bersihkan file-file sementara/sampah yang tidak ada di GitHub
+$ git clean -fd
 
 ##Apk (File APK)
 #Cara Mengunggah APK Baru ke Server (Jalankan di CMD Laptop, BUKAN di SSH Server)
@@ -97,7 +96,11 @@ $ scp C:\Users\majid\Downloads\smartbarn.apk majid@77.37.63.21:/home/majid/
 #Pindahkan APK ke Web (Jalankan di Terminal SSH Server)
 $ sudo mv /home/majid/smartbarn.apk /var/www/smartcattlebarn.site/html/
 
-##JARINGAN (Nginx & Firewall)
+##JARINGAN (Nginx Caching & Firewall)
+# Optimasi Caching Nginx (Tambahkan ke /etc/nginx/sites-available/smartcattlebarn.site)
+# location /assets/ { expires 1y; add_header Cache-Control "public, max-age=31536000, immutable"; }
+# location ~* \.(svg|png|ico|woff2)$ { expires 30d; add_header Cache-Control "public, max-age=2592000"; }
+
 #Cara Mematikan Website Frontend Sementara Waktu (Menutup Akses Web)
 $ sudo rm /etc/nginx/sites-enabled/smartcattlebarn.site
 $ sudo systemctl reload nginx

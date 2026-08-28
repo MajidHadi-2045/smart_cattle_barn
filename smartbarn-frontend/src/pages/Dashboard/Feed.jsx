@@ -325,21 +325,21 @@ const Feed = () => {
                 <div className="flex bg-slate-200 dark:bg-slate-800 p-1 rounded-lg">
                     <button 
                         onClick={() => setActiveTab('overview')} 
-                        className={`px-4 py-2 text-sm font-bold rounded-md transition ${activeTab === 'overview' ? 'bg-white dark:bg-slate-700 text-primary-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
+                        className={`px-4 py-2 text-sm font-bold rounded-md transition ${activeTab === 'overview' ? 'bg-white dark:bg-slate-700 text-primary-600 shadow-sm' : 'text-slate-700 hover:text-slate-900 dark:text-slate-200'}`}
                     >
                         Ringkasan Stok
                     </button>
                     {userRole === 'STAFF' && (
                         <button 
                             onClick={() => setActiveTab('schedule')} 
-                            className={`px-4 py-2 text-sm font-bold rounded-md transition ${activeTab === 'schedule' ? 'bg-white dark:bg-slate-700 text-primary-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
+                            className={`px-4 py-2 text-sm font-bold rounded-md transition ${activeTab === 'schedule' ? 'bg-white dark:bg-slate-700 text-primary-600 shadow-sm' : 'text-slate-700 hover:text-slate-900 dark:text-slate-200'}`}
                         >
                             Jadwal Pakan
                         </button>
                     )}
                     <button 
                         onClick={() => setActiveTab('report')} 
-                        className={`px-4 py-2 text-sm font-bold rounded-md transition ${activeTab === 'report' ? 'bg-white dark:bg-slate-700 text-primary-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
+                        className={`px-4 py-2 text-sm font-bold rounded-md transition ${activeTab === 'report' ? 'bg-white dark:bg-slate-700 text-primary-600 shadow-sm' : 'text-slate-700 hover:text-slate-900 dark:text-slate-200'}`}
                     >
                         Riwayat & Laporan
                     </button>
@@ -434,10 +434,10 @@ const Feed = () => {
                                         {/* Action Overlay */}
                                         {userRole === 'STAFF' && (
                                             <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button onClick={() => openEditSilo(silo)} className="p-1.5 bg-slate-100 dark:bg-slate-700 text-slate-500 hover:text-blue-500 rounded-lg shadow-sm">
+                                                <button onClick={() => openEditSilo(silo)} aria-label={`Edit ${silo.name}`} title={`Edit ${silo.name}`} className="p-1.5 bg-slate-100 dark:bg-slate-700 text-slate-600 hover:text-blue-600 rounded-lg shadow-sm">
                                                     <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                                                 </button>
-                                                <button onClick={() => handleDeleteSilo(silo.id)} className="p-1.5 bg-slate-100 dark:bg-slate-700 text-slate-500 hover:text-red-500 rounded-lg shadow-sm">
+                                                <button onClick={() => handleDeleteSilo(silo.id)} aria-label={`Hapus ${silo.name}`} title={`Hapus ${silo.name}`} className="p-1.5 bg-slate-100 dark:bg-slate-700 text-slate-600 hover:text-red-600 rounded-lg shadow-sm">
                                                     <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                                 </button>
                                             </div>
@@ -465,7 +465,7 @@ const Feed = () => {
                                         <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-3.5 mb-2 overflow-hidden shadow-inner">
                                             <div className={`${barColor} h-full rounded-full transition-all duration-1000 shadow-lg`} style={{ width: `${Math.min(percentage, 100)}%` }}></div>
                                         </div>
-                                        <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                        <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
                                             <span>Stok Tersedia</span>
                                             <span>{percentage}%</span>
                                         </div>
@@ -491,7 +491,7 @@ const Feed = () => {
                                                     <div className="flex items-center gap-2">
                                                         <span className="text-xl">⏳</span>
                                                         <div>
-                                                            <p className="text-[10px] uppercase font-bold text-slate-400">Estimasi Tahan</p>
+                                                            <p className="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-300">Estimasi Tahan</p>
                                                             <p className="font-bold text-slate-700 dark:text-slate-300 text-sm">
                                                                 {estimatedDays > 0 ? `${estimatedDays} Hari` : 'Habis / Data kurang'}
                                                             </p>
