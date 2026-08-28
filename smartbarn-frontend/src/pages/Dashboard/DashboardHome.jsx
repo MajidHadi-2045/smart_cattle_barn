@@ -728,11 +728,14 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                 </div>
 
                 {/* Cards Skeleton */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {[1, 2, 3, 4].map(i => (
-                        <div key={i} className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-100 dark:border-slate-700">
-                            <div className="h-4 animate-shimmer rounded w-24 mb-3"></div>
-                            <div className="h-8 animate-shimmer rounded w-16"></div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    {[1, 2, 3].map(i => (
+                        <div key={i} className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-100 dark:border-slate-700 flex justify-between items-start">
+                            <div>
+                                <div className="h-4 animate-shimmer rounded w-24 mb-3"></div>
+                                <div className="h-8 animate-shimmer rounded w-16"></div>
+                            </div>
+                            <div className="p-3 bg-slate-100 dark:bg-slate-700/50 rounded-xl w-12 h-12 animate-shimmer"></div>
                         </div>
                     ))}
                 </div>

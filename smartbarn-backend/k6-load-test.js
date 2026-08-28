@@ -75,20 +75,45 @@ export default function (data) {
     // SKENARIO 2: Simulasi Pengguna Web Dashboard (30% Trafik)
     // endpoint pemantauan utama
     // ========================================================
+    // =========================================================================
+    // ENDPOINT 1 (WAJIB): Memanggil Kartu Ringkasan Sapi (Total, Sehat, Sakit, Hamil)
+    // =========================================================================
     const resSummary = http.get(`${BASE_URL}/dashboard/summary`, { headers: authHeaders });
     check(resSummary, {
       'Web Dashboard Summary OK (200)': (r) => r.status === 200,
     });
 
+    // =========================================================================
+    // ENDPOINT 2 (WAJIB): Memanggil Grafik Statistik Populasi per Seksi Kandang
+    // =========================================================================
     const resStats = http.get(`${BASE_URL}/livestock/stats/1`, { headers: authHeaders });
     check(resStats, {
       'Web Livestock Stats OK (200)': (r) => r.status === 200,
     });
 
+    // =========================================================================
+    // ENDPOINT 3 (WAJIB): Memanggil Baris Tabel Daftar Sapi di Section Kandang
+    // =========================================================================
     const resList = http.get(`${BASE_URL}/livestock/section/1`, { headers: authHeaders });
     check(resList, {
       'Web Daftar Sapi Section OK (200)': (r) => r.status === 200,
     });
+
+    // =========================================================================
+    // ENDPOINT 4 (OPSIONAL): Sensor Lingkungan Live (Suhu, RH, THI Kandang)
+    // Keterangan: Mengambil data suhu & kelembaban live dari RAM Redis (< 1ms).
+    // Hapus tanda // di bawah ini jika ingin menguji pemuatan sensor live di k6:
+    // =========================================================================
+    const resEnvLive = http.get(`${BASE_URL}/environment/live/1`, { headers: authHeaders });
+    check(resEnvLive, { 'Web Env Live OK (200)': (r) => r.status === 200 || r.status === 404 });
+
+    // =========================================================================
+    // ENDPOINT 5 (OPSIONAL): Manajemen Limbah Harian (Feses & Urine Kandang)
+    // Keterangan: Mengambil akumulasi limbah harian dari PostgreSQL.
+    // Hapus tanda // di bawah ini jika ingin menguji pemuatan limbah harian di k6:
+    // =========================================================================
+    const resWaste = http.get(`${BASE_URL}/dashboard/waste-summary?filter=daily`, { headers: authHeaders });
+    check(resWaste, { 'Web Waste Summary OK (200)': (r) => r.status === 200 });
   }
 
   // Jeda 1 detik meniru jeda antar interval sensor & klik user

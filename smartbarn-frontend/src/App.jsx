@@ -58,9 +58,9 @@ const PageContentSkeleton = () => (
       <div className="h-10 w-40 bg-slate-200 dark:bg-slate-800 rounded-lg"></div>
     </div>
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-      <div className="h-[92px] bg-slate-200 dark:bg-slate-800 rounded-2xl"></div>
-      <div className="h-[92px] bg-slate-200 dark:bg-slate-800 rounded-2xl"></div>
-      <div className="h-[92px] bg-slate-200 dark:bg-slate-800 rounded-2xl"></div>
+      <div className="h-[106px] bg-slate-200 dark:bg-slate-800 rounded-2xl animate-shimmer"></div>
+      <div className="h-[106px] bg-slate-200 dark:bg-slate-800 rounded-2xl animate-shimmer"></div>
+      <div className="h-[106px] bg-slate-200 dark:bg-slate-800 rounded-2xl animate-shimmer"></div>
     </div>
     <div className="h-80 bg-slate-200 dark:bg-slate-800 rounded-2xl"></div>
   </div>

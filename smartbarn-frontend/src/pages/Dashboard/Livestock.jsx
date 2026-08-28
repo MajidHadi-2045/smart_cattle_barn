@@ -228,7 +228,7 @@ const Livestock = () => {
         socket.on('connect', onWsConnect);
         socket.on('disconnect', onWsDisconnect);
 
-        // Listener Global untuk Update Vital Sapi secara Real-time di List
+        // SINKRONISASI REAL-TIME: Terima pembaruan sensor detak jantung & suhu sapi via WebSocket
         socket.on('vital-update', (payload) => {
             setCows(prevCows => prevCows.map(cow => {
                 if (cow.id === payload.cattleId) {

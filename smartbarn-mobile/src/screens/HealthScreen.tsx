@@ -87,6 +87,7 @@ const HealthScreen = () => {
     fetchLivestock();
   }, []);
 
+  // Buka modal untuk menambah rekam medis baru
   const handleOpenAddForm = () => {
     setIsEditing(false);
     setSelectedRecordId(null);
@@ -98,6 +99,7 @@ const HealthScreen = () => {
     setModalVisible(true);
   };
 
+  // Buka modal untuk mengedit rekam medis yang sudah ada
   const handleOpenEditForm = (item: any) => {
     setIsEditing(true);
     setSelectedRecordId(item.id);
@@ -111,6 +113,7 @@ const HealthScreen = () => {
     setModalVisible(true);
   };
 
+  // Hapus catatan rekam medis dari sistem
   const handleDelete = (id: number) => {
     Alert.alert(
       'Konfirmasi Hapus',

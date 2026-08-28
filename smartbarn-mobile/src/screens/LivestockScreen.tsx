@@ -108,6 +108,7 @@ const LivestockScreen = ({ navigation }: any) => {
     fetchUser();
   }, []);
 
+  // Terima data telemetry sensor IoT secara real-time via WebSocket
   const { data: socketData } = useSocket(['websocket:vital-update']);
 
   useEffect(() => {

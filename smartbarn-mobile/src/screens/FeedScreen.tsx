@@ -50,6 +50,7 @@ const FeedScreen = () => {
   const [selectedSiloForTx, setSelectedSiloForTx] = useState<any>(null);
   const [txForm, setTxForm] = useState({ type: 'MASUK' as 'MASUK' | 'KELUAR', weightKg: '', description: '', expiryDate: '' });
 
+  // Simpan data silo baru atau perbarui silo yang ada
   const handleSaveSilo = async () => {
     if (!siloForm.name) return Alert.alert('Error', 'Nama silo tidak boleh kosong');
     const payload = {
@@ -76,6 +77,7 @@ const FeedScreen = () => {
     }
   };
 
+  // Hapus data silo dari sistem
   const handleDeleteSilo = (id: number) => {
     Alert.alert('Hapus Silo', 'Yakin ingin menghapus silo ini?', [
       { text: 'Batal', style: 'cancel' },
@@ -96,6 +98,7 @@ const FeedScreen = () => {
     ]);
   };
 
+  // Catat transaksi pakan masuk atau keluar dari silo
   const handleSaveTransaction = async () => {
     if (!selectedSiloForTx) return;
     if (!txForm.weightKg) return Alert.alert('Error', 'Jumlah tidak boleh kosong');
