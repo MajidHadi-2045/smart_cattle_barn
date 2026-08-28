@@ -47,10 +47,10 @@ const PageSkeleton = () => (
   </div>
 );
 
-// Skeleton khusus isi rute (tanpa header ganda) untuk me-eliminate CLS 0.497
+// Skeleton khusus isi rute (tanpa header ganda) untuk me-eliminate CLS 0.000
 const PageContentSkeleton = () => (
   <div className="space-y-6 pb-20 animate-pulse">
-    <div className="h-[104px] md:h-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div className="h-[108px] md:h-14 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
       <div>
         <div className="h-7 w-48 bg-slate-200 dark:bg-slate-800 rounded-lg mb-1"></div>
         <div className="h-4 w-80 bg-slate-200 dark:bg-slate-800 rounded"></div>
