@@ -34,7 +34,7 @@ const SensorTrendChart = ({ currentHistory, timeRange, setTimeRange }) => {
       </div>
       <div className="h-80 w-full">
         {currentHistory && currentHistory.length > 0 ? (
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height="100%" minHeight={320}>
             <LineChart data={currentHistory} margin={{ top: 5, right: 0, left: -20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
               <XAxis dataKey="time" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} dy={10} minTickGap={30} />

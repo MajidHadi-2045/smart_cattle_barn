@@ -730,7 +730,7 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                 {/* Cards Skeleton */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     {[1, 2, 3].map(i => (
-                        <div key={i} className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-100 dark:border-slate-700 flex justify-between items-start">
+                        <div key={i} className="h-[106px] bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-100 dark:border-slate-700 flex justify-between items-start">
                             <div>
                                 <div className="h-4 animate-shimmer rounded w-24 mb-3"></div>
                                 <div className="h-8 animate-shimmer rounded w-16"></div>
@@ -748,7 +748,7 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
                         {[1, 2, 3, 4].map(i => (
-                            <div key={i} className="bg-slate-50 dark:bg-slate-900/30 p-4 rounded-xl border border-slate-100 dark:border-slate-700">
+                            <div key={i} className="h-[110px] bg-slate-50 dark:bg-slate-900/30 p-4 rounded-xl border border-slate-100 dark:border-slate-700">
                                 <div className="h-5 animate-shimmer rounded w-32 mb-4"></div>
                                 <div className="h-10 animate-shimmer rounded w-24"></div>
                             </div>
@@ -1025,7 +1025,7 @@ const DashboardHome = ({ isPublicRoute = false }) => {
 
             {/* --- KARTU STATISTIK TERNAK --- */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex justify-between items-start">
+                <div className="h-[106px] bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex justify-between items-start">
                     <div>
                         <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Total Populasi</p>
                         <p className="text-3xl font-bold text-slate-800 dark:text-slate-100 mt-2">{livestockStats.total} <span className="text-sm font-normal text-slate-500">Ekor</span></p>
@@ -1034,7 +1034,7 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                         <Beef size={24} className="text-blue-500" />
                     </div>
                 </div>
-                <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex justify-between items-start">
+                <div className="h-[106px] bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex justify-between items-start">
                     <div>
                         <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Kondisi Sehat</p>
                         <p className="text-3xl font-bold text-green-600 mt-2">{livestockStats.healthy}</p>
@@ -1043,7 +1043,7 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                         <HeartPulse size={24} className="text-green-500" />
                     </div>
                 </div>
-                <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex justify-between items-start">
+                <div className="h-[106px] bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex justify-between items-start">
                     <div>
                         <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Kondisi Sakit</p>
                         <p className="text-3xl font-bold text-red-500 mt-2">{livestockStats.sick}</p>

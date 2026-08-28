@@ -23,8 +23,10 @@ export const options = {
 export function setup() {
   try {
     const loginPayload = JSON.stringify({
+      email: ADMIN_EMAIL,
       username: ADMIN_EMAIL,
       password: ADMIN_PASSWORD,
+      role: 'SUPER_ADMIN',
     });
 
     const headers = { 'Content-Type': 'application/json' };
@@ -112,7 +114,7 @@ export default function (data) {
     // Keterangan: Mengambil akumulasi limbah harian dari PostgreSQL.
     // Hapus tanda // di bawah ini jika ingin menguji pemuatan limbah harian di k6:
     // =========================================================================
-    const resWaste = http.get(`${BASE_URL}/dashboard/waste-summary?filter=daily`, { headers: authHeaders });
+    const resWaste = http.get(`${BASE_URL}/dashboard/waste?filter=daily`, { headers: authHeaders });
     check(resWaste, { 'Web Waste Summary OK (200)': (r) => r.status === 200 });
   }
 
