@@ -26,11 +26,11 @@ const FeatureCard = ({ title, desc, icon }) => {
             }}
             className="min-w-[300px] md:min-w-[380px] snap-center p-8 bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300 cursor-default group"
         >
-            <div className="w-14 h-14 bg-primary-50 rounded-lg flex items-center justify-center text-primary-600 mb-6 group-hover:bg-primary-600 group-hover:text-white transition-all duration-300 shadow-sm">
+            <div className="w-14 h-14 bg-primary-50 rounded-lg flex items-center justify-center text-primary-700 mb-6 group-hover:bg-primary-700 group-hover:text-white transition-all duration-300 shadow-sm">
                 {icon}
             </div>
             <h3 className="text-xl font-bold text-slate-900 mb-3">{title}</h3>
-            <p className="text-slate-500 leading-relaxed text-sm">
+            <p className="text-slate-600 leading-relaxed text-sm">
                 {desc}
             </p>
         </div>
@@ -70,9 +70,9 @@ const Typewriter = ({ text = "Jauh Lebih Cerdas.", phrases }) => {
     }, [displayedText, isDeleting, currentPhraseIndex, defaultPhrases, text]);
 
     return (
-        <span className="text-primary-600 font-black inline-flex items-center">
+        <span className="text-primary-700 font-black inline-flex items-center">
             <span>{displayedText}</span>
-            <span className="w-[3px] h-[0.85em] bg-primary-600 ml-1 inline-block animate-cursor-blink rounded-sm"></span>
+            <span className="w-[3px] h-[0.85em] bg-primary-700 ml-1 inline-block animate-cursor-blink rounded-sm"></span>
         </span>
     );
 };
@@ -105,22 +105,26 @@ const LandingPage = () => {
                     <div className="flex justify-between items-center">
                         <div className="flex items-center gap-3 cursor-pointer" onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})}>
                             <div className="bg-white p-1.5 rounded-xl shadow-sm border border-slate-100">
-                                <img src="/logoxl.svg" alt="Logo" width="32" height="32" className="h-8 w-8" />
+                                <img src="/logoxl.svg" alt="Logo Smart Cattle Barn" width="32" height="32" className="h-8 w-8" />
                             </div>
                             <span className="text-xl font-bold text-slate-900 tracking-tight text-shadow-sm">Smart Cattle Barn</span>
                         </div>
 
                         <div className="hidden md:flex items-center space-x-10">
-                            <a href="#features" className="text-slate-600 hover:text-primary-600 font-semibold transition text-sm">Fitur</a>
-                            <a href="#mobile-app" className="text-slate-600 hover:text-primary-600 font-semibold transition text-sm">Aplikasi</a>
-                            <a href="#about-pt" className="text-slate-600 hover:text-primary-600 font-semibold transition text-sm">Tentang</a>
-                            <Link to="/public-dashboard" className="text-slate-600 hover:text-primary-600 font-semibold transition text-sm">Dashboard</Link>
-                            <Link to="/login" className="px-7 py-3 bg-slate-900 text-white rounded-2xl font-bold hover:bg-primary-600 transition shadow-lg hover:shadow-primary-500/30 text-sm">
+                            <a href="#features" className="text-slate-700 hover:text-primary-700 font-semibold transition text-sm">Fitur</a>
+                            <a href="#mobile-app" className="text-slate-700 hover:text-primary-700 font-semibold transition text-sm">Aplikasi</a>
+                            <a href="#about-pt" className="text-slate-700 hover:text-primary-700 font-semibold transition text-sm">Tentang</a>
+                            <Link to="/public-dashboard" className="text-slate-700 hover:text-primary-700 font-semibold transition text-sm">Dashboard</Link>
+                            <Link to="/login" className="px-7 py-3 bg-slate-900 text-white rounded-2xl font-bold hover:bg-primary-700 transition shadow-lg hover:shadow-primary-500/30 text-sm">
                                 Login
                             </Link>
                         </div>
 
-                        <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="md:hidden text-slate-900">
+                        <button 
+                            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
+                            aria-label="Buka menu navigasi mobile" 
+                            className="md:hidden text-slate-900 p-2 rounded-lg"
+                        >
                             <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7" /></svg>
                         </button>
                     </div>
@@ -130,11 +134,11 @@ const LandingPage = () => {
                 {isMobileMenuOpen && (
                     <div className="md:hidden absolute top-24 left-4 right-4 bg-white rounded-[2rem] shadow-2xl p-6 border border-slate-100 animate-in fade-in zoom-in duration-300">
                         <div className="flex flex-col space-y-4 text-center font-bold">
-                            <a href="#features" onClick={() => setIsMobileMenuOpen(false)} className="py-2">Fitur</a>
-                            <a href="#mobile-app" onClick={() => setIsMobileMenuOpen(false)} className="py-2">Mobile App</a>
-                            <a href="#about-pt" onClick={() => setIsMobileMenuOpen(false)} className="py-2">Tentang</a>
-                            <Link to="/public-dashboard" onClick={() => setIsMobileMenuOpen(false)} className="py-4 text-slate-600 border border-slate-200 rounded-2xl">Dashboard</Link>
-                            <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} className="py-4 bg-slate-900 text-white rounded-2xl shadow-lg hover:bg-primary-600 hover:shadow-primary-500/30 transition">Login</Link>
+                            <a href="#features" onClick={() => setIsMobileMenuOpen(false)} className="py-2 text-slate-700">Fitur</a>
+                            <a href="#mobile-app" onClick={() => setIsMobileMenuOpen(false)} className="py-2 text-slate-700">Mobile App</a>
+                            <a href="#about-pt" onClick={() => setIsMobileMenuOpen(false)} className="py-2 text-slate-700">Tentang</a>
+                            <Link to="/public-dashboard" onClick={() => setIsMobileMenuOpen(false)} className="py-4 text-slate-700 border border-slate-200 rounded-2xl">Dashboard</Link>
+                            <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} className="py-4 bg-slate-900 text-white rounded-2xl shadow-lg hover:bg-primary-700 hover:shadow-primary-500/30 transition">Login</Link>
                         </div>
                     </div>
                 )}
@@ -155,12 +159,12 @@ const LandingPage = () => {
                                 Kelola Ternak <br />
                                 <Typewriter text="Jauh Lebih Cerdas." />
                             </h1>
-                            <p className="text-lg text-slate-500 mb-10 max-w-xl mx-auto lg:mx-0 leading-relaxed font-medium">
+                            <p className="text-lg text-slate-600 mb-10 max-w-xl mx-auto lg:mx-0 leading-relaxed font-medium">
                                 Efisiensi tanpa batas dengan integrasi IoT. Pantau kesehatan, pakan, dan lingkungan secara terintegrasi. <br/>
-                                <span className="text-primary-600 font-bold mt-2 inline-block">Kini hadir dengan Beranda Publik transparan yang dapat diakses oleh siapa saja!</span>
+                                <span className="text-primary-700 font-bold mt-2 inline-block">Kini hadir dengan Beranda Publik transparan yang dapat diakses oleh siapa saja!</span>
                             </p>
                             <div className="flex flex-col sm:flex-row gap-5 justify-center lg:justify-start">
-                                <Link to="/dashboard" className="px-8 py-4 bg-primary-600 text-white rounded-xl font-bold hover:bg-primary-700 transition shadow-sm flex items-center justify-center gap-3 group">
+                                <Link to="/dashboard" className="px-8 py-4 bg-primary-700 text-white rounded-xl font-bold hover:bg-primary-800 transition shadow-sm flex items-center justify-center gap-3 group">
                                     Mulai Sekarang
                                     <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                                 </Link>
@@ -232,10 +236,10 @@ const LandingPage = () => {
                                 {/* Floating Overlay Detail */}
                                 <div className="absolute -bottom-6 -right-10 bg-white p-5 rounded-3xl shadow-[0_20px_40px_rgba(0,0,0,0.15)] border border-slate-100 w-52 animate-bounce duration-[4000ms] flex items-center gap-4">
                                     <div className="w-12 h-12 bg-primary-50 rounded-2xl flex items-center justify-center shrink-0">
-                                        <svg className="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                        <svg className="w-6 h-6 text-primary-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                                     </div>
                                     <div>
-                                        <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Real-time</div>
+                                        <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Real-time</div>
                                         <div className="text-sm font-black text-slate-900">Active Sync</div>
                                     </div>
                                 </div>
@@ -249,14 +253,22 @@ const LandingPage = () => {
                 <section id="features" className="space-y-8">
                     <div className="flex flex-col md:flex-row justify-between items-end px-4 gap-6">
                         <div>
-                            <h2 className="text-sm font-bold text-primary-600 tracking-[0.2em] uppercase mb-3">Fitur Utama</h2>
+                            <h2 className="text-sm font-bold text-primary-700 tracking-[0.2em] uppercase mb-3">Fitur Utama</h2>
                             <p className="text-3xl font-bold text-slate-900 tracking-tight">Kendalikan segalanya dalam satu sistem.</p>
                         </div>
                         <div className="hidden md:flex gap-3">
-                            <button onClick={() => document.getElementById('fs').scrollBy({left: -400, behavior: 'smooth'})} className="p-4 rounded-2xl bg-white shadow-sm border border-slate-100 hover:bg-primary-50 transition-colors">
+                            <button 
+                                onClick={() => document.getElementById('fs').scrollBy({left: -400, behavior: 'smooth'})} 
+                                aria-label="Geser fitur ke kiri"
+                                className="p-4 rounded-2xl bg-white shadow-sm border border-slate-100 hover:bg-primary-50 transition-colors"
+                            >
                                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"/></svg>
                             </button>
-                            <button onClick={() => document.getElementById('fs').scrollBy({left: 400, behavior: 'smooth'})} className="p-4 rounded-2xl bg-white shadow-sm border border-slate-100 hover:bg-primary-50 transition-colors">
+                            <button 
+                                onClick={() => document.getElementById('fs').scrollBy({left: 400, behavior: 'smooth'})} 
+                                aria-label="Geser fitur ke kanan"
+                                className="p-4 rounded-2xl bg-white shadow-sm border border-slate-100 hover:bg-primary-50 transition-colors"
+                            >
                                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"/></svg>
                             </button>
                         </div>
@@ -318,7 +330,7 @@ const LandingPage = () => {
                         </div>
                         <div className="order-1 lg:order-2 text-center lg:text-left">
                             <h2 className="text-4xl font-black mb-8 leading-tight">Mobile Application<br/><span className="text-primary-400 font-medium">Dalam Genggaman.</span></h2>
-                            <p className="text-lg text-slate-400 mb-12 leading-relaxed max-w-lg mx-auto lg:mx-0">Pantau ternak langsung dari smartphone Anda. Dapatkan notifikasi darurat secara instan.</p>
+                            <p className="text-lg text-slate-300 mb-12 leading-relaxed max-w-lg mx-auto lg:mx-0">Pantau ternak langsung dari smartphone Anda. Dapatkan notifikasi darurat secara instan.</p>
                             <div className="flex flex-wrap gap-4 justify-center lg:justify-start">
                                 <a href="/smartbarn.apk" download className="bg-slate-800 border border-slate-700 text-white px-8 py-4 rounded-2xl font-bold hover:bg-slate-700 transition">Unduh APK (Android)</a>
                             </div>
@@ -331,11 +343,11 @@ const LandingPage = () => {
                     <div className="lg:col-span-2 bg-white rounded-[2.5rem] p-12 shadow-sm border border-slate-100 flex flex-col justify-center">
                         <div className="w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center text-white font-black text-xl mb-8">AT</div>
                         <h2 className="text-2xl font-bold mb-4">PT AgriTekno Nusantara</h2>
-                        <p className="text-slate-500 leading-relaxed font-medium">Pionir solusi peternakan berbasis IoT di Indonesia, berkomitmen menghadirkan efisiensi total melalui teknologi digital terdepan.</p>
+                        <p className="text-slate-600 leading-relaxed font-medium">Pionir solusi peternakan berbasis IoT di Indonesia, berkomitmen menghadirkan efisiensi total melalui teknologi digital terdepan.</p>
                     </div>
                     <div className="lg:col-span-3 bg-white rounded-[2.5rem] overflow-hidden shadow-sm border border-slate-100 min-h-[400px]">
                         <iframe
-                            width="100%" height="100%" frameBorder="0" scrolling="no" title="Lokasi"
+                            width="100%" height="100%" frameBorder="0" scrolling="no" title="Lokasi Peternakan Sapi"
                             src="https://www.openstreetmap.org/export/embed.html?bbox=105.301611%2C-5.300333%2C105.311611%2C-5.290333&amp;layer=mapnik&amp;marker=-5.295333%2C105.306611"
                         ></iframe>
                     </div>
@@ -357,16 +369,16 @@ const LandingPage = () => {
                             <div className="relative z-10 w-full max-w-5xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-12">
                                 {/* Left Side: Developer Info */}
                                 <div className="flex flex-col items-center lg:items-start text-center lg:text-left">
-                                    <h4 className="text-primary-600 font-bold uppercase tracking-[0.2em] text-xs mb-4">The Developer</h4>
-                                    <h3 className="text-5xl font-black text-slate-900 mb-2">Majid</h3>
-                                    <p className="text-slate-400 font-bold mb-8 text-xl">Full Stack Developer</p>
+                                    <p className="text-primary-700 font-bold uppercase tracking-[0.2em] text-xs mb-4">The Developer</p>
+                                    <h2 className="text-4xl md:text-5xl font-black text-slate-900 mb-2">Majid</h2>
+                                    <p className="text-slate-600 font-bold mb-8 text-xl">Full Stack Developer</p>
                                     <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 shrink-0">
+                                        <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center text-slate-500 shrink-0">
                                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 14l9-5-9-5-9 5 9 5z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/></svg>
                                         </div>
                                         <div>
                                             <p className="font-bold text-slate-800 text-left">Teknik Elektro</p>
-                                            <p className="text-slate-400 text-sm font-medium text-left">Universitas Lampung (Unila)</p>
+                                            <p className="text-slate-600 text-sm font-medium text-left">Universitas Lampung (Unila)</p>
                                         </div>
                                     </div>
                                 </div>
@@ -374,17 +386,17 @@ const LandingPage = () => {
                                 {/* Right Side: Quotes & Links */}
                                 <div className="flex flex-col items-center lg:items-start max-w-lg">
                                     <div className="flex items-start gap-4 mb-8">
-                                        <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 italic shrink-0 text-2xl font-serif">"</div>
-                                        <p className="text-xl italic text-slate-500 leading-relaxed font-medium text-center lg:text-left">
+                                        <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-500 italic shrink-0 text-2xl font-serif">"</div>
+                                        <p className="text-xl italic text-slate-600 leading-relaxed font-medium text-center lg:text-left">
                                             Membangun masa depan agrikultur modern melalui solusi perangkat lunak yang inovatif.
                                         </p>
                                     </div>
                                     <div className="flex flex-wrap gap-4 justify-center lg:justify-start w-full">
-                                        <a href="https://www.linkedin.com/in/majid-solihin-hadi-100759275/" target="_blank" rel="noopener noreferrer" className="px-8 py-3 bg-slate-900 text-white rounded-2xl font-bold hover:bg-primary-600 transition shadow-lg shadow-slate-900/10 flex items-center justify-center gap-2">
+                                        <a href="https://www.linkedin.com/in/majid-solihin-hadi-100759275/" target="_blank" rel="noopener noreferrer" aria-label="Profil LinkedIn Pengembang Majid" className="px-8 py-3 bg-slate-900 text-white rounded-2xl font-bold hover:bg-primary-700 transition shadow-lg shadow-slate-900/10 flex items-center justify-center gap-2">
                                             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
                                             LinkedIn
                                         </a>
-                                        <a href="https://github.com/MajidHadi-2045" target="_blank" rel="noopener noreferrer" className="px-8 py-3 border border-slate-100 text-slate-600 rounded-2xl font-bold hover:bg-slate-50 transition shadow-sm flex items-center justify-center gap-2">
+                                        <a href="https://github.com/MajidHadi-2045" target="_blank" rel="noopener noreferrer" aria-label="Profil GitHub Pengembang Majid" className="px-8 py-3 border border-slate-200 text-slate-700 rounded-2xl font-bold hover:bg-slate-50 transition shadow-sm flex items-center justify-center gap-2">
                                             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.042-1.416-4.042-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
                                             GitHub
                                         </a>
@@ -399,13 +411,13 @@ const LandingPage = () => {
                 <footer className="bg-white rounded-[2.5rem] p-10 md:p-16 shadow-sm border border-slate-100">
                     <div className="flex flex-col md:flex-row justify-between items-center gap-10">
                         <div className="flex items-center gap-4">
-                            <div className="p-2 bg-slate-50 rounded-xl border border-slate-100 shadow-sm"><img src="/logoxl.svg" alt="Logo" width="24" height="24" className="h-6 w-6"/></div>
+                            <div className="p-2 bg-slate-50 rounded-xl border border-slate-100 shadow-sm"><img src="/logoxl.svg" alt="Logo Smart Cattle Barn" width="24" height="24" className="h-6 w-6"/></div>
                             <span className="text-lg font-bold">Smart Cattle Barn</span>
                         </div>
-                        <p className="text-slate-400 text-sm font-medium">© 2026 PT AgriTekno Nusantara. All rights reserved.</p>
-                        <div className="flex gap-8 text-sm font-bold text-slate-400">
-                            <a href="#" className="hover:text-primary-600 transition">Privacy</a>
-                            <a href="#" className="hover:text-primary-600 transition">Terms</a>
+                        <p className="text-slate-600 text-sm font-medium">© 2026 PT AgriTekno Nusantara. All rights reserved.</p>
+                        <div className="flex gap-8 text-sm font-bold text-slate-600">
+                            <a href="#" className="hover:text-primary-700 transition">Privacy</a>
+                            <a href="#" className="hover:text-primary-700 transition">Terms</a>
                         </div>
                     </div>
                 </footer>
