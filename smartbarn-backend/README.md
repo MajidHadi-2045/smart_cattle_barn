@@ -84,6 +84,8 @@ $ npm run build
 $ sudo cp -r dist/* /var/www/smartcattlebarn.site/html/
 # Restrat ngnix
 $ sudo systemctl restart nginx
+# 1 line
+$ git pull && rm -rf dist && npm run build && sudo cp -r dist/* /var/www/smartcattlebarn.site/html/ && sudo systemctl restart nginx
 # 1-Line Super Fast Auto Deploy (Jalankan ini di VPS untuk Update Otomatis 10 Detik)
 $ git fetch origin && git reset --hard origin/main && npm run build && sudo cp -r dist/* /var/www/smartcattlebarn.site/html/ && sudo systemctl restart nginx
 

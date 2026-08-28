@@ -20,15 +20,18 @@ const HistoryPage = React.lazy(() => import('./pages/Dashboard/HistoryPage'));
 // --- SKELETON PLACEHOLDER UNTUK MENCEGAH LAYOUT SHIFT (CLS = 0.00) ---
 const PageSkeleton = () => (
   <div className="relative min-h-screen md:flex bg-slate-50 dark:bg-slate-950 font-sans">
-    {/* Sidebar Skeleton (Presisi w-64 di desktop untuk mencegah 256px layout shift) */}
-    <div className="hidden md:flex flex-col w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 p-4 shrink-0 space-y-4">
+    {/* Child 0: Overlay Backdrop Placeholder */}
+    <div className="fixed inset-0 pointer-events-none md:hidden opacity-0"></div>
+
+    {/* Child 1: Sidebar Skeleton (w-64) */}
+    <aside className="hidden md:flex flex-col w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 p-4 shrink-0 space-y-4">
       <div className="h-8 w-40 bg-slate-200 dark:bg-slate-800 rounded-lg mb-6"></div>
       {[1, 2, 3, 4, 5, 6].map(i => (
         <div key={i} className="h-10 w-full bg-slate-200 dark:bg-slate-800 rounded-xl"></div>
       ))}
-    </div>
+    </aside>
 
-    {/* Main Content Skeleton */}
+    {/* Child 2: Main Content Skeleton */}
     <main className="flex-1 min-w-0 flex flex-col h-screen overflow-hidden">
       {/* Header Skeleton h-20 */}
       <div className="flex items-center justify-between h-20 px-4 md:px-8 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shrink-0">

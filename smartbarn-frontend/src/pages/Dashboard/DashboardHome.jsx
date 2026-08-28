@@ -715,55 +715,6 @@ const DashboardHome = ({ isPublicRoute = false }) => {
     }; 
 
     // --- 3. RENDER UI ---
-    if (isLoading) {
-        return (
-            <div className="space-y-6 pb-20">
-                {/* Header Skeleton */}
-                <div className="h-14 flex flex-row justify-between items-center gap-4">
-                    <div>
-                        <div className="h-6 animate-shimmer rounded w-36 sm:w-48 mb-1"></div>
-                        <div className="h-3.5 animate-shimmer rounded w-48 sm:w-80 hidden sm:block"></div>
-                    </div>
-                    <div className="h-9 w-32 sm:w-44 animate-shimmer rounded-lg"></div>
-                </div>
-
-                {/* Cards Skeleton */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    {[1, 2, 3].map(i => (
-                        <div key={i} className="h-[106px] bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-100 dark:border-slate-700 flex justify-between items-start">
-                            <div>
-                                <div className="h-4 animate-shimmer rounded w-24 mb-3"></div>
-                                <div className="h-8 animate-shimmer rounded w-16"></div>
-                            </div>
-                            <div className="p-3 bg-slate-100 dark:bg-slate-700/50 rounded-xl w-12 h-12 animate-shimmer"></div>
-                        </div>
-                    ))}
-                </div>
-
-                {/* Sensor Cards Skeleton */}
-                <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 md:p-6 mt-6 border border-slate-100 dark:border-slate-700">
-                    <div className="flex justify-between items-center mb-6">
-                        <div className="h-6 animate-shimmer rounded w-48"></div>
-                        <div className="h-10 animate-shimmer rounded w-24"></div>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-                        {[1, 2, 3, 4].map(i => (
-                            <div key={i} className="h-[110px] bg-slate-50 dark:bg-slate-900/30 p-4 rounded-xl border border-slate-100 dark:border-slate-700">
-                                <div className="h-5 animate-shimmer rounded w-32 mb-4"></div>
-                                <div className="h-10 animate-shimmer rounded w-24"></div>
-                            </div>
-                        ))}
-                    </div>
-                    {/* Chart Skeleton */}
-                    <div className="h-80 w-full bg-slate-50 dark:bg-slate-900/30 rounded-xl flex flex-col items-center justify-center border border-slate-100 dark:border-slate-800">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500 mb-2"></div>
-                        <p className="text-slate-400 text-sm font-medium">Menyiapkan Grafik Sensor...</p>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
     // Ambil data spesifik untuk zona yang sedang dipilih
     const rawHistory = Array.isArray(historyDataBySection) ? historyDataBySection : [];
     const currentHistory = rawHistory.map((envItem, index) => {
@@ -787,7 +738,7 @@ const DashboardHome = ({ isPublicRoute = false }) => {
     const isDataLive = isWsConnected && lastSensorUpdate > 0 && (currentTime - lastSensorUpdate < 120000);
 
     return (
-        <div className="space-y-6 pb-20 animate-fade-in">
+        <div className="space-y-6 pb-20">
             {/* Header Dashboard / Beranda */}
             <div className="h-14 flex flex-row justify-between items-center gap-4">
                 <div>
@@ -796,16 +747,19 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                 </div>
                 
                 <div className="flex items-center gap-3 flex-wrap">
-                    {/* Indikator Status Sistem */}
-                    <div className="flex items-center gap-2 bg-white dark:bg-slate-800 px-4 py-2 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
-                        <span className="relative flex h-3 w-3">
-                          <span className={`${isDataLive ? 'animate-ping' : ''} absolute inline-flex h-full w-full rounded-full opacity-75 ${!isDataLive ? 'bg-red-400' : 'bg-green-400'}`}></span>
-                          <span className={`relative inline-flex rounded-full h-3 w-3 ${!isDataLive ? 'bg-red-500' : 'bg-green-500'}`}></span>
-                        </span>
-                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                            {!isWsConnected ? 'WebSocket Terputus' : (!isDataLive ? 'Sensor Tidak Aktif' : 'Sistem Aktif (Live)')}
-                        </span>
-                    </div>
+                    {isLoading ? (
+                        <div className="h-9 w-32 sm:w-44 animate-shimmer rounded-lg"></div>
+                    ) : (
+                        <div className="flex items-center gap-2 bg-white dark:bg-slate-800 px-4 py-2 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
+                            <span className="relative flex h-3 w-3">
+                              <span className={`${isDataLive ? 'animate-ping' : ''} absolute inline-flex h-full w-full rounded-full opacity-75 ${!isDataLive ? 'bg-red-400' : 'bg-green-400'}`}></span>
+                              <span className={`relative inline-flex rounded-full h-3 w-3 ${!isDataLive ? 'bg-red-500' : 'bg-green-500'}`}></span>
+                            </span>
+                            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                {!isWsConnected ? 'WebSocket Terputus' : (!isDataLive ? 'Sensor Tidak Aktif' : 'Sistem Aktif (Live)')}
+                            </span>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -1028,7 +982,11 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                 <div className="h-[106px] bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex justify-between items-start">
                     <div>
                         <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Total Populasi</p>
-                        <p className="text-3xl font-bold text-slate-800 dark:text-slate-100 mt-2">{livestockStats.total} <span className="text-sm font-normal text-slate-500">Ekor</span></p>
+                        {isLoading ? (
+                            <div className="h-8 animate-shimmer rounded w-16 mt-2"></div>
+                        ) : (
+                            <p className="text-3xl font-bold text-slate-800 dark:text-slate-100 mt-2">{livestockStats.total} <span className="text-sm font-normal text-slate-500">Ekor</span></p>
+                        )}
                     </div>
                     <div className="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-xl">
                         <Beef size={24} className="text-blue-500" />
@@ -1037,7 +995,11 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                 <div className="h-[106px] bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex justify-between items-start">
                     <div>
                         <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Kondisi Sehat</p>
-                        <p className="text-3xl font-bold text-green-600 mt-2">{livestockStats.healthy}</p>
+                        {isLoading ? (
+                            <div className="h-8 animate-shimmer rounded w-16 mt-2"></div>
+                        ) : (
+                            <p className="text-3xl font-bold text-green-600 mt-2">{livestockStats.healthy}</p>
+                        )}
                     </div>
                     <div className="p-3 bg-green-50 dark:bg-green-900/30 rounded-xl">
                         <HeartPulse size={24} className="text-green-500" />
@@ -1046,7 +1008,11 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                 <div className="h-[106px] bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex justify-between items-start">
                     <div>
                         <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Kondisi Sakit</p>
-                        <p className="text-3xl font-bold text-red-500 mt-2">{livestockStats.sick}</p>
+                        {isLoading ? (
+                            <div className="h-8 animate-shimmer rounded w-16 mt-2"></div>
+                        ) : (
+                            <p className="text-3xl font-bold text-red-500 mt-2">{livestockStats.sick}</p>
+                        )}
                     </div>
                     <div className="p-3 bg-red-50 dark:bg-red-900/30 rounded-xl">
                         <Activity size={24} className="text-red-500" />
