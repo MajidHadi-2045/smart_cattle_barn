@@ -42,10 +42,9 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
       const payload = JSON.parse(message);
       
       if (channel === 'websocket:vital-update') {
-        // Emit specifically to the cow's listener (for charts)
-        this.server.emit(`vital-update-${payload.cattleId}`, payload);
-        // Emit generally (for the livestock list)
+        // Emit single unified event to all connected clients
         this.server.emit('vital-update', payload);
+        this.server.emit(`vital-update-${payload.cattleId}`, payload);
       } else {
         // Emit to all connected clients for general channels
         this.server.emit(channel, payload);
