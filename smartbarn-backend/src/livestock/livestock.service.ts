@@ -123,8 +123,13 @@ export class LivestockService {
    */
   private async clearLivestockCache(sectionId?: number) {
     try {
-      await this.redis.del('dashboard:farm-summary');
-      await this.redis.del('livestock:list:all');
+      await this.redis.del(
+        'dashboard:farm-summary',
+        'dashboard:waste:daily',
+        'dashboard:waste:weekly',
+        'dashboard:waste:monthly',
+        'livestock:list:all'
+      );
       if (sectionId) {
         await this.redis.del(`livestock:stats:section:${sectionId}`);
         await this.redis.del(`livestock:list:section:${sectionId}`);
@@ -971,25 +976,33 @@ export class LivestockService {
     return { success: true, count: results.length };
   }
 
+  private cachedChecklistConfig: any = null;
+
   private loadChecklistConfig() {
+    if (this.cachedChecklistConfig) {
+      return this.cachedChecklistConfig;
+    }
     try {
       const configPath = path.join(process.cwd(), 'checklist-config.json');
       if (fs.existsSync(configPath)) {
         const data = fs.readFileSync(configPath, 'utf8');
         const parsed = JSON.parse(data);
         if (parsed.feedGoal !== undefined) {
-          return {
+          this.cachedChecklistConfig = {
             feed: { goal: parsed.feedGoal, period: 'daily' },
             waste: { goal: parsed.wasteGoal, period: 'daily' },
             weight: { goal: parsed.weightGoal, period: 'monthly' }
           };
+          return this.cachedChecklistConfig;
         }
-        return parsed;
+        this.cachedChecklistConfig = parsed;
+        return this.cachedChecklistConfig;
       }
     } catch (err) {
       // Ignored
     }
-    return { feed: { goal: 2, period: 'daily' }, waste: { goal: 1, period: 'daily' }, weight: { goal: 1, period: 'monthly' } };
+    this.cachedChecklistConfig = { feed: { goal: 2, period: 'daily' }, waste: { goal: 1, period: 'daily' }, weight: { goal: 1, period: 'monthly' } };
+    return this.cachedChecklistConfig;
   }
 
   // 3. Dapatkan Kebutuhan Pakan (BK & As-fed)

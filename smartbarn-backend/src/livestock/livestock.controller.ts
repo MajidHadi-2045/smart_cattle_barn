@@ -34,22 +34,23 @@ export class LivestockController {
   // =========================================================
   @Post('vital')
   async receiveVitalData(@Body() data: any) {
-    // TAHAP 1 (IN-MEMORY): Tulis data sensor paling baru ke Redis cache
-    try {
-      await this.redis.set(`vital:${data.cattleId}`, JSON.stringify(data));
-    } catch (err) {
-      // Abaikan kegagalan set jika Redis mati
-    }
-    
-    // TAHAP 2 (WEB-SOCKET): Kirim sinyal broadcast seketika ke aplikasi klien (UI/Dashboard)
+    // TAHAP 1 (WEB-SOCKET): Kirim sinyal broadcast seketika ke aplikasi klien (UI/Dashboard)
     this.gateway.server.emit(`vital-update-${data.cattleId}`, data);
 
-    // TAHAP 3 (BACKGROUND-JOB): Antrekan pemrosesan insert database agar tidak memblokir respon HTTP
-    try {
-      await this.vitalQueue.add('save-vital', data, { removeOnComplete: true });
-    } catch (err) {
-      console.warn('Queue addition failed:', err.message);
-    }
+    // TAHAP 2 (PARALEL NON-BLOCKING): Tulis ke Redis Cache & Antrekan ke BullMQ secara bersamaan
+    await Promise.all([
+      this.redis
+        .set(`vital:${data.cattleId}`, JSON.stringify(data))
+        .catch(() => {}),
+      this.vitalQueue
+        .add('save-vital', data, {
+          removeOnComplete: true,
+          removeOnFail: 100,
+        })
+        .catch((err) => {
+          console.warn('Queue addition failed:', err.message);
+        }),
+    ]);
 
     return { status: 'success', message: 'Data received' };
   }

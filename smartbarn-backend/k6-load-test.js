@@ -48,77 +48,102 @@ export default function (data) {
     ...(data.token ? { Authorization: `Bearer ${data.token}` } : {}),
   };
 
-  // Mengacak beban: 70% simulasi data sensor IoT, 30% aktivitas Web Dashboard
-  const isSensor = Math.random() < 0.7;
+  // Mengacak beban: 50% Sensor Sapi, 20% Sensor Lingkungan & Angin, 30% Web Dashboard
+  const rand = Math.random();
 
-  if (isSensor) {
-    // ========================================================
-    // SKENARIO 1: Simulasi Kalung Sensor Sapi (70% Trafik)
-    // endpoint Ingestion Telemetri (Redis & BullMQ Queue)
-    // ========================================================
+  if (rand < 0.50) {
+    // =========================================================================
+    // SKENARIO 1: Simulasi Kalung Sensor Vital Sapi (50% Trafik)
+    // Endpoint Ingestion Telemetri (Redis & BullMQ Queue)
+    // =========================================================================
     const cattleIds = ['C-302', 'C-304', 'C-500', 'C-576', 'C-904'];
     const randomCattle = cattleIds[Math.floor(Math.random() * cattleIds.length)];
 
     const payload = JSON.stringify({
       cattleId: randomCattle,
       heartRate: Math.floor(60 + Math.random() * 30),
-      bodyTemperature: parseFloat((37.5 + Math.random() * 2.5).toFixed(1)),
+      bodyTemperature: parseFloat((37.5 + Math.random() * 2.0).toFixed(1)),
     });
 
     const res = http.post(`${BASE_URL}/livestock/vital`, payload, { headers: { 'Content-Type': 'application/json' } });
     
     check(res, {
       'Sensor Vital Status 200/201': (r) => r.status === 200 || r.status === 201,
-      'Response memuat status success': (r) => r.body && r.body.includes('success'),
+      'Sensor Vital Success Response': (r) => r.body && r.body.includes('success'),
     });
 
+  } else if (rand < 0.70) {
+    // =========================================================================
+    // SKENARIO 2: Simulasi Sensor Lingkungan & Windspeed Kandang (20% Trafik)
+    // Endpoint Ingestion Telemetri Lingkungan (In-Memory Redis + Batch Flush)
+    // =========================================================================
+    const isWind = Math.random() < 0.5;
+
+    if (!isWind) {
+      // A. Sensor Lingkungan (Suhu, RH, Amonia, THI)
+      const envPayload = JSON.stringify({
+        zoneId: 1,
+        type: 'zone_sensor',
+        temperature: parseFloat((27.5 + Math.random() * 5.0).toFixed(1)),
+        humidity: parseFloat((60.0 + Math.random() * 20.0).toFixed(1)),
+        ammonia: parseFloat((8.0 + Math.random() * 8.0).toFixed(1)),
+        thi: parseFloat((75.0 + Math.random() * 6.0).toFixed(1)),
+        timestamp: new Date().toISOString(),
+      });
+      const resEnv = http.post(`${BASE_URL}/environment/sensor`, envPayload, { headers: { 'Content-Type': 'application/json' } });
+      check(resEnv, {
+        'Sensor Lingkungan OK (200/201)': (r) => r.status === 200 || r.status === 201,
+      });
+    } else {
+      // B. Sensor Windspeed (Kecepatan Angin)
+      const windPayload = JSON.stringify({
+        zoneId: 1,
+        type: 'wind_sensor',
+        windspeed: parseFloat((1.2 + Math.random() * 3.5).toFixed(2)),
+        timestamp: new Date().toISOString(),
+      });
+      const resWind = http.post(`${BASE_URL}/environment/sensor`, windPayload, { headers: { 'Content-Type': 'application/json' } });
+      check(resWind, {
+        'Sensor Windspeed OK (200/201)': (r) => r.status === 200 || r.status === 201,
+      });
+    }
+
   } else {
-    // ========================================================
-    // SKENARIO 2: Simulasi Pengguna Web Dashboard (30% Trafik)
-    // endpoint pemantauan utama
-    // ========================================================
     // =========================================================================
-    // ENDPOINT 1 (WAJIB): Memanggil Kartu Ringkasan Sapi (Total, Sehat, Sakit, Hamil)
+    // SKENARIO 3: Simulasi Pengguna Web Dashboard (30% Trafik)
     // =========================================================================
+    // 1. Ringkasan Total Sapi
     const resSummary = http.get(`${BASE_URL}/dashboard/summary`, { headers: authHeaders });
     check(resSummary, {
       'Web Dashboard Summary OK (200)': (r) => r.status === 200,
     });
 
-    // =========================================================================
-    // ENDPOINT 2 (WAJIB): Memanggil Grafik Statistik Populasi per Seksi Kandang
-    // =========================================================================
+    // 2. Statistik Populasi per Seksi Kandang
     const resStats = http.get(`${BASE_URL}/livestock/stats/1`, { headers: authHeaders });
     check(resStats, {
       'Web Livestock Stats OK (200)': (r) => r.status === 200,
     });
 
-    // =========================================================================
-    // ENDPOINT 3 (WAJIB): Memanggil Baris Tabel Daftar Sapi di Section Kandang
-    // =========================================================================
+    // 3. Daftar Sapi di Section Kandang
     const resList = http.get(`${BASE_URL}/livestock/section/1`, { headers: authHeaders });
     check(resList, {
       'Web Daftar Sapi Section OK (200)': (r) => r.status === 200,
     });
 
-    // =========================================================================
-    // ENDPOINT 4 (OPSIONAL): Sensor Lingkungan Live (Suhu, RH, THI Kandang)
-    // Keterangan: Mengambil data suhu & kelembaban live dari RAM Redis (< 1ms).
-    // Hapus tanda // di bawah ini jika ingin menguji pemuatan sensor live di k6:
-    // =========================================================================
+    // 4. Sensor Lingkungan Live (Suhu, RH, THI Kandang)
     const resEnvLive = http.get(`${BASE_URL}/environment/live/1`, { headers: authHeaders });
     check(resEnvLive, { 'Web Env Live OK (200)': (r) => r.status === 200 || r.status === 404 });
 
-    // =========================================================================
-    // ENDPOINT 5 (OPSIONAL): Manajemen Limbah Harian (Feses & Urine Kandang)
-    // Keterangan: Mengambil akumulasi limbah harian dari PostgreSQL.
-    // Hapus tanda // di bawah ini jika ingin menguji pemuatan limbah harian di k6:
-    // =========================================================================
+    // 5. Sensor Windspeed Live (Kecepatan Angin)
+    const resWindLive = http.get(`${BASE_URL}/environment/live-wind/1`, { headers: authHeaders });
+    check(resWindLive, { 'Web Wind Live OK (200)': (r) => r.status === 200 || r.status === 404 });
+
+    // 6. Manajemen Limbah Harian (Feses & Urine Kandang)
     const resWaste = http.get(`${BASE_URL}/dashboard/waste?filter=daily`, { headers: authHeaders });
     check(resWaste, { 'Web Waste Summary OK (200)': (r) => r.status === 200 });
   }
 
-  // Jeda 1 detik meniru jeda antar interval sensor & klik user
+  // Jeda 1 detik meniru interval sensor & interaksi user
   sleep(1);
 }
 

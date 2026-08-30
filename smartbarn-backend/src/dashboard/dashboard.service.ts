@@ -20,37 +20,46 @@ export class DashboardService {
     });
   }
 
+  private cachedConfig: any = null;
+
   private getConfigPath() {
     return path.join(process.cwd(), 'checklist-config.json');
   }
 
   private loadConfig() {
+    if (this.cachedConfig) {
+      return this.cachedConfig;
+    }
     try {
       const configPath = this.getConfigPath();
       if (fs.existsSync(configPath)) {
         const data = fs.readFileSync(configPath, 'utf8');
         const parsed = JSON.parse(data);
         if (parsed.feedGoal !== undefined) {
-          return {
+          this.cachedConfig = {
             feed: { goal: parsed.feedGoal, period: 'daily' },
             waste: { goal: parsed.wasteGoal, period: 'daily' },
             weight: { goal: parsed.weightGoal, period: 'monthly' }
           };
+          return this.cachedConfig;
         }
-        return parsed;
+        this.cachedConfig = parsed;
+        return this.cachedConfig;
       }
     } catch (err) {
       console.warn('Error reading checklist config, using defaults:', err);
     }
-    return { 
+    this.cachedConfig = { 
       feed: { goal: 2, period: 'daily' }, 
       waste: { goal: 1, period: 'daily' }, 
       weight: { goal: 1, period: 'monthly' } 
     };
+    return this.cachedConfig;
   }
 
   async saveConfig(config: any) {
     try {
+      this.cachedConfig = config;
       const configPath = this.getConfigPath();
       fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf8');
       return { success: true, config };
@@ -98,9 +107,9 @@ export class DashboardService {
       console.warn('Database Connection Down in DashboardService. Returning default stats...');
     }
 
-    // 3. SIMPAN KE CACHE DENGAN HATI-HATI
+    // 3. SIMPAN KE CACHE (TTL 300 detik / 5 menit agar kebal Cache Stampede)
     try {
-      await this.redis.set(cacheKey, JSON.stringify(result), 'EX', 10);
+      await this.redis.set(cacheKey, JSON.stringify(result), 'EX', 300);
     } catch (err) {
       // Abaikan kegagalan set cache jika Redis sedang mati
     }
@@ -108,8 +117,20 @@ export class DashboardService {
     return result;
   }
 
-  // KELOMPOK 2: MANAJEMEN LIMBAH
+  // KELOMPOK 2: MANAJEMEN LIMBAH (Cache-Aside Diaktifkan!)
   async getWasteSummary(filter: 'daily' | 'weekly' | 'monthly') {
+    const cacheKey = `dashboard:waste:${filter}`;
+
+    // 1. Cek Cache Redis (Super Cepat < 1ms)
+    try {
+      const cached = await this.redis.get(cacheKey);
+      if (cached) {
+        return JSON.parse(cached);
+      }
+    } catch (err) {
+      console.warn('Redis Connection Down (getWasteSummary).');
+    }
+
     const now = new Date();
     let startDate = new Date();
 
@@ -149,6 +170,11 @@ export class DashboardService {
     } catch (err) {
       console.warn('Database Connection Down in getWasteSummary. Returning default values...');
     }
+
+    // 2. Simpan ke Cache selama 300 detik (5 menit)
+    try {
+      await this.redis.set(cacheKey, JSON.stringify(result), 'EX', 300);
+    } catch (err) {}
 
     return result;
   }
