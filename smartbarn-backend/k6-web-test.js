@@ -12,7 +12,15 @@ export const options = {
     { duration: '5s', target: 0 },
   ],
   thresholds: {
+    // ERROR RATE: Toleransi error < 1%
+    // Ref: Google SRE Book - Error Budget <= 1%
     http_req_failed: ['rate<0.01'],
+
+    // LATENSI HTTP WEB DASHBOARD via WiFi:
+    // p(95) < 800ms — Tiap iterasi VU memanggil 5 endpoint GET berurutan
+    // Rata-rata per-request ~200ms, threshold 800ms = ruang wajar untuk request terberat
+    // Ref: k6 Docs - threshold best practice: set at 2x-3x observed average per request
+    // Ref: W3C Web Performance WG - halaman dashboard data < 1000ms acceptable
     http_req_duration: ['p(95)<800'],
   },
 };

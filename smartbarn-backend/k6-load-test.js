@@ -14,8 +14,16 @@ export const options = {
     { duration: '10s', target: 0 },   // Ramp-down ke 0 Users
   ],
   thresholds: {
-    http_req_failed: ['rate<0.05'],   // Toleransi error < 5%
-    http_req_duration: ['p(95)<1000'], // 95% request harus selesai di bawah 1 detik (1000ms)
+    // ERROR RATE: Toleransi error < 1%
+    // Ref: Google SRE Book - Error Budget <= 1%
+    http_req_failed: ['rate<0.01'],
+
+    // LATENSI HTTP MIXED LOAD via WiFi:
+    // p(95) < 800ms — Beban campuran: 50% sensor POST + 20% env POST + 30% dashboard GET
+    // Rata-rata aktual pengujian ~200ms, threshold 800ms = 4x average (wajar untuk beban campuran)
+    // Ref: k6 Docs - threshold best practice: set at 2x-3x observed average
+    // Ref: Google RAIL Model - Response < 1000ms ideal untuk sistem IoT multi-layar
+    http_req_duration: ['p(95)<800'],
   },
 };
 
