@@ -1,0 +1,351 @@
+--- [Paragraph 32] ---
+Pemantauan kondisi lingkungan kandang dan vitalitas sapi secara real-time sangat krusial dalam peternakan modern. Namun, derasnya aliran data sensor Internet of Things (IoT) sering memicu beban komputasi tinggi dan kemacetan penulisan (write bottleneck) pada basis data. Penelitian ini bertujuan merancang sistem pemantauan smart cattle barn berbasis dual-platform aplikasi web (React.js) dan seluler (React Native) yang terhubung ke backend NestJS menggunakan arsitektur hibrida. Sistem memisahkan penanganan data berdasarkan kecepatannya (data velocity). Pada jalur cepat (hot path), data vitalitas sapi (detak jantung per 10 detik, suhu tubuh per 1 menit) dan data lingkungan kandang (suhu, kelembapan, amonia, kecepatan angin per 1 menit) disiarkan langsung ke frontend via WebSocket dan in-memory caching Redis Pub/Sub. Pada jalur lambat (cold path), persistensi data vitalitas ke PostgreSQL disalurkan melalui antrean asinkron BullMQ (bulk insert), sedangkan data lingkungan kandang disimpan langsung menggunakan Prisma ORM. Selain itu, kalkulasi pertumbuhan dan kenyamanan ternak (Temperature Humidity Index, Dry Matter Intake, Average Daily Gain, dan Feed Conversion Ratio) diisolasi di latar belakang (background processing) secara asinkron. Pengamanan sistem menggunakan Role-Based Access Control (RBAC) dan JSON Web Token (JWT). Pengujian Black-Box pada 29 skenario mencatatkan keberhasilan 100%. Pengujian beban dengan Grafana k6 hingga 100 Virtual Users (VU) menunjukkan tingkat keberhasilan transaksi 100% (error 0,00%). Di bawah beban puncak tersebut, konsumsi CPU backend hanya 1,10% dengan kenaikan RAM sebesar 35,27 MB. Meskipun demikian, terdeteksi gejala latensi ekor (tail latency) berupa penundaan (concurrency stall) maksimum 5,75 detik pada 5% transaksi teratas akibat persaingan connection pool basis data saat proses penulisan massal (batch flush) oleh BullMQ. Secara keseluruhan, arsitektur hibrida ini terbukti andal dalam menjaga stabilitas sistem pemantauan peternakan cerdas di bawah beban data konkuren yang masif.
+
+--- [Paragraph 33] ---
+Kata Kunci: Arsitektur Hibrida, Dual-Platform, Event-Driven, Grafana k6, In-Memory Caching, Smart Cattle Barn.
+
+--- [Paragraph 40] ---
+Real-time monitoring of barn environmental conditions and cattle vitality is crucial in modern livestock farming. However, the high flow of IoT sensor data often triggers a high computational load and database write bottlenecks. This study aims to design a dual-platform smart cattle barn monitoring system using web (React.js) and mobile (React Native) applications integrated with a NestJS backend utilizing a hybrid architecture. The system segregates data handling based on data velocity. In the hot path, cattle vitality data (heart rate every 10 seconds, body temperature every 1 minute) and barn environmental data (temperature, humidity, ammonia, wind speed every 1 minute) are immediately broadcasted to the frontend using WebSockets and Redis Pub/Sub-based in-memory caching. Meanwhile, in the cold path for PostgreSQL storage, cattle vitality data is routed through the BullMQ asynchronous queue first for bulk inserts, while barn environmental data is written directly using Prisma ORM. Additionally, intensive growth and comfort calculations including Temperature Humidity Index (THI), Dry Matter Intake (DMI), Average Daily Gain (ADG), and Feed Conversion Ratio (FCR) are isolated as asynchronous background tasks. System access is secured using Role-Based Access Control (RBAC) and JSON Web Tokens (JWT). Functional testing using Black-Box Testing across 29 scenarios demonstrated a 100% success rate. Load testing using Grafana k6 under an extreme mixed workload of up to 100 Virtual Users (VU) recorded a 100% transaction success rate (0.00% error rate). Under peak load, the server operated efficiently with an average backend CPU consumption of 1.10% and a RAM allocation increase of 35.27 MB. Nonetheless, a maximum concurrency stall of 5.75 seconds occurred in the top 5% of transactions due to connection pool contention during BullMQ's batch flush execution. Overall, this hybrid architecture is proven reliable in maintaining server stability for smart livestock monitoring under massive concurrent data loads.
+
+--- [Paragraph 41] ---
+Keywords: Dual-Platform, Event-Driven, Grafana k6, Hybrid Architecture, In-Memory Caching, Smart Cattle Barn.
+
+--- [Paragraph 83] ---
+2.4.10 Grafana k6 dan Metode Isolasi Gangguan Jaringan28
+
+--- [Paragraph 84] ---
+2.4.11 Teori Antrean (Queueing Theory) dan Latensi Ekor (Tail Latency)29
+
+--- [Paragraph 119] ---
+4.2.9.3 Modul Manajemen Data Ternak69
+
+--- [Paragraph 131] ---
+4.2.4 Pengujian Beban dan Konkurensi Pengguna95
+
+--- [Paragraph 136] ---
+4.2.4.5  Pembahasan Hambatan (Stall) pada Pengujian Beban menggunakan K6110
+
+--- [Paragraph 153] ---
+Tabel 4.3 Agregasi Hasil Pengujian Beban dan Konkurensi Sistem 103
+
+--- [Paragraph 205] ---
+Gambar 4.20 Hasil Pengujian Beban Transmisi IoT Skala Ringan (10 VU)95
+
+--- [Paragraph 206] ---
+Gambar 4.21 Hasil Pengujian Beban Transmisi IoT Skala Menengah (50 VU)96
+
+--- [Paragraph 207] ---
+Gambar 4.22 Hasil Pengujian Beban Transmisi IoT Skala Puncak (100 VU)97
+
+--- [Paragraph 208] ---
+Gambar 4.23 Hasil Pengujian Beban Akses Pengguna Web Skala Ringan 
+
+--- [Paragraph 210] ---
+Gambar 4.24 Hasil Pengujian Beban Akses Pengguna Web Skala Menengah 
+
+--- [Paragraph 212] ---
+Gambar 4.25 Hasil Pengujian Beban Akses Pengguna Web Skala Puncak 
+
+--- [Paragraph 214] ---
+Gambar 4.26 Hasil Pengujian Beban Campuran Skala Ringan (10 VU)101
+
+--- [Paragraph 215] ---
+Gambar 4.27 Hasil Pengujian Beban Campuran Skala Menengah (50 VU)101
+
+--- [Paragraph 217] ---
+Gambar 4.29 Grafik Distribusi Latensi Respons Server pada Skenario A 
+
+--- [Paragraph 219] ---
+Gambar 4.30 Grafik Distribusi Latensi Respons Server pada Skenario B (Web
+
+--- [Paragraph 221] ---
+Gambar 4.31 Grafik Distribusi Latensi Respons Server pada Skenario C 
+
+--- [Paragraph 229] ---
+Guna mengotomatisasi pengumpulan data sensor lingkungan dan asupan pakan secara real-time, implementasi teknologi Internet of Things (IoT) pada konsep smart cattle barn kini mulai diadopsi secara luas. Melalui integrasi sensor nirkabel, sistem mampu menghasilkan aliran data telemetri peristiwa peternakan yang masif (high-throughput event data) secara terus-menerus [4]. Kendati demikian, peralihan menuju sistem otomatisasi ini menghadirkan tantangan baru pada kapasitas infrastruktur backend server.
+
+--- [Paragraph 240] ---
+Menguji efektivitas mitigasi beban kerja server menggunakan kombinasi arsitektur event-driven dan in-memory caching dalam mempertahankan tingkat latensi yang rendah di bawah tekanan simulasi aliran data yang masif.
+
+--- [Paragraph 265] ---
+Bab ini menyajikan pembuktian implementasi baris kode program backend maupun frontend, visualisasi hasil eksekusi aplikasi dual-platform, serta pemaparan data numerik hasil pengujian sistem melalui pengujian fungsionalitas Blackbox, skor metrik aksesibilitas web, dan pengujian beban kinerja server.
+
+--- [Paragraph 289] ---
+Menyajikan tinjauan komprehensif arsitektur referensi multi-layer (perception, network, application) berbasis IoT dan Big Data, serta integrasi edge/fog computing untuk memitigasi latensi di sektor pertanian cerdas.
+
+--- [Paragraph 360] ---
+Pola penyimpanan sementara ini mengisolasi proses penyerapan data telemetri dari proses kalkulasi intensif di tingkat aplikasi [20] [21] [18]. Pendekatan ini menjamin prinsip non-blocking I/O pada sistem backend, sehingga meminimalkan latensi ujung-ke-ujung (end-to-end latency) dan menghindarkan server utama dari risiko kemacetan (system hang/freeze) ketika melakukan perhitungan indeks stres panas (Temperature Humidity Index - THI) secara real-time serta penulisan data historis jangka panjang.
+
+--- [Paragraph 362] ---
+Dalam arsitektur sistem ini, pemrosesan in-memory caching diterapkan sebagai teknik optimasi performa server untuk mengatasi kendala hambatan kinerja (bottleneck) pada disk I/O yang kerap terjadi saat basis data relasional menghadapi akses berskala besar dan konkurensi tinggi. Melalui pendekatan ini, data aktif yang sering diakses disimpan sementara ke dalam memori akses acak atau RAM menggunakan sistem database NoSQL berbasis memori yang memiliki performa tinggi [22]. Teknologi yang diimplementasikan dalam penelitian ini adalah Redis [23], yang dikonfigurasi untuk mempercepat pemrosesan data dan melayani permintaan data dinamis dengan target latensi sangat rendah pada skala mikrodetik (microsecond-scale) [23]. Penerapan Redis sebagai lapisan penyimpanan memori terbukti sangat andal dalam mengelola berbagai aliran data operasional pada ekosistem Internet of Things (IoT) secara efisien [23]. Untuk mengoptimalkan pembacaan data status kandang terkini, sistem backend mengadopsi mekanisme penanganan data panas (hot data scenario) [22]. Ketika aplikasi klien melakukan permintaan data status kandang, sistem backend akan memeriksa ketersediaan data pada lapisan penyimpanan Redis terlebih dahulu. Jika terjadi situasi di mana data telah tersedia di dalam memori (cache hit), data tersebut akan langsung dikirimkan secara instan kepada klien. Sebaliknya, jika data tidak ditemukan (cache miss), sistem backend akan mengeksekusi kueri ke basis data relasional utama, lalu memetakan hasilnya kembali ke dalam Redis untuk memperbarui cache [22].
+
+--- [Paragraph 386] ---
+Berbeda dengan arsitektur aplikasi hybrid konvensional yang berjalan lambat di dalam kontainer WebView, React Native tidak merender komponen visualnya di dalam halaman web internal. Di tingkat runtime, React Native secara dinamis memetakan dan merender komponen visual tersebut langsung menjadi komponen antarmuka asli (Native Components) dari sistem operasi target (seperti elemen View asli pada Android dan iOS) [33]. Karena didukung langsung oleh komponen native bawaan sistem operasi, aplikasi yang dibangun menggunakan React Native mampu menghasilkan performa grafis yang tinggi, efisiensi konsumsi memori, serta responsivitas antarmuka yang setara dengan aplikasi native murni. Karakteristik ini sangat krusial dalam memfasilitasi staf lapangan agar dapat memantau dan menerima aliran data telemetri kondisi sapi serta lingkungan kandang secara lancar dan instan melalui perangkat smartphone mereka tanpa mengalami kendala latensi perenderan.
+
+--- [Paragraph 392] ---
+Selain itu, sistem ini menggunakan Prisma Migrate untuk mengotomatisasi perubahan dan migrasi struktur tabel basis data secara aman tanpa kehilangan kontrol atas SQL asli. Dalam konteks operasional kandang, integrasi Prisma ORM mempermudah pengelolaan relasi data yang kompleks, seperti menghubungkan tabel profil identitas sapi pedaging dengan tabel riwayat log asupan pakan bahan kering (Dry Matter Intake - DMI) secara modular. Melalui optimasi eksekusi kueri yang terstruktur serta penanganan pengecualian yang kuat, Prisma mampu mengamankan penulisan data historis dalam volume besar dengan latensi rendah [37].
+
+--- [Paragraph 399] ---
+Selain pengujian aspek fungsionalitas, sistem ini juga melalui tahap pengujian beban (load testing). Validasi performa ini bertujuan untuk memastikan kapasitas pemrosesan (throughput) server tetap stabil dan responsif dalam menyerap aliran data sensor yang masif sekalipun berada pada kondisi tingkat konkurensi pengguna yang tinggi.
+
+--- [Paragraph 416] ---
+2.4.10 Grafana k6 dan Metode Isolasi Gangguan Jaringan
+
+--- [Paragraph 417] ---
+Grafana k6 merupakan sebuah instrumen pengujian beban (load testing) dan pengujian performa yang bersifat sumber terbuka (open-source) yang dirancang untuk mengukur kinerja serta skalabilitas dari aplikasi web, antarmuka pemrograman aplikasi (API), dan arsitektur sistem terdistribusi [46]. Alat ini dibangun menggunakan bahasa pemrograman Go untuk menjamin efisiensi eksekusi yang tinggi pada sisi sistem, sedangkan skrip skenario pengujiannya ditulis menggunakan bahasa pemrograman JavaScript agar memudahkan perancangan simulasi perilaku pengguna secara dinamis.
+
+--- [Paragraph 418] ---
+Dalam pengujian kinerja sistem, Grafana k6 bekerja dengan menyimulasikan sejumlah pengguna virtual (Virtual Users atau VU) yang mengirimkan permintaan secara konkuren ke titik akhir (endpoint) server dalam durasi waktu tertentu. Penggunaan instrumen pengujian beban ini sangat krusial untuk mengevaluasi ketahanan sistem di bawah tekanan beban kerja yang tinggi serta memastikan keandalan perangkat lunak sebelum dioperasikan pada lingkungan produksi [47].
+
+--- [Paragraph 419] ---
+Dalam penelitian ini, eksekusi Grafana k6 dikonfigurasikan menggunakan metode Same-Datacenter Loopback Benchmark, di mana permintaan k6 dikirimkan secara internal di dalam lingkungan server lokal menggunakan alamat 127.0.0.1. Pendekatan ini diterapkan untuk memenuhi prinsip isolasi gangguan jaringan atau Network Noise Isolation, yaitu meminimalkan faktor pengganggu eksternal dari jaringan internet publik agar data hasil pengujian bersifat objektif. Transmisi data melalui jaringan internet publik memiliki tingkat variansi latensi yang sangat tinggi akibat fluktuasi sinyal nirkabel dan kemacetan trafik penyedia jasa internet. Sebagai perbandingan, latensi koneksi lokal (loopback) di dalam kernel server hanya membutuhkan waktu sekitar 0,05 milidetik, jauh lebih rendah dibandingkan latensi Wi-Fi yang mencapai 3 milidetik atau koneksi internet publik lintas wilayah yang dapat berkisar antara 40 milidetik hingga 183 milidetik [48]. Oleh karena itu, penggabungan instrumen Grafana k6 dengan metode isolasi ini bertujuan untuk meniadakan pengaruh ketidakstabilan jaringan luar guna mengukur kapasitas komputasi murni dari kode backend, memori cache, dan kueri database pada server secara akurat [48].
+
+--- [Paragraph 420] ---
+2.4.11 Teori Antrean (Queueing Theory) dan Latensi Ekor (Tail Latency)
+
+--- [Paragraph 422] ---
+Ketika utilitas sumber daya melewati ambang batas 60%, waktu respons rata-rata akan meningkat dua kali lipat, dan ketika utilitas mencapai 80%, waktu respons tersebut akan meningkat hingga tiga kali lipat [48]. Pada kondisi pembebanan konkuren yang sangat tinggi, analisis performa tidak hanya berfokus pada nilai rata-rata, melainkan pada distribusi persentil tinggi (seperti persentil ke-95 atau p95) untuk mengidentifikasi fenomena latensi ekor (tail latency) atau concurrency stall [48]. Gejala penundaan ini terjadi saat mayoritas transaksi selesai dengan cepat, namun sebagian kecil transaksi mengalami kelambatan ekstrim akibat persaingan tingkat tinggi dalam memperebutkan kolam koneksi (connection pool) database atau pemblokiran utas tunggal (event loop) pada backend [48].
+
+--- [Paragraph 426] ---
+Transisi menuju otomatisasi berbasis Precision Livestock Farming (PLF) dengan memanfaatkan sensor IoT memang mampu meningkatkan efisiensi. Namun, pola pemantauan terus-menerus ini memunculkan kendala baru pada infrastruktur backend server berupa tingginya beban komputasi main thread serta tingginya risiko hambatan kinerja (bottleneck) pada disk I/O database relasional saat harus menerima dan memproses aliran data telemetri sensor secara simultan dengan throughput yang tinggi.
+
+--- [Paragraph 427] ---
+Untuk menyelesaikan masalah tersebut, diambil sebuah solusi rekayasa (solution space) berupa penerapan arsitektur hibrida pada backend NestJS yang mengombinasikan pemrosesan asinkron dan manajemen penyimpanan terpisah. Aliran data telemetri sensor yang dikirimkan oleh perangkat IoT dipisahkan penanganannya berdasarkan tingkat kecepatannya (data velocity). Data telemetri sensor yang bersifat high-velocity dialirkan melalui protokol MQTT dan langsung diamankan ke dalam lapisan penyimpanan NoSQL berbasis memori, Redis, untuk disajikan ke dalam dashboard client lintas platform secara real-time guna meminimalkan latensi pembacaan data dinamis. Sementara itu, tugas-tugas komputasi kalkulasi matematika yang berat (seperti perhitungan indeks beban panas sapi secara real-time dan analisis statistik asupan pakan harian) diisolasi dari thread utama aplikasi backend ke dalam proses latar belakang (background process) yang bekerja secara asinkron menggunakan antrean pesan (message queue) berbasis BullMQ sebelum disimpan secara permanen ke dalam database persisten PostgreSQL.
+
+--- [Paragraph 428] ---
+Tahap akhir dari kerangka berpikir ini adalah melakukan validasi dan pembuktian performa sistem secara empiris. Keandalan arsitektur dan fungsionalitas sistem diuji secara menyeluruh menggunakan metode black-box testing untuk memvalidasi fungsionalitas fungsional input-output antarmuka REST API, audit Google Lighthouse untuk mengukur kinerja visualisasi grafik serta kepatuhan standar frontend dashboard, pengujian unit (unit testing) menggunakan Jest dan React Native Testing Library (RNTL) untuk memverifikasi performa aplikasi mobile staf lapangan secara efisien tanpa emulator, serta pengujian beban (load testing) untuk membuktikan bahwa server backend tetap tangguh, responsif, dan bebas dari risiko gagal sistem (system crash) di bawah beban konkurensi data yang masif.
+
+--- [Paragraph 459] ---
+Penelitian ini fokus secara spesifik pada aspek rekayasa perangkat lunak untuk membangun ekosistem pemantauan smart cattle barn yang memiliki latensi rendah dan efisiensi penggunaan sumber daya komputasi yang tinggi. Secara visual, batas pembagian antara komponen eksternal yang diabaikan dengan komponen inti yang menjadi fokus rekayasa dalam penelitian ini diilustrasikan pada Gambar 3.1 berikut.
+
+--- [Paragraph 555] ---
+Grafana K6
+
+--- [Paragraph 556] ---
+Tools Load Testing 
+
+--- [Paragraph 570] ---
+Secara praktis, seluruh rincian tugas rekayasa perangkat lunak dipecah dan dipetakan ke dalam papan status kerja atau Kanban board. Pemetaan ini berfungsi untuk melacak progres setiap fitur secara obyektif, mulai dari tahap perencanaan spesifikasi antarmuka pemrograman aplikasi, penulisan logika basis data, fase pengujian beban latensi, hingga tahap penyelesaian akhir. Secara visual, keseluruhan alur metodologi dan tahapan penelitian sistem ini diilustrasikan secara terperinci pada Gambar 3.2 berikut.
+
+--- [Paragraph 574] ---
+Analisis kebutuhan bertujuan membangun platform dengan latensi rendah dan toleransi kesalahan pada dua domain utama, yaitu server komputasi berkinerja tinggi menggunakan NestJS dan Redis, serta klien visualisasi lintas platform (dual-platform) menggunakan React.js untuk versi Web dan React Native untuk versi Mobile. Sistem dirancang untuk menangani ribuan paket data per detik, mencegah server mengalami kehabisan memori akibat beban antrean komputasi, serta menyajikan pembaruan data secara instan yang akurat.
+
+--- [Paragraph 585] ---
+Tahap penting selanjutnya adalah pengujian sistem yang holistik. Pengujian dibagi menjadi tiga area utama, yaitu: pertama, pengujian antarmuka pemrograman aplikasi (API) secara fungsional menggunakan tools Postman; kedua, pengujian stabilitas komponen antarmuka pengguna Mobile menggunakan framework pengujian Jest; dan ketiga, pelaksanaan pengujian beban (load testing) menggunakan Grafana K6 untuk menyimulasikan tembakan lalu lintas data dari banyak pengguna virtual (Virtual Users). Pengujian beban ini bertujuan memverifikasi apakah logika server hibrida berhasil mencegah server mengalami kegagalan proses dan memastikan metrik RAM tetap stabil. Jika evaluasi menunjukkan stabilitas yang baik dan latensi yang rendah, maka pengembangan dinyatakan selesai dan bermuara pada finalisasi Web Dashboard serta Aplikasi Mobile sebagai hasil akhir penelitian.
+
+--- [Paragraph 624] ---
+Pelaksanaan simulasi beban (load testing) menggunakan Grafana K6 untuk memastikan antrean BullMQ dan memori Redis tidak memicu kegagalan sistem (crash) saat menerima lalu lintas data masif dari simulator.
+
+--- [Paragraph 629] ---
+Kedua metode ini dipilih untuk menjawab dua pertanyaan fundamental penelitian: apakah fitur jalur lambat (Direct Path) berfungsi sesuai logika bisnis? Dan apakah jalur cepat (Hot Path) mampu mempertahankan latensi rendah di bawah tekanan beban tinggi?
+
+--- [Paragraph 639] ---
+Performance testing dilakukan untuk mengevaluasi kinerja sistem yang dirancang dengan arsitektur berkinerja tinggi. Pengujian ini menjadi indikator keberhasilan utama penelitian karena berfungsi untuk mengukur stabilitas serta kecepatan respons server ketika menghadapi beban kerja konkuren dari perangkat lunak simulator data k6.
+
+--- [Paragraph 640] ---
+Fokus utama pengujian adalah memastikan bahwa sistem mampu mempertahankan performa optimal, meminimalkan latensi transmisi pada jalur cepat, dan menjaga konsistensi eksekusi tugas antrean BullMQ meskipun sedang terjadi kontensi (persaingan) penulisan dan pembacaan data secara bersamaan.
+
+--- [Paragraph 641] ---
+Skenario pengujian dilakukan menggunakan teknik load testing, di mana sistem akan dibebani dengan simulasi konkurensi pengguna virtual (Virtual Users - VU) secara bertahap mulai dari 10 VU, 50 VU, hingga beban puncak 100 VU secara serentak. Pengujian ini membatasi laju transaksi klien menggunakan mekanisme jeda alami (think time) untuk mensimulasikan perilaku riil di lapangan. Parameter kuantitatif yang diamati meliputi:
+
+--- [Paragraph 642] ---
+Throughput: Jumlah transaksi data HTTP/WebSocket yang berhasil diproses secara tuntas oleh sistem per detik (Requests per Second - RPS). Dalam arsitektur hibrida ini, dibedakan antara Kapasitas Penyerapan Data Teoretis (Ingestion Capacity) pada lapisan in-memory cache Redis dan antrean BullMQ yang dirancang mampu menampung hingga ribuan data telemetri per detik, dengan Throughput Transaksi Aktual (Measured Throughput) di sisi klien k6 yang dibatasi oleh latensi siklus bolak-balik jaringan TCP (round-trip time).
+
+--- [Paragraph 643] ---
+Latency (Waktu Tunda): Mengingat antarmuka pengguna menerapkan strategi hybrid data fetching, pengukuran latensi dibagi menjadi dua metrik utama. Pertama, Latensi Pemuatan Awal (Initial Load Latency), yaitu waktu respons REST API dalam menyajikan data historis saat dasbor pertama kali dimuat, dengan target rata-rata waktu di bawah 500 milidetik. Kedua, Latensi Waktu Nyata (Real-Time Latency), yaitu jeda waktu transmisi asinkron pada jalur cepat sejak data diterbitkan oleh simulator hingga komponen grafik diperbarui. Mengingat karakteristik sistem terdistribusi rentan terhadap lonjakan latensi sesaat (latency spikes), keberhasilan target latensi di bawah 100 milidetik diukur secara ketat menggunakan metrik persentil tinggi (High Percentile Latency), khususnya Persentil ke-95 (p95), untuk memastikan 95% transaksi pengguna berjalan secara instan meskipun terdapat extreme outliers pada nilai latensi maksimum akibat proses inisialisasi database (cold start) maupun gangguan dari proses luar pada infrastruktur shared.
+
+--- [Paragraph 674] ---
+Infrastruktur Virtual Privite Server (VPS) mampu menangani pengujian beban masif (load testing) menggunakan Grafana K6 yang menyimulasikan banyak Virtual  Users (VU) tanpa mengalami kegagalan sistem (crash) atau lonjakan RAM yang ekstrem.
+
+--- [Paragraph 679] ---
+Latensi Komunikasi Waktu Nyata
+
+--- [Paragraph 680] ---
+Implementasi metode Hybrid Data Fetching berhasil mempertahankan latensi  pemuatan historis di bawah ambang 500 milidetik dan mempercepat pergeseran grafik telemetri secara real- time via WebSocket di 
+
+--- [Paragraph 728] ---
+Berdasarkan analisis alur kerja dari Gambar 4.6, memori sementara (cache) dengan pola cache-aside terbukti berjalan secara akurat dan membuahkan efisiensi performa yang signifikan. Sebagai contoh skenario, ketika pengguna membuka aplikasi website untuk memuat kerangka dasar data historis lingkungan kandang, modul backend NestJS secara proaktif akan mengalihkan (intercept) permintaan basis data tersebut. Alih - alih mengeksekusi instruksi kueri SQL berulang-ulang menuju PostgreSQL yang sifatnya lambat (disk-bound), server dengan cerdas langsung mengambilkan duplikat data tersebut langsung dari penyimpanan Random Access Memory (RAM) pada Redis. Eksekusi pintas ini sukses memangkas latensi respons jaringan secara ekstrem menjadi hanya dalam hitungan sepersekian milidetik.
+
+--- [Paragraph 1132] ---
+4.2.4 Pengujian Beban dan Konkurensi Pengguna
+
+--- [Paragraph 1133] ---
+Pengujian beban (Load Testing) dan simulasi konkurensi pengguna merupakan parameter pamungkas untuk membuktikan secara kuantitatif hipotesis utama dalam penelitian ini: bahwa implementasi arsitektur event-driven berbasis hibrida mampu melindungi infrastruktur server dari ancaman kelumpuhan (crash). Pengujian performa ini dieksekusi secara intensif menggunakan rekayasa open-source, Grafana K6. Agar evaluasi berjalan sangat komprehensif, skenario dirancang ke dalam tiga fase pembebanan terpisah (Three-Phase Testing). Untuk mengukur tingkat ketangguhan pada server, setiap skenario diuji menggunakan metode eskalasi beban bertahap, dimulai dari 10, 50, hingga memuncak pada 100 Pengguna Virtual (Virtual Users / VU) yang bekerja secara bersamaan.
+
+--- [Paragraph 1135] ---
+Fase pertama bertujuan menguji daya tahan mekanisme antrean pesan (Message Queue) dari pustaka BullMQ. Pengujian ini menyimulasikan eskalasi gelombang transmisi rentetan data telemetri (detak jantung dan suhu) yang dikirimkan secara konstan oleh Kalung Sensor IoT ke titik akhir API pencatatan. Pada pengujian tahap awal, sistem diuji dengan beban ringan yakni 10 Virtual Users (VU) untuk melihat batas dasar latensi server. Dapat dilihat pada Gambar 4.20 Hasil Pengujian Beban Transmisi IoT Skala Ringan (10 VU).
+
+--- [Paragraph 1136] ---
+Gambar 4.20 Hasil Pengujian Beban Transmisi IoT Skala Ringan (10 VU)
+
+--- [Paragraph 1137] ---
+Pengujian kemudian diekskalasi menjadi 50 VU, yang mewakili kondisi lalu lintas jaringan tingkat menengah di dalam kawasan peternakan. Dapat dilihat pada Gambar 4.21 Hasil Pengujian Beban Transmisi IoT Skala Menengah (50 VU).
+
+--- [Paragraph 1138] ---
+Gambar 4.21 Hasil Pengujian Beban Transmisi IoT Skala Menengah (50 VU)Gambar 4.21 Hasil Pengujian Beban Transmisi IoT Skala Menengah (50 VU)
+
+--- [Paragraph 1139] ---
+Gambar 4.21 Hasil Pengujian Beban Transmisi IoT Skala Menengah (50 VU)
+
+--- [Paragraph 1140] ---
+Gambar 4.21 Hasil Pengujian Beban Transmisi IoT Skala Menengah (50 VU)
+
+--- [Paragraph 1141] ---
+Tahap terakhir pada fase ini akan menekan server secara ekstrem menggunakan 100 VU secara konkuren. Berdasarkan Gambar 4.22, sistem berhasil menyerap seluruh lonjakan tanpa mengalami penolakan koneksi (zero packet loss). Hal ini membuktikan bahwa BullMQ sukses melakukan perataan beban (load leveling), menahan gelombang operasi I/O Write di dalam memori sehingga Thread utama Node.js terhindar dari kelumpuhan. Dapat dilihat pada Gambar 4.22 Hasil Pengujian Beban Transmisi IoT Skala Puncak (100 VU).
+
+--- [Paragraph 1142] ---
+Gambar 4.22 Hasil Pengujian Beban Transmisi IoT Skala Puncak (100 VU)Gambar 4.22 Hasil Pengujian Beban Transmisi IoT Skala Puncak (100 VU)
+
+--- [Paragraph 1143] ---
+Gambar 4.22 Hasil Pengujian Beban Transmisi IoT Skala Puncak (100 VU)
+
+--- [Paragraph 1144] ---
+Gambar 4.22 Hasil Pengujian Beban Transmisi IoT Skala Puncak (100 VU)
+
+--- [Paragraph 1147] ---
+Pengujian diawali dengan 10 pengguna aplikasi Web yang mengakses secara bersamaan. Dapat dilihat pada Gambar 4.23 Hasil Pengujian Beban Akses Pengguna Web Skala Ringan (10 VU)
+
+--- [Paragraph 1148] ---
+Gambar 4.23 Hasil Pengujian Beban Akses Pengguna Web Skala Ringan (10 VU)Gambar 4.23 Hasil Pengujian Beban Akses Pengguna Web Skala Ringan (10 VU)
+
+--- [Paragraph 1149] ---
+Gambar 4.23 Hasil Pengujian Beban Akses Pengguna Web Skala Ringan (10 VU)
+
+--- [Paragraph 1150] ---
+Gambar 4.23 Hasil Pengujian Beban Akses Pengguna Web Skala Ringan (10 VU)
+
+--- [Paragraph 1151] ---
+Beban kemudian ditingkatkan 5 kali lipat menjadi 50 pengguna, guna menyimulasikan kondisi jam sibuk operasional di lapangan. Dapat dilihat pada Gambar 4.24 Hasil Pengujian Beban Akses Pengguna Web Skala Menengah (50 VU).
+
+--- [Paragraph 1152] ---
+Gambar 4.24 Hasil Pengujian Beban Akses Pengguna Web Skala Menengah (50 VU)Gambar 4.24 Hasil Pengujian Beban Akses Pengguna Web Skala Menengah (50 VU)
+
+--- [Paragraph 1153] ---
+Gambar 4.24 Hasil Pengujian Beban Akses Pengguna Web Skala Menengah (50 VU)
+
+--- [Paragraph 1154] ---
+Gambar 4.24 Hasil Pengujian Beban Akses Pengguna Web Skala Menengah (50 VU)
+
+--- [Paragraph 1155] ---
+Uji beban puncak 100 pengguna pada Gambar 4.25, kurva latensi server tetap sangat rendah. Keberhasilan absolut ini mengonfirmasi bahwa mesin Redis bertindak efisien sebagai perisai; data disajikan langsung dari RAM tanpa perlu menyiksa basis data PostgreSQL dengan query relasional berulang. Dapat dilihat pada Gambar 4.25 Hasil Pengujian Beban Akses Pengguna Web Skala Menengah (100 VU).
+
+--- [Paragraph 1156] ---
+Gambar 4.25 Hasil Pengujian Beban Akses Pengguna Web Skala Puncak (100 VU)
+
+--- [Paragraph 1158] ---
+Fase terakhir merupakan simulasi lingkungan operasional dunia nyata (Stress Testing). Pada skenario campuran ini, server diserang oleh aktivitas persilangan secara simultan, yakni 70% agen bertindak sebagai sensor yang menembakkan telemetri, dan 30% bertindak sebagai manusia yang memuat data Web.
+
+--- [Paragraph 1159] ---
+Kondisi beban campuran skala kecil disimulasikan melalui serangan 10 VU lintas-platform. Dapat dilihat pada Gambar 4.26 Hasil Pengujian Beban Campuran Skala Ringan (10 VU).
+
+--- [Paragraph 1160] ---
+Gambar 4.26 Hasil Pengujian Beban Campuran Skala Ringan (10 VU)
+
+--- [Paragraph 1161] ---
+Simulasi dilanjutkan ke skala menengah dengan menggabungkan 50 VU lintas-platform. Dapat dilihat pada Gambar 4.27 Hasil Pengujian Beban Campuran Skala Menengah (50 VU).
+
+--- [Paragraph 1162] ---
+Gambar 4.27 Hasil Pengujian Beban Campuran Skala Menengah (50 VU)
+
+--- [Paragraph 1163] ---
+Merujuk pada hasil kompilasi beban ekstrem 100 VU pada Gambar 4.19, server terbukti sangat tangguh. Meskipun dipaksa menangani siklus baca-tulis silang secara konkuren, tingkat keberhasilan penyelesaian transaksi (throughput) bertahan pada 100%. Uji empiris ini mengukuhkan validitas teori bahwa perpaduan kerangka kerja NestJS, cache Redis, dan antrean pesan asinkron BullMQ merupakan fondasi arsitektur yang paling ideal dalam mempertahankan skalabilitas ekosistem Internet of Things. Dapat dilihat pada Gambar 4.28 Hasil Pengujian Beban Campuran Skala Puncak (100 VU).
+
+--- [Paragraph 1168] ---
+Guna memberikan pandangan kuantitatif yang transparan, seluruh data metrik waktu respons (latensi) dari kesembilan pengujian di atas diagregasikan dan dirangkum pada Tabel 4.3.
+
+--- [Paragraph 1169] ---
+Sebelum menganalisis data agregasi tersebut, perlu dijelaskan secara metodologis bahwa seluruh eksekusi pengujian beban menggunakan Grafana k6 dalam penelitian ini dilakukan secara internal di dalam server Virtual Private Server (VPS) atau dikenal dengan metode Same-Datacenter Loopback Benchmark dengan mengarahkan permintaan langsung ke alamat lokal host (127.0.0.1). Keputusan pengujian lokal ini bertujuan untuk menerapkan prinsip isolasi gangguan jaringan atau Network Noise Isolation, yaitu meniadakan pengaruh fluktuasi, waktu tunda (lag), dan ketidakstabilan sinyal internet luar (seperti Wi-Fi publik atau trafik penyedia jasa internet pengguna) . Menurut metodologi evaluasi performa sistem terdistribusi , untuk mengukur kapasitas komputasi murni dari kode backend, kecepatan pemrosesan memori, serta optimasi kueri database pada server, faktor hambatan jaringan luar wajib diisolasi. Pengujian lintas jaringan publik akan memicu variansi data yang disebabkan oleh faktor eksternal di luar kendali server, sehingga mendistorsi akurasi pengukuran kinerja sistem yang diuji. Dengan meniadakan faktor jaringan internet luar, hasil pengukuran persentil ke-95 (p95) pada server murni merefleksikan efisiensi arsitektur backend NestJS, basis data PostgreSQL, dan caching Redis yang dirancang.
+
+--- [Paragraph 1170] ---
+Tabel 4.3 Agregasi Hasil Pengujian Beban dan Konkurensi Sistem
+
+--- [Paragraph 1279] ---
+Namun, jika dianalisis lebih mendalam di luar nilai rata-rata, data pada Tabel 4.3 menunjukkan karakteristik perilaku sistem terdistribusi yang sangat berbeda pada setiap skenario. Pada Skenario A (Transmisi IoT) dan Skenario B (Akses Web) dengan beban 100 VU, sistem berjalan dengan sangat stabil tanpa adanya gejala ekor berat (heavy-tail), di mana nilai latensi maksimal masing-masing hanya mencapai 58,52 ms dan 72,03 ms.
+
+--- [Paragraph 1280] ---
+Anomali kinerja yang cukup kritis terdeteksi secara spesifik pada Skenario C (Beban Campuran) dengan beban puncak 100 VU, di mana rata-rata latensi naik hingga 68,56 ms, sedangkan latensi persentil ke-95 (p95) tetap bertahan sangat cepat di angka 6,43 ms. Perbedaan yang mencolok ini secara matematis menunjukkan adanya sebaran data berekor berat (heavily right-skewed / heavy-tail distribution). Melalui perhitungan akumulasi durasi, total waktu pengerjaan dari seluruh 7.227 permintaan pada skenario ini adalah sebesar 495,48 detik. Kelompok 95% permintaan tercepat (6.866 permintaan) yang selesai di bawah 6,43 ms hanya menyumbang sekitar 17,16 detik terhadap total waktu pengerjaan.
+
+--- [Paragraph 1281] ---
+Hal ini menunjukkan bahwa sisa waktu pengerjaan sebanyak 478,32 detik dihabiskan hanya untuk melayani 5% kelompok permintaan terlambat (361 permintaan). Kelompok ini mencatatkan rata-rata latensi sebesar 1,32 detik per permintaan, dengan titik tunda (stall) terburuk mencapai 5,75 detik pada nilai maksimalnya. Secara teoritis, penumpukan waktu pemrosesan pada 5% transaksi teratas ini merupakan gejala latensi ekor (tail latency) yang disebabkan oleh penumpukan antrean pada server (queueing saturation) . Berdasarkan teori antrean model M/D/1, ketika utilitas atau beban kerja server mendekati kapasitas maksimalnya, waktu tunggu di dalam antrean akan meningkat secara signifikan, sehingga memicu terjadinya kelambatan ekstrem (concurrency stall). Data kuantitatif ini membuktikan bahwa tidak semua respons sistem berada di bawah ambang batas toleransi aplikasi IoT waktu nyata (real-time) sebesar 200 ms. Sebanyak 5,00% dari total permintaan pada kondisi beban campuran terbukti mengalami kelambatan (stall) yang melampaui batas toleransi tersebut hingga 28 kali lipat. Analisis mendalam mengenai penyebab teknis dari masalah kelambatan pada skenario beban campuran ini akan dibahas secara detail pada subbab berikutnya.
+
+--- [Paragraph 1282] ---
+Secara teoritis, adanya data pencilan latensi (latency outliers) pada 5% transaksi teratas ini memperlihatkan pentingnya melakukan pengujian beban menggunakan metode berbasis persentil dibandingkan hanya mengandalkan nilai rata-rata (mean). Pada sistem terdistribusi, nilai rata-rata sering kali menyamarkan adanya penumpukan penundaan pada ekor distribusi (tail latency). Meskipun 95% transaksi pada Skenario C 100 VU berhasil selesai dalam durasi yang sangat singkat di bawah 6,43 ms (sehingga menghemat anggaran latensi atau latency budget), antrean jaringan akibat concurrency stall pada 5% transaksi sisanya tetap berpotensi menurunkan kenyamanan pengguna (user experience) bagi segmen pengguna yang mengakses sistem di waktu yang bersamaan.
+
+--- [Paragraph 1283] ---
+Untuk memberikan gambaran distribusi waktu respons yang lebih mendetail terhadap perubahan tingkat konkurensi pengguna, tren latensi dari setiap skenario pengujian divisualisasikan melalui grafik berikut:
+
+--- [Paragraph 1284] ---
+Grafik Tren Latensi Skenario A (Pembebanan Murni Transmisi IoT)
+
+--- [Paragraph 1285] ---
+Visualisasi tren latensi Response Time pada Skenario A untuk tingkat beban 10 VU, 50 VU, dan 100 VU dapat dilihat pada Gambar 4.29.
+
+--- [Paragraph 1286] ---
+Gambar 4.29 Grafik Distribusi Latensi Respons Server pada Skenario A (Sensor Write-Only)Gambar 4.29 Grafik Distribusi Latensi Respons Server pada Skenario A (Sensor Write-Only)
+
+--- [Paragraph 1287] ---
+Gambar 4.29 Grafik Distribusi Latensi Respons Server pada Skenario A (Sensor Write-Only)
+
+--- [Paragraph 1288] ---
+Gambar 4.29 Grafik Distribusi Latensi Respons Server pada Skenario A (Sensor Write-Only)
+
+--- [Paragraph 1289] ---
+Berdasarkan Gambar 4.29, grafik menunjukkan pola kurva yang sangat rata (flat) dan stabil dari beban rendah hingga beban puncak 100 VU. Garis latensi Average, p95, dan Maximum saling berhimpit secara rapat di bawah kisaran 60 ms. Hal ini memperjelas bahwa penyerapan data telemetri secara write-only melalui WebSocket Gateway dan In-Memory Cache Redis tidak mengalami degradasi performa akibat lonjakan jumlah perangkat IoT.
+
+--- [Paragraph 1290] ---
+Grafik Tren Latensi Skenario B (Pembebanan Akses Pengguna Web)
+
+--- [Paragraph 1291] ---
+Visualisasi tren latensi Response Time pada Skenario B untuk melayani akses pembacaan dasbor web dapat dilihat pada Gambar 4.30.
+
+--- [Paragraph 1292] ---
+Gambar 4.30 Grafik Distribusi Latensi Respons Server pada Skenario B (Web Read-Only)
+
+--- [Paragraph 1293] ---
+Grafik pada Gambar 4.30 memperlihatkan lonjakan latensi singkat (spike) pada awal pengujian (fase Cold Start) pada 10 VU sebelum akhirnya melandai tajam pada beban 50 VU dan 100 VU. Efek melandainya kurva ini secara visual membuktikan peranan mekanisme Cache-Aside Redis, di mana mayoritas permintaan pembacaan dasbor berhasil dilayani langsung dari RAM (Cache Hit) tanpa menyentuh PostgreSQL.
+
+--- [Paragraph 1294] ---
+Grafik Tren Latensi Skenario C (Pembebanan Campuran Mixed Read-Write)
+
+--- [Paragraph 1295] ---
+Visualisasi tren latensi pada Skenario C yang memperlihatkan fenomena lonjakan ekor berat (heavy-tail) dapat dilihat pada Gambar 4.31.
+
+--- [Paragraph 1296] ---
+Gambar 4.31 Grafik Distribusi Latensi Respons Server pada Skenario C (Mixed Read-Write Workload)Gambar 4.31 Grafik Distribusi Latensi Respons Server pada Skenario C (Mixed Read-Write Workload)
+
+--- [Paragraph 1297] ---
+Gambar 4.31 Grafik Distribusi Latensi Respons Server pada Skenario C (Mixed Read-Write Workload)
+
+--- [Paragraph 1298] ---
+Gambar 4.31 Grafik Distribusi Latensi Respons Server pada Skenario C (Mixed Read-Write Workload)
+
+--- [Paragraph 1299] ---
+Gambar 4.31 secara jelas menggambarkan fenomena anomali heavy-tail distribution pada beban 100 VU. Garis latensi rata-rata (Average) dan p95​ berada di posisi sangat rendah di dekat sumbu horizontal, sedangkan garis latensi maksimum (Max) melonjak drastis hingga menyentuh angka 5,75 detik (5.750 ms). Pemisahan garis grafik yang sangat kontras ini memvalidasi keberadaan 5% kelompok permintaan yang mengalami penundaan ekstrim (concurrency stall) akibat persaingan resource pada beban campuran.
+
+--- [Paragraph 1300] ---
+4.2.4.5  Pembahasan Hambatan (Stall) pada Pengujian Beban menggunakan K6
+
+--- [Paragraph 1301] ---
+Kemunculan fenomena ekor berat (heavy-tail distribution) dengan latensi maksimum mencapai 5,75 detik yang hanya terjadi pada Skenario C 100 VU sementara Skenario A 100 VU dan Skenario B 100 VU tetap memiliki distribusi latensi normal mengonfirmasi bahwa hambatan sistem (concurrency stall) ini berasal dari persaingan sumber daya (resource contention) antara jalur penulisan (write path) dan jalur pembacaan (read path) secara bersamaan.
+
+--- [Paragraph 1303] ---
+Pemblokiran Event Loop  Node.js Saat Batch Flush BullMQ Sesuai rancangan sistem, BullMQ menampung data telemetri sensor di dalam memori dan melakukan eksekusi pembuangan data secara massal (batch flush) sebanyak 200 data atau setiap interval 10 detik ke database PostgreSQL menggunakan prisma.livestock Vital.createMany(). Meskipun antrean BullMQ bersifat asinkron, mesin V8 Node.js  yang melandasi NestJS pada dasarnya bekerjamenggunakan single thread. Ketika fungsi createMany() dieksekusi untuk 200 data sekaligus, Node.js harus melakukan serialisasi objek JSON berukuran besar dan penyiapan kueri SQL di dalam memori. Operasi yang intensif CPU ini memblokir utas utama (Event Loop) secara singkat. Selama utas utama terblokir, permintaan HTTP baru yang masuk akan tertahan di antrean sirkuit jaringan sistem operasi tanpa mendapatkan respons, yang berdampak pada akumulasi latensi multi-detik pada sebagian kecil transaksi.
+
+--- [Paragraph 1305] ---
+Jeda Pengumpulan Sampah Memori (V8 Stop-The-World Garbage Collection) Pemrosesan ribuan data antrean telemetri di dalam memori pasca-proses batch flush mengakibatkan fluktuasi alokasi RAM pada V8 Heap. Untuk membebaskan memori dari objek-objek sementara yang sudah tidak terpakai, mesin V8 Node.js secara otomatis menjalankan proses Garbage Collection (GC). Pada tekanan memori yang tinggi, V8 akan melakukan jeda pembersihan total (Stop-The-World GC pause). Selama jeda ini berlangsung, seluruh eksekusi kode aplikasi NestJS dihentikan sementara, yang berkontribusi langsung terhadap kemunculan pencilan latensi (latency spikes) bagi transaksi yang masuk persis saat jeda tersebut terjadi.
+
+--- [Paragraph 1428] ---
+Hasil pengujian beban campuran (Mixed Workload 100 VU) menunjukkan sistem mencapai tingkat keberhasilan transaksi sebesar 100% tanpa adanya kesalahan (Error Rate 0,00%). Pada kondisi beban puncak tersebut, server bekerja secara efisien dengan rata-rata penggunaan CPU backend sebesar 1,10% dan kenaikan memori RAM sebesar 35,27 MB. Meskipun demikian, analisis data statistik mengindikasikan adanya kendala berupa lonjakan waktu respons (concurrency stall) pada 5% transaksi teratas (95th percentile) dengan latensi maksimal mencapai 5,75 detik. Hambatan ini terjadi karena proses penulisan data secara massal (batch flush oleh worker processor BullMQ) sempat membebani utas tunggal (event loop) Node.js serta memicu antrean pada batas maksimal koneksi (connection pool) Prisma ORM ke PostgreSQL.
+
+--- [Paragraph 1433] ---
+Optimasi TTL Caching dan Mitigasi Concurrency Stall 5,75 Detik (Event-Driven Cache Invalidation): Untuk mengatasi fenomena latensi (Concurrency Stall) hingga 5,75 detik pada Skenario C 100 VU yang dipicu oleh persaingan koneksi database (Prisma Connection Pool Contention) saat terjadinya Cache Miss periodik (TTL 10 detik), penelitian selanjutnya disarankan untuk memperpanjang durasi TTL Cache-Aside menjadi 5 hingga 10 menit (300–600 detik) untuk data ringkasan sapi yang jarang berubah. Selain itu, disarankan menerapkan arsitektur Event-Driven Cache Invalidation, di mana cache dashboard:farm-summary baru dihapus dan diperbarui HANYA ketika terdapat transaksi perubahan status sapi oleh staf atau dokter hewan. Strategi ini terbukti akan menghilangkan fenomena Cache Stampede dan membebaskan koneksi database.
+
+--- [Paragraph 1482] ---
+“Grafana k6 | Grafana k6 documentation,” Grafana Labs. Accessed: Aug. 16, 2026. [Online]. Available: https://grafana.com/docs/k6/latest/.
+
+--- [Paragraph 1500] ---
+Pengujian Beban dan Konkurensi Pengguna (Load Testing)
+
+--- [Paragraph 1502] ---
+Penggunaan CPU dan RAM saat Pengujian K6 (Load Testing)
+

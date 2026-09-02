@@ -1,9 +1,10 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
 
-const BASE_URL = __ENV.BASE_URL || 'http://localhost:4000/api';
-const ADMIN_EMAIL = __ENV.ADMIN_EMAIL || 'majid123@example.com';
-const ADMIN_PASSWORD = __ENV.ADMIN_PASSWORD || 'rahasia123';
+const isLocal = __ENV.LOCAL === 'true' || __ENV.TARGET === 'local';
+const BASE_URL = __ENV.BASE_URL || (isLocal ? 'http://127.0.0.1:4000/api' : 'http://smartcattlebarn.site:4000/api');
+const ADMIN_EMAIL = __ENV.ADMIN_EMAIL || 'goodakun42@gmail.com';
+const ADMIN_PASSWORD = __ENV.ADMIN_PASSWORD || 'rahasia1234';
 
 export const options = {
   stages: [

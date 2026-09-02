@@ -60,6 +60,10 @@ clean_database_remote.js
 clearSchedules.js
 desktop.ini
 Hasil_skripsi_Majid Solihin Hadi_2_rev - Copy.docx
+scratch_extract_thesis.py
+check-bullmq.js
+check-db-counts.js
+check_api_history.js
 
 # PDF Files & Scripts
 generate_pdf.py

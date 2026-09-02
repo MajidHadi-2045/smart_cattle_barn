@@ -1,45 +1,83 @@
-import http from 'k6/http';
-import { check, sleep } from 'k6';
+import { Client } from 'k6/x/mqtt';
+import { Trend, Counter } from 'k6/metrics';
 
-const BASE_URL = __ENV.BASE_URL || 'http://localhost:4000/api';
+// =========================================================================
+// METRIK SENSOR VITAL SAPI (TRANSMISI & PEMROSESAN BACKEND)
+// =========================================================================
+const mqttVitalPublishLatency = new Trend('mqtt_vital_publish_latency');       // Waktu transmisi ke Broker MQTT
+const mqttVitalProcessingLatency = new Trend('mqtt_vital_processing_latency'); // Latensi E2E sampai Backend selesai menerima
+const mqttVitalSent = new Counter('mqtt_vital_messages_sent');                 // Total pesan dikirim
+const mqttVitalProcessed = new Counter('mqtt_vital_messages_processed');       // Total pesan berhasil diproses
+
+// Konfigurasi Target: Otomatis mendeteksi Lokal VPS (127.0.0.1) atau Remote Laptop (77.37.63.21)
+const isLocal = __ENV.LOCAL === 'true' || __ENV.TARGET === 'local';
+const MQTT_URL = __ENV.MQTT_URL || (isLocal ? 'mqtt://127.0.0.1:1883' : 'mqtt://77.37.63.21:1883');
 
 export const options = {
-  stages: [
-    { duration: '5s', target: 50 },   // Ramp-up ke 50 VUs
-    { duration: '20s', target: 100 }, // Load test 100 VUs sensor
-    { duration: '5s', target: 0 },    // Ramp-down
-  ],
+  scenarios: {
+    vital_sensor_load: {
+      executor: 'per-vu-iterations',
+      vus: __ENV.VUS ? parseInt(__ENV.VUS) : 10,
+      iterations: 1,
+      maxDuration: '60s',
+    },
+  },
   thresholds: {
-    // ERROR RATE: Toleransi error < 1% (standar production IoT sensor)
-    // Ref: Google SRE Book - Error Budget <= 1% untuk sistem production
-    http_req_failed: ['rate<0.01'],
-
-    // LATENSI HTTP INGESTION VITAL SAPI via WiFi/Internet:
-    // p(95) < 500ms — Ditetapkan 2.5x rata-rata aktual pengujian (~200ms)
-    // Memberi ruang lonjakan wajar saat beban naik ke 50-100 VU
-    // Ref: k6 Docs - threshold best practice: set at 2x-3x observed average
-    // Ref: Google RAIL Model - Response < 500ms ideal untuk sistem IoT real-time
-    http_req_duration: ['p(95)<500'],
+    mqtt_vital_publish_latency: ['p(95)<100'],
+    mqtt_vital_processing_latency: ['p(95)<1000'],
   },
 };
 
 export default function () {
+  const vuId = __VU;
   const cattleIds = ['C-302', 'C-304', 'C-500', 'C-576', 'C-904'];
-  const cattleId = cattleIds[Math.floor(Math.random() * cattleIds.length)];
+  const cattleId = cattleIds[(vuId - 1) % cattleIds.length];
 
-  const payload = JSON.stringify({
-    cattleId: cattleId, 
-    heartRate: Math.floor(65 + Math.random() * 25),
-    bodyTemperature: parseFloat((38.0 + Math.random() * 2.0).toFixed(1)),
+  const client = new Client();
+
+  client.on('message', (topic, message) => {
+    const now = Date.now();
+    try {
+      const data = JSON.parse(String.fromCharCode.apply(null, new Uint8Array(message)));
+      if (data.clientTimestamp) {
+        const latency = now - data.clientTimestamp;
+        if (latency >= 0) {
+          mqttVitalProcessingLatency.add(latency);
+          mqttVitalProcessed.add(1);
+        }
+      }
+    } catch (e) {}
   });
 
-  const params = { headers: { 'Content-Type': 'application/json' } };
-  const res = http.post(`${BASE_URL}/livestock/vital`, payload, params);
-  
-  check(res, {
-    'Sensor Vital berhasil dikirim (200/201)': (r) => r.status === 200 || r.status === 201,
+  client.on('connect', () => {
+    client.subscribe(`barn/cow/${cattleId}/vitals`);
+
+    let count = 0;
+    const maxCount = 15; // Mengirim 15 data telemetri per VU (1 data/detik)
+
+    const interval = setInterval(() => {
+      count++;
+      if (count > maxCount) {
+        clearInterval(interval);
+        setTimeout(() => client.end(), 1000);
+        return;
+      }
+
+      const sendTime = Date.now();
+      const payload = JSON.stringify({
+        cattleId: cattleId,
+        heartRate: Math.floor(65 + Math.random() * 25),
+        temp: parseFloat((37.5 + Math.random() * 2.0).toFixed(1)),
+        timestamp: new Date().toISOString(),
+        clientTimestamp: sendTime,
+      });
+
+      const pubStart = Date.now();
+      client.publish(`barn/cow/${cattleId}/vitals`, payload);
+      mqttVitalPublishLatency.add(Date.now() - pubStart);
+      mqttVitalSent.add(1);
+    }, 1000);
   });
 
-  sleep(0.5); // Pengiriman sensor setiap 0.5s per VU
+  client.connect(MQTT_URL);
 }
-
