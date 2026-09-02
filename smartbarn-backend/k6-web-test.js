@@ -51,8 +51,10 @@ export function setup() {
 export default function (data) {
   const authHeaders = {
     'Content-Type': 'application/json',
-    ...(data.token ? { Authorization: `Bearer ${data.token}` } : {}),
   };
+  if (data && data.token) {
+    authHeaders['Authorization'] = 'Bearer ' + data.token;
+  }
 
   // =========================================================================
   // ENDPOINT 1 (WAJIB): Memanggil Kartu Ringkasan Sapi (Total, Sehat, Sakit, Hamil)

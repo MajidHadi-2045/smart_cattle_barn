@@ -157,8 +157,10 @@ export default function (data) {
   } else {
     const authHeaders = {
       'Content-Type': 'application/json',
-      ...(data.token ? { Authorization: `Bearer ${data.token}` } : {}),
     };
+    if (data && data.token) {
+      authHeaders['Authorization'] = 'Bearer ' + data.token;
+    }
 
     // 1. Dashboard Summary
     const t0 = Date.now();
