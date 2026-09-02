@@ -18,7 +18,6 @@ const cacheMissDuration = new Trend('http_duration_cache_miss');   // Waktu resp
 const cacheHitCount = new Counter('total_cache_hits');
 const cacheMissCount = new Counter('total_cache_misses');
 
-// Konfigurasi Beban (Dapat diatur dinamis via CLI: --vus 10, --vus 50, --vus 100)
 export const options = {
   thresholds: {
     http_req_failed: ['rate<0.01'],
@@ -59,38 +58,38 @@ export default function (data) {
   }
 
   // =========================================================================
-  // FASE 1: CACHE HIT (Membaca Data Live Lingkungan dari RAM Redis)
-  // Endpoint: GET /environment/live/1 (Dilayani dari key Redis live:zone:1:environment)
+  // EKSEKUSI PARALEL DENGAN JUMLAH & STRUKTUR DATA YANG 100% IMBANG & IDENTIK
+  // Keduanya meminta 1 data kondisi kandang terbaru yang persis sama:
+  // - Request 1 (HIT)  : Dilayani dari RAM Redis
+  // - Request 2 (MISS) : Dipaksa query SELECT ke PostgreSQL Database
   // =========================================================================
-  const tHitStart = Date.now();
-  const resHit = http.get(`${BASE_URL}/environment/live/1`, { headers: authHeaders });
-  const hitDuration = Date.now() - tHitStart;
+  const responses = http.batch([
+    ['GET', `${BASE_URL}/environment/live/1`, null, { headers: authHeaders }],               // Cache HIT (1 Objek dari Redis RAM)
+    ['GET', `${BASE_URL}/environment/live/1?fresh=true`, null, { headers: authHeaders }],   // Cache MISS (1 Objek yang persis sama dari Database)
+  ]);
 
-  if (resHit.status === 200) {
-    cacheHitDuration.add(hitDuration);
+  const resHit = responses[0];
+  const resMiss = responses[1];
+
+  // 1. Catat durasi murni Cache Hit (Redis RAM)
+  if (resHit && resHit.status === 200) {
+    cacheHitDuration.add(resHit.timings.duration);
     cacheHitCount.add(1);
   }
+
+  // 2. Catat durasi murni Cache Miss (PostgreSQL Query)
+  if (resMiss && resMiss.status === 200) {
+    cacheMissDuration.add(resMiss.timings.duration);
+    cacheMissCount.add(1);
+  }
+
   check(resHit, {
     'Cache HIT OK (Status 200)': (r) => r.status === 200,
   });
 
-  sleep(0.5);
-
-  // =========================================================================
-  // FASE 2: CACHE MISS / DIRECT DB (Membaca Riwayat Data dari PostgreSQL Database)
-  // Endpoint: GET /environment/trend/1?range=24h (Memaksa Prisma SELECT ke disk database)
-  // =========================================================================
-  const tMissStart = Date.now();
-  const resMiss = http.get(`${BASE_URL}/environment/trend/1?range=24h`, { headers: authHeaders });
-  const missDuration = Date.now() - tMissStart;
-
-  if (resMiss.status === 200) {
-    cacheMissDuration.add(missDuration);
-    cacheMissCount.add(1);
-  }
   check(resMiss, {
     'Cache MISS Database OK (Status 200)': (r) => r.status === 200,
   });
 
-  sleep(0.5);
+  sleep(1);
 }

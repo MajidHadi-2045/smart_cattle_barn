@@ -13,6 +13,14 @@ export class EnvironmentService {
     setInterval(() => this.flushAllBatches(), 10000);
   }
 
+  // Mengambil 1 data sensor terbaru langsung dari PostgreSQL (Bypass Cache)
+  async getLatestData(zoneId: number) {
+    return this.prisma.environmentData.findFirst({
+      where: { zoneId: parseInt(zoneId as any) || 1 },
+      orderBy: { timestamp: 'desc' },
+    });
+  }
+
   async saveZoneSensorData(zoneId: number, data: any) {
     this.envBatch.push({
       zoneId,

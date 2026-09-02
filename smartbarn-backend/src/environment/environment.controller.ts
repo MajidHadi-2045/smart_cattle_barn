@@ -56,12 +56,20 @@ export class EnvironmentController {
   // B. ENDPOINT UNTUK DASHBOARD UI (GRAFIK & LIVE)
   // ==========================================
   @Get('live/:zoneId')
-  async getLive(@Param('zoneId') zoneId: string) {
+  async getLive(@Param('zoneId') zoneId: string, @Query('fresh') fresh?: string) {
+    // 1. KONDISI CACHE MISS (DIPAKSA BYPASS KE POSTGRESQL DATABASE)
+    if (fresh === 'true') {
+      return this.environmentService.getLatestData(+zoneId || 1);
+    }
+
+    // 2. KONDISI CACHE HIT (DILAYANI DARI REDIS RAM)
     let data: string | null = null;
     try {
       data = await this.redis.get(`live:zone:${zoneId}:environment`);
     } catch (err) {}
-    if (!data) return null;
+    if (!data) {
+      return this.environmentService.getLatestData(+zoneId || 1);
+    }
 
     try {
       const parsed = JSON.parse(data);
