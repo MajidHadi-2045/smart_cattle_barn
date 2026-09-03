@@ -55,20 +55,22 @@ export class LivestockService {
   /**
    * 1. STATISTIK DASHBOARD (Cache-Aside Diaktifkan!)
    */
-  async getDashboardStats(sectionId: number) {
+  async getDashboardStats(sectionId: number, fresh: boolean = false) {
     const cacheKey = `livestock:stats:section:${sectionId}`;
 
-    // A. Cek Cache Redis (Super Cepat)
-    try {
-      const cachedData = await this.redis.get(cacheKey);
-      if (cachedData) {
-        return JSON.parse(cachedData);
+    // A. Cek Cache Redis (Super Cepat) jika tidak dipaksa fresh
+    if (!fresh) {
+      try {
+        const cachedData = await this.redis.get(cacheKey);
+        if (cachedData) {
+          return JSON.parse(cachedData);
+        }
+      } catch (err) {
+        console.warn('Redis Connection Down (getDashboardStats).');
       }
-    } catch (err) {
-      console.warn('Redis Connection Down (getDashboardStats).');
     }
 
-    // B. Hitung agregat dari PostgreSQL jika cache kosong
+    // B. Hitung agregat dari PostgreSQL jika cache kosong / dipaksa fresh
     const stats = await this.prisma.livestock.groupBy({
       by: ['status'],
       where: { sectionId },

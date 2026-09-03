@@ -43,17 +43,8 @@ export function setup() {
       const body = res.json();
       const token = body.accessToken || body.access_token || body.token || '';
 
-      // WARM-UP REDIS CACHE: Isi data live sensor ke Redis RAM agar Cache Hit 100% aktif
-      const warmPayload = JSON.stringify({
-        zoneId: 1,
-        type: 'zone_sensor',
-        temperature: 28.5,
-        humidity: 65.0,
-        ammonia: 10.0,
-        thi: 78.2,
-        timestamp: new Date().toISOString(),
-      });
-      http.post(`${BASE_URL}/environment/sensor`, warmPayload, {
+      // WARM-UP REDIS CACHE: Panggil 1 kali agar data statistik tersimpan di Redis RAM (TTL 300s)
+      http.get(`${BASE_URL}/livestock/stats/1`, {
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -79,19 +70,21 @@ export default function (data) {
   const mode = __ENV.MODE || 'both'; // 'hit', 'miss', atau 'both' (default)
 
   // =========================================================================
-  // EKSEKUSI PENGUJIAN SESUAI MODE
+  // EKSEKUSI PENGUJIAN HEAD-TO-HEAD STATISTIK:
+  // - Request HIT  : Mengambil ringkasan agregasi yang sudah di-cache di Redis RAM
+  // - Request MISS : Memaksa PostgreSQL melakukan komputasi GROUP BY & COUNT real-time
   // =========================================================================
   if (mode === 'hit') {
     // Mode Murni Cache HIT (Hanya memanggil Redis RAM)
-    const resHit = http.get(`${BASE_URL}/environment/live/1`, { headers: authHeaders });
+    const resHit = http.get(`${BASE_URL}/livestock/stats/1`, { headers: authHeaders });
     if (resHit && resHit.status === 200) {
       cacheHitDuration.add(resHit.timings.duration);
       cacheHitCount.add(1);
     }
     check(resHit, { 'Cache HIT OK (Status 200)': (r) => r.status === 200 });
   } else if (mode === 'miss') {
-    // Mode Murni Cache MISS (Hanya memanggil Database PostgreSQL)
-    const resMiss = http.get(`${BASE_URL}/environment/live/1?fresh=true`, { headers: authHeaders });
+    // Mode Murni Cache MISS (Hanya memanggil Database PostgreSQL GROUP BY)
+    const resMiss = http.get(`${BASE_URL}/livestock/stats/1?fresh=true`, { headers: authHeaders });
     if (resMiss && resMiss.status === 200) {
       cacheMissDuration.add(resMiss.timings.duration);
       cacheMissCount.add(1);
@@ -100,8 +93,8 @@ export default function (data) {
   } else {
     // Mode PARALEL BOTH (Mengeksekusi keduanya secara bersamaan)
     const responses = http.batch([
-      ['GET', `${BASE_URL}/environment/live/1`, null, { headers: authHeaders }],               // Cache HIT (Redis RAM)
-      ['GET', `${BASE_URL}/environment/live/1?fresh=true`, null, { headers: authHeaders }],   // Cache MISS (PostgreSQL DB)
+      ['GET', `${BASE_URL}/livestock/stats/1`, null, { headers: authHeaders }],               // Cache HIT (Redis RAM)
+      ['GET', `${BASE_URL}/livestock/stats/1?fresh=true`, null, { headers: authHeaders }],   // Cache MISS (PostgreSQL GROUP BY)
     ]);
 
     const resHit = responses[0];

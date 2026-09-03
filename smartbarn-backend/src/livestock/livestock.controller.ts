@@ -74,8 +74,8 @@ export class LivestockController {
   }
 
   @Get('stats/:sectionId')
-  getStats(@Param('sectionId') sectionId: string) {
-    return this.livestockService.getDashboardStats(+sectionId);
+  getStats(@Param('sectionId') sectionId: string, @Query('fresh') fresh?: string) {
+    return this.livestockService.getDashboardStats(+sectionId, fresh === 'true');
   }
 
   @Get('section/:sectionId')
