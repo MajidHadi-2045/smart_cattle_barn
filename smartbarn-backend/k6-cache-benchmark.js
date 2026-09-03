@@ -41,10 +41,29 @@ export function setup() {
 
     if (res.status === 200 || res.status === 201) {
       const body = res.json();
-      return { token: body.accessToken || body.access_token || body.token || '' };
+      const token = body.accessToken || body.access_token || body.token || '';
+
+      // WARM-UP REDIS CACHE: Isi data live sensor ke Redis RAM agar Cache Hit 100% aktif
+      const warmPayload = JSON.stringify({
+        zoneId: 1,
+        type: 'zone_sensor',
+        temperature: 28.5,
+        humidity: 65.0,
+        ammonia: 10.0,
+        thi: 78.2,
+        timestamp: new Date().toISOString(),
+      });
+      http.post(`${BASE_URL}/environment/sensor`, warmPayload, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+
+      return { token };
     }
   } catch (err) {
-    console.warn(`[Setup Warning] Gagal login: ${err.message}`);
+    console.warn(`[Setup Warning] Gagal setup: ${err.message}`);
   }
   return { token: '' };
 }
