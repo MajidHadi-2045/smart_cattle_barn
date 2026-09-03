@@ -17,9 +17,39 @@ export class LivestockService {
     this.redis = new Redis({
       host: process.env.REDIS_HOST || 'localhost',
       port: parseInt(process.env.REDIS_PORT || '6379', 10),
-      maxRetriesPerRequest: 1
+      maxRetriesPerRequest: 1,
     });
-    this.redis.on('error', () => { });
+    this.redis.on('error', () => {});
+  }
+
+  /**
+   * PEMBERSIHAN KHUSUS DATA TELEMETRI HASIL TESTING
+   * Hanya menghapus LivestockVital, EnvironmentData, AirCirculation, dan Live Cache Redis.
+   * Data master sapi, kandang, user, dll TETAP 100% AMAN.
+   */
+  async cleanAllTelemetryData() {
+    const delVitals = await this.prisma.livestockVital.deleteMany({});
+    const delEnv = await this.prisma.environmentData.deleteMany({});
+    const delAir = await this.prisma.airCirculation.deleteMany({});
+    let redisCleaned = 0;
+    try {
+      const keys = await this.redis.keys('live:zone:*');
+      if (keys.length > 0) {
+        await this.redis.del(...keys);
+        redisCleaned = keys.length;
+      }
+    } catch (e) {}
+
+    return {
+      success: true,
+      message: 'Semua data telemetri hasil pengujian berhasil dibersihkan!',
+      deleted: {
+        livestockVitals: delVitals.count,
+        environmentData: delEnv.count,
+        airCirculation: delAir.count,
+        redisLiveKeys: redisCleaned,
+      },
+    };
   }
 
   /**

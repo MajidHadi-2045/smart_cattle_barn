@@ -57,39 +57,50 @@ export default function (data) {
     authHeaders['Authorization'] = 'Bearer ' + data.token;
   }
 
+  const mode = __ENV.MODE || 'both'; // 'hit', 'miss', atau 'both' (default)
+
   // =========================================================================
-  // EKSEKUSI PARALEL DENGAN JUMLAH & STRUKTUR DATA YANG 100% IMBANG & IDENTIK
-  // Keduanya meminta 1 data kondisi kandang terbaru yang persis sama:
-  // - Request 1 (HIT)  : Dilayani dari RAM Redis
-  // - Request 2 (MISS) : Dipaksa query SELECT ke PostgreSQL Database
+  // EKSEKUSI PENGUJIAN SESUAI MODE
   // =========================================================================
-  const responses = http.batch([
-    ['GET', `${BASE_URL}/environment/live/1`, null, { headers: authHeaders }],               // Cache HIT (1 Objek dari Redis RAM)
-    ['GET', `${BASE_URL}/environment/live/1?fresh=true`, null, { headers: authHeaders }],   // Cache MISS (1 Objek yang persis sama dari Database)
-  ]);
+  if (mode === 'hit') {
+    // Mode Murni Cache HIT (Hanya memanggil Redis RAM)
+    const resHit = http.get(`${BASE_URL}/environment/live/1`, { headers: authHeaders });
+    if (resHit && resHit.status === 200) {
+      cacheHitDuration.add(resHit.timings.duration);
+      cacheHitCount.add(1);
+    }
+    check(resHit, { 'Cache HIT OK (Status 200)': (r) => r.status === 200 });
+  } else if (mode === 'miss') {
+    // Mode Murni Cache MISS (Hanya memanggil Database PostgreSQL)
+    const resMiss = http.get(`${BASE_URL}/environment/live/1?fresh=true`, { headers: authHeaders });
+    if (resMiss && resMiss.status === 200) {
+      cacheMissDuration.add(resMiss.timings.duration);
+      cacheMissCount.add(1);
+    }
+    check(resMiss, { 'Cache MISS Database OK (Status 200)': (r) => r.status === 200 });
+  } else {
+    // Mode PARALEL BOTH (Mengeksekusi keduanya secara bersamaan)
+    const responses = http.batch([
+      ['GET', `${BASE_URL}/environment/live/1`, null, { headers: authHeaders }],               // Cache HIT (Redis RAM)
+      ['GET', `${BASE_URL}/environment/live/1?fresh=true`, null, { headers: authHeaders }],   // Cache MISS (PostgreSQL DB)
+    ]);
 
-  const resHit = responses[0];
-  const resMiss = responses[1];
+    const resHit = responses[0];
+    const resMiss = responses[1];
 
-  // 1. Catat durasi murni Cache Hit (Redis RAM)
-  if (resHit && resHit.status === 200) {
-    cacheHitDuration.add(resHit.timings.duration);
-    cacheHitCount.add(1);
+    if (resHit && resHit.status === 200) {
+      cacheHitDuration.add(resHit.timings.duration);
+      cacheHitCount.add(1);
+    }
+
+    if (resMiss && resMiss.status === 200) {
+      cacheMissDuration.add(resMiss.timings.duration);
+      cacheMissCount.add(1);
+    }
+
+    check(resHit, { 'Cache HIT OK (Status 200)': (r) => r.status === 200 });
+    check(resMiss, { 'Cache MISS Database OK (Status 200)': (r) => r.status === 200 });
   }
-
-  // 2. Catat durasi murni Cache Miss (PostgreSQL Query)
-  if (resMiss && resMiss.status === 200) {
-    cacheMissDuration.add(resMiss.timings.duration);
-    cacheMissCount.add(1);
-  }
-
-  check(resHit, {
-    'Cache HIT OK (Status 200)': (r) => r.status === 200,
-  });
-
-  check(resMiss, {
-    'Cache MISS Database OK (Status 200)': (r) => r.status === 200,
-  });
 
   sleep(1);
 }

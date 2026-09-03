@@ -55,7 +55,13 @@
     "test:local:cache:10vu": "./k6 run -e LOCAL=true --vus 10 --duration 30s k6-cache-benchmark.js",
     "test:local:cache:50vu": "./k6 run -e LOCAL=true --vus 50 --duration 30s k6-cache-benchmark.js",
     "test:local:cache:100vu": "./k6 run -e LOCAL=true --vus 100 --duration 30s k6-cache-benchmark.js",
-    "clean-db": "node clean_database_remote.js",
+    "test:local:cache:hit:10vu": "./k6 run -e LOCAL=true -e MODE=hit --vus 10 --duration 30s k6-cache-benchmark.js",
+    "test:local:cache:hit:50vu": "./k6 run -e LOCAL=true -e MODE=hit --vus 50 --duration 30s k6-cache-benchmark.js",
+    "test:local:cache:hit:100vu": "./k6 run -e LOCAL=true -e MODE=hit --vus 100 --duration 30s k6-cache-benchmark.js",
+    "test:local:cache:miss:10vu": "./k6 run -e LOCAL=true -e MODE=miss --vus 10 --duration 30s k6-cache-benchmark.js",
+    "test:local:cache:miss:50vu": "./k6 run -e LOCAL=true -e MODE=miss --vus 50 --duration 30s k6-cache-benchmark.js",
+    "test:local:cache:miss:100vu": "./k6 run -e LOCAL=true -e MODE=miss --vus 100 --duration 30s k6-cache-benchmark.js",
+    "clean-db": "node clean-telemetry.js",
     "monitor": "node monitor.js"
   },
   "dependencies": {

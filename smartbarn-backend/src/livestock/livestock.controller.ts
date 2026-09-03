@@ -56,6 +56,15 @@ export class LivestockController {
   }
 
   // ==========================================
+  // PEMBERSIHAN DATA TELEMETRI TESTING VIA API
+  // ==========================================
+  @Delete('clean-telemetry')
+  @UseGuards(AuthGuard)
+  async cleanTelemetry() {
+    return this.livestockService.cleanAllTelemetryData();
+  }
+
+  // ==========================================
   // 2. ENDPOINT DASHBOARD & FILTER (STATIS)
   // Harus diletakkan di atas endpoint dinamis /:id
   // ==========================================

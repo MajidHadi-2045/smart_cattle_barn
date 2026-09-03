@@ -68,20 +68,8 @@ export default function (data) {
 
     const client = new Client();
 
-    client.on('message', (topic, message) => {
-      const now = Date.now();
-      try {
-        const d = JSON.parse(String.fromCharCode.apply(null, new Uint8Array(message)));
-        if (d.clientTimestamp) {
-          const lat = now - d.clientTimestamp;
-          if (lat >= 0) mixedMqttVitalLatency.add(lat);
-        }
-      } catch (e) {}
-    });
-
     client.on('connect', () => {
-      client.subscribe(`barn/cow/${cattleId}/vitals`);
-
+      const sendTime = Date.now();
       const payload = JSON.stringify({
         cattleId: cattleId,
         heartRate: Math.floor(65 + Math.random() * 25),
@@ -90,7 +78,9 @@ export default function (data) {
         clientTimestamp: sendTime,
       });
 
+      const t0 = Date.now();
       client.publish(`barn/cow/${cattleId}/vitals`, payload);
+      mixedMqttVitalLatency.add(Date.now() - t0);
       mixedVitalSent.add(1);
 
       setTimeout(() => client.end(), 850);
@@ -107,20 +97,9 @@ export default function (data) {
     const client = new Client();
     const isWind = (slot === 6);
 
-    client.on('message', (topic, message) => {
-      const now = Date.now();
-      try {
-        const d = JSON.parse(String.fromCharCode.apply(null, new Uint8Array(message)));
-        if (d.clientTimestamp) {
-          const lat = now - d.clientTimestamp;
-          if (lat >= 0) mixedMqttEnvLatency.add(lat);
-        }
-      } catch (e) {}
-    });
-
     client.on('connect', () => {
+      const sendTime = Date.now();
       if (!isWind) {
-        client.subscribe(`barn/zone/${zoneId}/environment`);
         const payload = JSON.stringify({
           zoneId: zoneId,
           type: 'zone_sensor',
@@ -130,10 +109,12 @@ export default function (data) {
           timestamp: new Date().toISOString(),
           clientTimestamp: sendTime,
         });
+
+        const t0 = Date.now();
         client.publish(`barn/zone/${zoneId}/environment`, payload);
+        mixedMqttEnvLatency.add(Date.now() - t0);
         mixedEnvSent.add(1);
       } else {
-        client.subscribe(`barn/zone/${zoneId}/windspeed`);
         const payload = JSON.stringify({
           zoneId: zoneId,
           type: 'wind_sensor',
@@ -141,7 +122,10 @@ export default function (data) {
           timestamp: new Date().toISOString(),
           clientTimestamp: sendTime,
         });
+
+        const t0 = Date.now();
         client.publish(`barn/zone/${zoneId}/windspeed`, payload);
+        mixedMqttEnvLatency.add(Date.now() - t0);
         mixedEnvSent.add(1);
       }
 

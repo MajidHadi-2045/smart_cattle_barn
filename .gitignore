@@ -64,6 +64,7 @@ scratch_extract_thesis.py
 check-bullmq.js
 check-db-counts.js
 check_api_history.js
+clean-telemetry.js
 
 # PDF Files & Scripts
 generate_pdf.py
