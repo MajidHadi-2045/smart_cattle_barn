@@ -68,7 +68,7 @@ export class EnvironmentController {
       data = await this.redis.get(`live:zone:${zoneId}:environment`);
     } catch (err) {}
     if (!data) {
-      return this.environmentService.getLatestData(+zoneId || 1);
+      return null;
     }
 
     try {

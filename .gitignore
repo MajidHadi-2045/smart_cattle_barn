@@ -65,6 +65,7 @@ check-bullmq.js
 check-db-counts.js
 check_api_history.js
 clean-telemetry.js
+K6_TESTING_DIAGRAMS.md
 
 # PDF Files & Scripts
 generate_pdf.py
