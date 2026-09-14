@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, Animated } from 'react-native';
+import { StyleSheet, Animated, Easing } from 'react-native';
 
 interface SkeletonProps {
   width?: number | string;
@@ -9,24 +9,28 @@ interface SkeletonProps {
 }
 
 const Skeleton: React.FC<SkeletonProps> = ({ width, height, borderRadius = 8, style }) => {
-  const animatedValue = React.useRef(new Animated.Value(0.3)).current;
+  const animatedValue = React.useRef(new Animated.Value(0.45)).current;
 
   React.useEffect(() => {
-    Animated.loop(
+    const animation = Animated.loop(
       Animated.sequence([
         Animated.timing(animatedValue, {
-          toValue: 1,
-          duration: 1000,
+          toValue: 0.95,
+          duration: 850,
+          easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
         }),
         Animated.timing(animatedValue, {
-          toValue: 0.3,
-          duration: 1000,
+          toValue: 0.45,
+          duration: 850,
+          easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
         }),
       ])
-    ).start();
-  }, []);
+    );
+    animation.start();
+    return () => animation.stop();
+  }, [animatedValue]);
 
   return (
     <Animated.View
@@ -46,8 +50,9 @@ const Skeleton: React.FC<SkeletonProps> = ({ width, height, borderRadius = 8, st
 
 const styles = StyleSheet.create({
   skeleton: {
-    backgroundColor: '#e1e5e9',
+    backgroundColor: '#e2e8f0', // slate-200
   },
 });
 
 export default Skeleton;
+

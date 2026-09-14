@@ -12,8 +12,15 @@ import {
   ScrollView,
   Alert,
   KeyboardAvoidingView,
-  Platform
+  Platform,
+  LayoutAnimation,
+  UIManager
 } from 'react-native';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, SPACING, SHADOWS } from '../theme';
 import { 
@@ -124,6 +131,9 @@ const LivestockScreen = ({ navigation }: any) => {
       setSilos(swrData.silos);
       if (swrData.checklist) {
         setFeedGoal(swrData.checklist.feedGoal || 1);
+      }
+      if (loading) {
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       }
       setLoading(false);
       setRefreshing(false);

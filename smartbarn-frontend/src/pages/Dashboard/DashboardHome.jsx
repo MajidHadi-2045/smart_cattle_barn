@@ -738,7 +738,7 @@ const DashboardHome = ({ isPublicRoute = false }) => {
     const isDataLive = isWsConnected && lastSensorUpdate > 0 && (currentTime - lastSensorUpdate < 120000);
 
     return (
-        <div className="space-y-6 pb-20">
+        <div className="space-y-6 pb-20 animate-fade-in">
             {/* Header Dashboard / Beranda */}
             <div className="h-14 flex flex-row justify-between items-center gap-4">
                 <div>

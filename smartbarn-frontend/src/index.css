@@ -98,3 +98,25 @@ input[type="number"] {
 .animate-cursor-blink {
     animation: cursorBlink 0.8s infinite;
 }
+
+/* --- GPU-Accelerated Smooth Content Fade-In (Zero CLS, Fast 250ms) --- */
+@keyframes contentFadeIn {
+    0% {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-in {
+    animation: contentFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    will-change: opacity, transform;
+}
+
+.animate-fade-in-fast {
+    animation: contentFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    will-change: opacity, transform;
+}

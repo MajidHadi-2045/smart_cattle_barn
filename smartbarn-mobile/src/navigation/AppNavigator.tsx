@@ -140,10 +140,7 @@ const AppNavigator = () => {
       } catch (e) {
         console.error('Error checking token:', e);
       } finally {
-        // Berikan delay sedikit agar logo dan animasi loading bisa dilihat user
-        setTimeout(() => {
-          setIsLoading(false);
-        }, 1500);
+        setIsLoading(false);
       }
     };
     checkLoginStatus();
