@@ -66,6 +66,10 @@ check-db-counts.js
 check_api_history.js
 clean-telemetry.js
 K6_TESTING_DIAGRAMS.md
+DIAGRAM_JALUR_PENGUJIAN_K6.svg
+DIAGRAM_JALUR_PENGUJIAN_K6.html
+generate_svg_diagram.py
+fix_svg.py
 
 # PDF Files & Scripts
 generate_pdf.py
