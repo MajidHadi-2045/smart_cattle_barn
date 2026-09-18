@@ -1701,14 +1701,12 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                         style={
                             window.innerWidth >= 640 
                                 ? { 
-                                    left: 0, 
-                                    top: 0, 
-                                    transform: `translate3d(${tooltipPos.x}px, ${tooltipPos.y}px, 0)`,
-                                    willChange: 'transform'
+                                    left: `${tooltipPos.x}px`, 
+                                    top: `${tooltipPos.y}px`,
                                   } 
                                 : {}
                         }
-                        className={`fixed z-[9999] bg-slate-900/95 text-white p-4 rounded-xl shadow-2xl shadow-slate-950/60 backdrop-blur-md border border-slate-700/80 w-[calc(100vw-2rem)] sm:w-80 transition-transform duration-75 ease-out animate-fade-in ${
+                        className={`fixed z-[9999] bg-slate-900/95 text-white p-4 rounded-xl shadow-2xl shadow-slate-950/60 backdrop-blur-md border border-slate-700/80 w-[calc(100vw-2rem)] sm:w-80 transition-all duration-75 ease-out opacity-100 ${
                             window.innerWidth < 640 
                                 ? 'bottom-6 left-4 right-4 mx-auto' 
                                 : 'pointer-events-none'
