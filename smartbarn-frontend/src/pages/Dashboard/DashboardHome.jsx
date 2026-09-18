@@ -1,4 +1,5 @@
 import React, { useState, useEffect, Suspense } from 'react';
+import { createPortal } from 'react-dom';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from 'recharts';
 import { fetchApi } from '../../utils/api';
 import { socket } from '../../utils/socket';
@@ -1687,8 +1688,8 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                 </div>
             )}
 
-            {/* Floating Adaptive Hover / Touch Modal Info Sapi (Desktop & Mobile) */}
-            {hoveredCowInfo && (
+            {/* Floating Adaptive Hover / Touch Modal Info Sapi (Desktop & Mobile via React Portal) */}
+            {hoveredCowInfo && typeof document !== 'undefined' && createPortal(
                 <>
                     {/* Backdrop khusus Mobile */}
                     <div 
@@ -1741,7 +1742,8 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                             </div>
                         </div>
                     </div>
-                </>
+                </>,
+                document.body
             )}
         </div>
     );
