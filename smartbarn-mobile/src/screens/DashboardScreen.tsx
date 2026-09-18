@@ -1351,7 +1351,7 @@ const DashboardScreen = ({ navigation }: any) => {
 
                 <ScrollView style={{ maxHeight: 300, marginBottom: SPACING.md }}>
                   <View style={styles.cowSelectGrid}>
-                    {livestock.filter(cow => cow.cattleId.toLowerCase().includes(searchChartText.toLowerCase())).slice(0, 5).map(cow => {
+                    {livestock.filter(cow => cow.cattleId.toLowerCase().includes(searchChartText.toLowerCase())).map(cow => {
                       const isSelected = selectedChartCows.includes(cow.cattleId);
                       return (
                         <TouchableOpacity
@@ -1446,7 +1446,7 @@ const DashboardScreen = ({ navigation }: any) => {
 
                 <ScrollView style={{ maxHeight: 300, marginBottom: SPACING.md }}>
                   <View style={styles.cowSelectGrid}>
-                    {livestock.filter(cow => cow.cattleId.toLowerCase().includes(searchTableText.toLowerCase())).slice(0, 10).map(cow => {
+                    {livestock.filter(cow => cow.cattleId.toLowerCase().includes(searchTableText.toLowerCase())).map(cow => {
                       const isSelected = selectedTableCows.includes(cow.cattleId);
                       return (
                         <TouchableOpacity

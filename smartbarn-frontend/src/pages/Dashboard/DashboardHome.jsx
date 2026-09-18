@@ -14,7 +14,7 @@ const MultiSelectDropdown = ({ options = [], selectedIds = [], onChange, maxSele
     const safeOptions = Array.isArray(options) ? options : [];
     const safeSelectedIds = Array.isArray(selectedIds) ? selectedIds : [];
 
-    const filteredOptions = safeOptions.filter(opt => opt && opt.cattleId && String(opt.cattleId).toLowerCase().includes((searchTerm || '').toLowerCase())).slice(0, 15);
+    const filteredOptions = safeOptions.filter(opt => opt && opt.cattleId && String(opt.cattleId).toLowerCase().includes((searchTerm || '').toLowerCase()));
 
     const handleToggle = (id) => {
         if (!id) return;
@@ -151,34 +151,55 @@ const DashboardHome = ({ isPublicRoute = false }) => {
     const [lastSensorUpdate, setLastSensorUpdate] = useState(0); // Set to 0 initially so it shows offline until data arrives
     const [currentTime, setCurrentTime] = useState(Date.now());
 
-    // State & Handler untuk Hover Info Sapi Adaptif (Desktop & Mobile)
+    // State & Handler untuk Hover Info Sapi Interaktif Mengikuti Kursor (Desktop & Mobile)
     const [hoveredCowInfo, setHoveredCowInfo] = useState(null);
     const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
 
-    const handleShowCowInfo = (e, sum) => {
-        e.stopPropagation();
-        const rect = e.currentTarget.getBoundingClientRect();
+    const updateTooltipPosition = (clientX, clientY, sum) => {
         const isMobile = window.innerWidth < 640;
-
         if (isMobile) {
             setHoveredCowInfo(sum);
             return;
         }
 
-        let x = rect.right + 12;
-        let y = rect.top;
+        const tooltipWidth = 320; // Lebar tooltip (sm:w-80 = 320px)
+        const tooltipHeight = 140; // Estimasi tinggi tooltip
+        const offset = 16; // Jarak aman dari kursor
 
-        // Cegah tooltip terpotong di tepi kanan layar
-        if (x + 300 > window.innerWidth) {
-            x = Math.max(10, rect.left - 300);
+        let x = clientX + offset;
+        let y = clientY + offset;
+
+        // Auto-adjust horizontal: jika tooltip melebihi batas kanan layar, pindah ke sisi kiri kursor
+        if (x + tooltipWidth > window.innerWidth - 16) {
+            x = clientX - tooltipWidth - offset;
         }
-        // Cegah tooltip terpotong di tepi bawah layar (geser ke atas)
-        if (y + 160 > window.innerHeight) {
-            y = Math.max(10, window.innerHeight - 170);
+        // Batasi agar tidak terpotong di tepi kiri layar
+        if (x < 12) {
+            x = 12;
+        }
+
+        // Auto-adjust vertikal: jika tooltip melebihi batas bawah layar, pindah ke atas kursor
+        if (y + tooltipHeight > window.innerHeight - 16) {
+            y = clientY - tooltipHeight - offset;
+        }
+        // Batasi agar tidak terpotong di tepi atas layar
+        if (y < 12) {
+            y = 12;
         }
 
         setTooltipPos({ x, y });
-        setHoveredCowInfo(sum);
+        if (sum) {
+            setHoveredCowInfo(sum);
+        }
+    };
+
+    const handleShowCowInfo = (e, sum) => {
+        e.stopPropagation();
+        updateTooltipPosition(e.clientX, e.clientY, sum);
+    };
+
+    const handleMouseMoveCowInfo = (e, sum) => {
+        updateTooltipPosition(e.clientX, e.clientY, sum);
     };
 
     const handleHideCowInfo = () => {
@@ -1398,6 +1419,7 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                                             key={sum.cowId} 
                                             className="group hover:bg-amber-50/50 dark:hover:bg-slate-800/80 transition-colors cursor-pointer"
                                             onMouseEnter={(e) => handleShowCowInfo(e, sum)}
+                                            onMouseMove={(e) => handleMouseMoveCowInfo(e, sum)}
                                             onMouseLeave={handleHideCowInfo}
                                             onClick={(e) => handleShowCowInfo(e, sum)}
                                         >
@@ -1675,8 +1697,17 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                     />
 
                     <div 
-                        style={window.innerWidth >= 640 ? { left: `${tooltipPos.x}px`, top: `${tooltipPos.y}px` } : {}}
-                        className={`fixed z-[9999] bg-slate-900/95 text-white p-4 rounded-xl shadow-2xl backdrop-blur-md border border-slate-700 w-[calc(100vw-2rem)] sm:w-80 transition-all duration-150 animate-fade-in ${
+                        style={
+                            window.innerWidth >= 640 
+                                ? { 
+                                    left: 0, 
+                                    top: 0, 
+                                    transform: `translate3d(${tooltipPos.x}px, ${tooltipPos.y}px, 0)`,
+                                    willChange: 'transform'
+                                  } 
+                                : {}
+                        }
+                        className={`fixed z-[9999] bg-slate-900/95 text-white p-4 rounded-xl shadow-2xl shadow-slate-950/60 backdrop-blur-md border border-slate-700/80 w-[calc(100vw-2rem)] sm:w-80 transition-transform duration-75 ease-out animate-fade-in ${
                             window.innerWidth < 640 
                                 ? 'bottom-6 left-4 right-4 mx-auto' 
                                 : 'pointer-events-none'
