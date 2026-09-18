@@ -1,5 +1,5 @@
-// File: src/components/dashboard/UserProfileModal.jsx
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
 
 const UserProfileModal = ({ isOpen, onClose, user, onPhotoUpdate, onProfileUpdate }) => {
@@ -77,7 +77,7 @@ const UserProfileModal = ({ isOpen, onClose, user, onPhotoUpdate, onProfileUpdat
       }
   };
 
-  if (!isOpen || !user) return null;
+  if (!isOpen || !user || typeof document === 'undefined') return null;
 
   const handlePhotoClick = () => {
     if(!isUploading) fileInputRef.current.click();
@@ -142,8 +142,8 @@ const UserProfileModal = ({ isOpen, onClose, user, onPhotoUpdate, onProfileUpdat
     reader.readAsDataURL(file);
   };
 
-  return (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex justify-center items-center z-[99] p-4 animate-fade-in">
+  return createPortal(
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex justify-center items-center z-[100] p-4 animate-fade-in">
       <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-700 relative transform transition-all scale-100">
         
         {/* Tombol Close */}
@@ -154,8 +154,8 @@ const UserProfileModal = ({ isOpen, onClose, user, onPhotoUpdate, onProfileUpdat
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
 
-        {/* ... (Background Header Tetap Sama) ... */}
-        <div className="h-32 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 relative">
+        {/* Header Banner - Emerald/Teal Theme */}
+        <div className="h-32 bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 dark:from-emerald-700 dark:via-emerald-600 dark:to-teal-700 relative">
             <div className="absolute inset-0 bg-black/10"></div>
         </div>
 
@@ -170,7 +170,7 @@ const UserProfileModal = ({ isOpen, onClose, user, onPhotoUpdate, onProfileUpdat
                     {photoPreview ? (
                         <img src={photoPreview} alt="Profile" className="w-full h-full object-cover" />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center font-bold text-slate-400 text-4xl bg-slate-100 dark:bg-slate-900">
+                        <div className="w-full h-full flex items-center justify-center font-bold text-emerald-600 dark:text-emerald-400 text-4xl bg-emerald-50 dark:bg-slate-900">
                             {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
                         </div>
                     )}
@@ -199,9 +199,13 @@ const UserProfileModal = ({ isOpen, onClose, user, onPhotoUpdate, onProfileUpdat
             </div>
             
             <h2 className="mt-4 text-2xl font-bold text-slate-900 dark:text-white tracking-tight">{user.name?.replace(/\b(?:super\s*)?admin\b/gi, '').trim()}</h2>
-            <p className="text-sm font-medium text-primary-600 dark:text-primary-400 mt-1 uppercase tracking-widest">{user.role?.replace('_', ' ')}</p>
+            <div className="mt-1.5">
+                <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/60 px-3 py-1 rounded-full uppercase tracking-wider inline-block">
+                    {user.role?.replace('_', ' ')}
+                </span>
+            </div>
             
-            {/* FITUR UBAH KONTAK (SKRIPSI) */}
+            {/* FITUR UBAH KONTAK */}
             <div className="mt-6 space-y-4">
                 <div className="flex justify-between items-center px-1">
                     <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">Informasi Kontak</h3>
@@ -214,7 +218,7 @@ const UserProfileModal = ({ isOpen, onClose, user, onPhotoUpdate, onProfileUpdat
                                     setIsEditing(true);
                                 }
                             }}
-                            className="text-xs font-bold text-primary-600 hover:text-primary-800 transition bg-primary-50 px-3 py-1 rounded-full"
+                            className="text-xs font-bold text-emerald-700 hover:text-emerald-800 dark:text-emerald-300 dark:hover:text-emerald-200 transition bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 px-3.5 py-1 rounded-full border border-emerald-200 dark:border-emerald-800/60 shadow-2xs"
                         >
                             {isEditing ? (isSaving ? 'Menyimpan...' : 'Simpan') : 'Edit Kontak'}
                         </button>
@@ -222,7 +226,7 @@ const UserProfileModal = ({ isOpen, onClose, user, onPhotoUpdate, onProfileUpdat
                 </div>
 
                 <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl flex items-center gap-4 text-left border border-slate-100 dark:border-slate-700">
-                    <div className="bg-white dark:bg-slate-800 p-2 rounded-lg shadow-sm text-slate-400">
+                    <div className="bg-emerald-50 dark:bg-emerald-950/50 p-2 rounded-lg shadow-2xs text-emerald-600 dark:text-emerald-400 border border-emerald-100/50 dark:border-emerald-900/40">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
                     </div>
                     <div className="flex-1">
@@ -232,7 +236,7 @@ const UserProfileModal = ({ isOpen, onClose, user, onPhotoUpdate, onProfileUpdat
                                 type="email" 
                                 value={editData.email} 
                                 onChange={(e) => setEditData({...editData, email: e.target.value})}
-                                className="w-full mt-1 bg-white border border-slate-300 rounded px-2 py-1 text-sm outline-none focus:border-primary-500" 
+                                className="w-full mt-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg px-2.5 py-1 text-sm outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 dark:text-white" 
                             />
                         ) : (
                             <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{user.email || 'Belum diatur'}</p>
@@ -241,7 +245,7 @@ const UserProfileModal = ({ isOpen, onClose, user, onPhotoUpdate, onProfileUpdat
                 </div>
 
                 <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl flex items-center gap-4 text-left border border-slate-100 dark:border-slate-700">
-                    <div className="bg-white dark:bg-slate-800 p-2 rounded-lg shadow-sm text-slate-400">
+                    <div className="bg-emerald-50 dark:bg-emerald-950/50 p-2 rounded-lg shadow-2xs text-emerald-600 dark:text-emerald-400 border border-emerald-100/50 dark:border-emerald-900/40">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
                     </div>
                     <div className="flex-1">
@@ -252,7 +256,7 @@ const UserProfileModal = ({ isOpen, onClose, user, onPhotoUpdate, onProfileUpdat
                                 value={editData.phone} 
                                 onChange={(e) => setEditData({...editData, phone: e.target.value})}
                                 placeholder="Contoh: 08123456789"
-                                className="w-full mt-1 bg-white border border-slate-300 rounded px-2 py-1 text-sm outline-none focus:border-primary-500" 
+                                className="w-full mt-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg px-2.5 py-1 text-sm outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 dark:text-white" 
                             />
                         ) : (
                             <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{user.phone || 'Belum diatur'}</p>
@@ -263,7 +267,7 @@ const UserProfileModal = ({ isOpen, onClose, user, onPhotoUpdate, onProfileUpdat
                 <div className="grid grid-cols-2 gap-4">
                     <div className="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-100 dark:border-slate-700">
                         <p className="text-xs text-slate-500 font-medium mb-1">Status Akun</p>
-                        <span className="inline-flex px-2 py-1 bg-green-100 text-green-700 rounded-md text-xs font-bold uppercase">Aktif</span>
+                        <span className="inline-flex px-2.5 py-1 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/50 rounded-md text-xs font-bold uppercase tracking-wider">Aktif</span>
                     </div>
                     <div className="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-100 dark:border-slate-700">
                         <p className="text-xs text-slate-500 font-medium mb-1">ID Pengguna</p>
@@ -273,7 +277,8 @@ const UserProfileModal = ({ isOpen, onClose, user, onPhotoUpdate, onProfileUpdat
             </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

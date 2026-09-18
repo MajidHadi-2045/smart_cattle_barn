@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import UserProfileModal from './dashboard/UserProfileModal';
 import ConfirmModal from './common/ConfirmModal';
@@ -266,8 +267,8 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       />
 
       {/* Modal Ganti Password */}
-      {isChangePasswordModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+      {isChangePasswordModalOpen && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700 animate-scale-up">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
@@ -343,7 +344,8 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

@@ -107,16 +107,14 @@ input[type="number"] {
     }
     100% {
         opacity: 1;
-        transform: translateY(0);
+        transform: none;
     }
 }
 
 .animate-fade-in {
     animation: contentFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    will-change: opacity, transform;
 }
 
 .animate-fade-in-fast {
     animation: contentFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    will-change: opacity, transform;
 }

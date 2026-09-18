@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
 import useSWR from 'swr';
 import { fetchApi } from '../../utils/api';
@@ -377,8 +378,8 @@ const HealthPage = () => {
       </div>
 
       {/* --- MODAL FORM --- */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md animate-fade-in">
+      {isModalOpen && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fade-in">
             <div className="bg-white/95 dark:bg-slate-800/95 backdrop-blur-2xl rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden border border-white/50 dark:border-slate-600 transition-all transform scale-100">
                 <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800">
                     <h3 className="text-lg font-bold text-slate-800 dark:text-white">{formData.id ? 'Edit Rekam Medis' : 'Catat Pemeriksaan Baru'}</h3>
@@ -594,7 +595,8 @@ const HealthPage = () => {
                     </div>
                 </form>
             </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* --- CONFIRM MODAL --- */}

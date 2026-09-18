@@ -786,8 +786,8 @@ const DashboardHome = ({ isPublicRoute = false }) => {
             </div>
 
             {/* --- MODAL CHECKLIST HARIAN & KOREKSI --- */}
-            {isChecklistModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+            {isChecklistModalOpen && typeof document !== 'undefined' && createPortal(
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
                     <div className="relative w-full max-w-4xl bg-white dark:bg-slate-800 rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-700 overflow-hidden max-h-[90vh] flex flex-col">
                         {/* Header Modal */}
                         <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-700">
@@ -852,12 +852,12 @@ const DashboardHome = ({ isPublicRoute = false }) => {
 
                                             {/* 2. Target Limbah */}
                                             <div className="space-y-1.5">
-                                                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Target Limbah (Per Sapi)</label>
+                                                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Target Limbah (Per Kandang)</label>
                                                 <div className="flex items-center gap-3">
                                                     <input 
                                                         type="number" 
                                                         min="1" 
-                                                        max="50"
+                                                        max="10"
                                                         value={customWasteGoal}
                                                         onChange={(e) => setCustomWasteGoal(e.target.value)}
                                                         className="w-20 px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
@@ -873,12 +873,12 @@ const DashboardHome = ({ isPublicRoute = false }) => {
 
                                             {/* 3. Target Timbangan */}
                                             <div className="space-y-1.5">
-                                                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Target Penimbangan (Per Sapi)</label>
+                                                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Target Timbang (Per Sapi)</label>
                                                 <div className="flex items-center gap-3">
                                                     <input 
                                                         type="number" 
                                                         min="1" 
-                                                        max="500"
+                                                        max="30"
                                                         value={customWeightGoal}
                                                         onChange={(e) => setCustomWeightGoal(e.target.value)}
                                                         className="w-20 px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
@@ -891,27 +891,19 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                                                     </select>
                                                 </div>
                                             </div>
-                                        </div>
 
-                                        <div className="flex items-center gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
                                             <button 
-                                                onClick={handleSaveChecklistConfig}
+                                                onClick={saveCustomConfig}
                                                 disabled={isSavingConfig}
-                                                className="py-2 px-4 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 dark:disabled:bg-slate-800 text-white font-semibold text-xs rounded-xl transition duration-150 shadow-sm flex items-center gap-2"
+                                                className="w-full py-2 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-xl transition duration-150 shadow-sm flex items-center justify-center gap-2 mt-2"
                                             >
-                                                {isSavingConfig ? 'Menyimpan...' : '💾 Simpan Konfigurasi'}
-                                            </button>
-                                            <button 
-                                                onClick={() => setIsConfigSectionOpen(false)}
-                                                className="py-2 px-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs rounded-xl transition duration-150"
-                                            >
-                                                Batal
+                                                {isSavingConfig ? 'Menyimpan...' : 'Simpan Konfigurasi'}
                                             </button>
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="md:col-span-2 space-y-4">
-                                        <h4 className="font-bold text-xs text-slate-400 uppercase tracking-wider">Status Tugas Hari Ini</h4>
+                                    <div className="md:col-span-2 space-y-3">
+                                        <h4 className="font-bold text-sm text-slate-800 dark:text-slate-200 mb-2">Daftar Kepatuhan Tugas Harian</h4>
                                         
                                         {/* 1. PAKAN */}
                                         <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/30 border border-slate-100 dark:border-slate-850">
@@ -996,7 +988,8 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                             </div>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* --- KARTU STATISTIK TERNAK --- */}
@@ -1466,8 +1459,8 @@ const DashboardHome = ({ isPublicRoute = false }) => {
             {/* ========================================== */}
             {/* 1. MODAL RIWAYAT & KOREKSI DATA (HISTORY) */}
             {/* ========================================== */}
-            {isHistoryModalOpen && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto animate-fade-in">
+            {isHistoryModalOpen && typeof document !== 'undefined' && createPortal(
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100] overflow-y-auto animate-fade-in">
                     <div className="bg-white dark:bg-slate-800 rounded-3xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl border border-slate-100 dark:border-slate-700 overflow-hidden transform transition-all duration-350 scale-100">
                         {/* Modal Header */}
                         <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800/55">
@@ -1550,14 +1543,15 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* ========================================== */}
             {/* 2. MODAL FORM EDIT DATA (EDIT POPUP) */}
             {/* ========================================== */}
-            {isEditModalOpen && (
-                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[60] animate-fade-in">
+            {isEditModalOpen && typeof document !== 'undefined' && createPortal(
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100] animate-fade-in">
                     <div className="bg-white dark:bg-slate-800 rounded-3xl max-w-md w-full shadow-2xl border border-slate-100 dark:border-slate-700 overflow-hidden">
                         {/* Modal Header */}
                         <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800/55">
@@ -1656,10 +1650,11 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
             {/* Modal Konfirmasi Hapus Data Dashboard */}
-            {deleteConfirm.isOpen && (
+            {deleteConfirm.isOpen && typeof document !== 'undefined' && createPortal(
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
                     <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-700 p-6 text-center animate-slide-up">
                         <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -1685,7 +1680,8 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* Floating Adaptive Hover / Touch Modal Info Sapi (Desktop & Mobile via React Portal) */}

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Brush } from 'recharts';
 import { socket } from '../../utils/socket';
 import toast from 'react-hot-toast';
@@ -1291,7 +1292,7 @@ const Livestock = () => {
             )}
 
             {/* --- MODAL KONFIRMASI HAPUS SAPI (PREMIUM GLASSMORPHIC) --- */}
-            {deleteTargetCow && (
+            {deleteTargetCow && createPortal(
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200" onClick={() => !isDeletingCow && setDeleteTargetCow(null)}>
                     <div className="bg-white dark:bg-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 dark:border-slate-700/60 scale-100 transform transition-all" onClick={e => e.stopPropagation()}>
                         {/* Header Warning Icon Badge */}
@@ -1371,12 +1372,13 @@ const Livestock = () => {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* --- MODAL KONFIRMASI HAPUS KANDANG (ZONE) --- */}
-            {deleteTargetZone && (
-                <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200" onClick={() => !isDeletingZoneOrSection && setDeleteTargetZone(null)}>
+            {deleteTargetZone && createPortal(
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200" onClick={() => !isDeletingZoneOrSection && setDeleteTargetZone(null)}>
                     <div className="bg-white dark:bg-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 dark:border-slate-700/60 scale-100 transform transition-all" onClick={e => e.stopPropagation()}>
                         <div className="flex flex-col items-center text-center">
                             <div className="w-16 h-16 rounded-2xl bg-amber-50 dark:bg-amber-950/50 text-amber-500 dark:text-amber-400 flex items-center justify-center text-3xl mb-4 shadow-sm ring-8 ring-amber-50/50 dark:ring-amber-900/20 animate-pulse">
@@ -1440,12 +1442,13 @@ const Livestock = () => {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* --- MODAL KONFIRMASI HAPUS SEKSI KANDANG (SECTION) --- */}
-            {deleteTargetSection && (
-                <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200" onClick={() => !isDeletingZoneOrSection && setDeleteTargetSection(null)}>
+            {deleteTargetSection && createPortal(
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200" onClick={() => !isDeletingZoneOrSection && setDeleteTargetSection(null)}>
                     <div className="bg-white dark:bg-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 dark:border-slate-700/60 scale-100 transform transition-all" onClick={e => e.stopPropagation()}>
                         <div className="flex flex-col items-center text-center">
                             <div className="w-16 h-16 rounded-2xl bg-orange-50 dark:bg-orange-950/50 text-orange-500 dark:text-orange-400 flex items-center justify-center text-3xl mb-4 shadow-sm ring-8 ring-orange-50/50 dark:ring-orange-900/20 animate-pulse">
@@ -1504,12 +1507,13 @@ const Livestock = () => {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* --- MODAL TAMBAH/EDIT SAPI --- */}
-            {showCowModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setShowCowModal(false)}>
+            {showCowModal && createPortal(
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setShowCowModal(false)}>
                     <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
                         <div className="p-5 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
                             <h3 className="font-bold text-xl">{cowFormData.id ? 'Edit Data Sapi' : 'Tambah Sapi Baru'}</h3>
@@ -1582,12 +1586,13 @@ const Livestock = () => {
                             </div>
                         </form>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* --- MODAL MANAJEMEN LIMBAH --- */}
-            {showWasteModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 backdrop-blur-sm p-4" onClick={() => { setShowWasteModal(false); setWasteZoneFilter('ALL'); }}>
+            {showWasteModal && createPortal(
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/55 backdrop-blur-sm p-4" onClick={() => { setShowWasteModal(false); setWasteZoneFilter('ALL'); }}>
                     <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-sm max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
                         <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-amber-50/50 dark:bg-amber-950/10">
                             <div className="flex items-center gap-2.5">
@@ -1628,12 +1633,13 @@ const Livestock = () => {
                             </form>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* --- MODAL KELOLA KANDANG --- */}
-            {showZoneModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setShowZoneModal(false)}>
+            {showZoneModal && createPortal(
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setShowZoneModal(false)}>
                     <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
                         <div className="p-5 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
                             <h3 className="font-bold text-xl">Kelola Kandang / Barn Section</h3>
@@ -1694,7 +1700,7 @@ const Livestock = () => {
                                                 className="flex-1 px-3 py-1.5 text-xs border border-slate-200 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 outline-none"
                                             />
                                             <button 
-                                                type="button"
+                                                type="button" 
                                                 onClick={() => handleAddSection(z.id)}
                                                 className="bg-slate-800 dark:bg-slate-100 text-white dark:text-slate-800 px-3 py-1.5 text-xs rounded-md font-bold"
                                             >
@@ -1707,12 +1713,13 @@ const Livestock = () => {
                             </div>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* --- MODAL GRAFIK KESEHATAN (EKG) --- */}
-            {showChartModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4" onClick={() => { setShowChartModal(false); setActiveChartCow(null); }}>
+            {showChartModal && createPortal(
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-md p-4" onClick={() => { setShowChartModal(false); setActiveChartCow(null); }}>
                     <div className="bg-slate-900 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto border border-slate-700" onClick={e => e.stopPropagation()}>
                         <div className="p-5 border-b border-slate-800 flex justify-between items-center bg-slate-800/50">
                             <div>
@@ -1754,11 +1761,13 @@ const Livestock = () => {
                             </div>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
+
             {/* --- MODAL DETAIL SAPI --- */}
-            {showDetailModal && selectedCow && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setShowDetailModal(false)}>
+            {showDetailModal && selectedCow && createPortal(
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setShowDetailModal(false)}>
                     <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-md border border-slate-200 dark:border-slate-700 animate-fade-in-up max-h-[90vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
                         <div className="relative h-32 bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 shrink-0">
                             <button onClick={() => setShowDetailModal(false)} className="absolute top-4 right-4 z-20 text-white hover:bg-white/20 rounded-full p-1.5 transition" aria-label="Tutup detail sapi">
@@ -1798,8 +1807,39 @@ const Livestock = () => {
                                             <span className="text-slate-500">Berat Awal</span>
                                             <span className="font-bold text-slate-800 dark:text-slate-200">{selectedCow.weight} kg</span>
                                         </div>
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-slate-500">Berat Saat Ini</span>
+                                            <span className="font-bold text-slate-800 dark:text-slate-200">{selectedCow.currentWeight ? `${selectedCow.currentWeight} kg` : '-'}</span>
+                                        </div>
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-slate-500">Lokasi</span>
+                                            <span className="font-bold text-slate-800 dark:text-slate-200">{selectedCow.location}</span>
+                                        </div>
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-slate-500">Pemberian Pakan Terakhir</span>
+                                            <span className="font-bold text-slate-800 dark:text-slate-200">{selectedCow.lastFed || '-'}</span>
+                                        </div>
                                     </div>
                                 </div>
+
+                                <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">
+                                    <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Kondisi Kesehatan</p>
+                                    <div className="space-y-2">
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-slate-500">Detak Jantung</span>
+                                            <span className={`font-bold ${getVitalStatus('heartRate', selectedCow.heartRate) === 'danger' ? 'text-red-500 animate-pulse' : 'text-slate-800 dark:text-slate-200'}`}>
+                                                {selectedCow.heartRate ? `${selectedCow.heartRate} bpm` : '-'}
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-slate-500">Suhu Tubuh</span>
+                                            <span className={`font-bold ${getVitalStatus('temp', selectedCow.temp) === 'danger' ? 'text-red-500 animate-pulse' : 'text-slate-800 dark:text-slate-200'}`}>
+                                                {selectedCow.temp ? `${selectedCow.temp} °C` : '-'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
                                 <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">
                                     <div className="flex justify-between items-center mb-1">
@@ -2074,14 +2114,14 @@ const Livestock = () => {
                                     Cek Vital
                                 </button>
                             </div>
-                        </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* --- MODAL NUTRITION (TIMBANG & PAKAN) --- */}
-            {showNutritionModal && selectedCow && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setShowNutritionModal(false)}>
+            {showNutritionModal && selectedCow && createPortal(
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setShowNutritionModal(false)}>
                     <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
                         <div className="p-5 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
                             <h3 className="font-bold text-xl">Nutrisi & Pertumbuhan</h3>
@@ -2255,11 +2295,12 @@ const Livestock = () => {
                             </div>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
             {/* --- MODAL BULK TIMBANG --- */}
-            {showBulkWeightModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 backdrop-blur-sm p-4" onClick={() => { setShowBulkWeightModal(false); setWeightZoneFilter('ALL'); }}>
+            {showBulkWeightModal && createPortal(
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/55 backdrop-blur-sm p-4" onClick={() => { setShowBulkWeightModal(false); setWeightZoneFilter('ALL'); }}>
                     <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-sm max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
                         <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-sky-50 dark:bg-sky-950/15">
                             <div className="flex items-center gap-2.5">
@@ -2346,12 +2387,13 @@ const Livestock = () => {
                             </form>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* --- MODAL BULK PAKAN --- */}
-            {showBulkFeedModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 backdrop-blur-sm p-4" onClick={() => { setShowBulkFeedModal(false); setFeedZoneFilter('ALL'); }}>
+            {showBulkFeedModal && createPortal(
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/55 backdrop-blur-sm p-4" onClick={() => { setShowBulkFeedModal(false); setFeedZoneFilter('ALL'); }}>
                     <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-sm max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
                         <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-emerald-50 dark:bg-emerald-950/15">
                             <div className="flex items-center gap-2.5">
@@ -2563,7 +2605,7 @@ const Livestock = () => {
                                                         {feedType === 'Konsentrat+hijauan' ? (
                                                             <div className="space-y-1.5 text-[11px]">
                                                                 <div className="flex justify-between items-center">
-                                                                    <span className="text-slate-500">Hijauan Harian (Total):</span>
+                                                                  <span className="text-slate-500">Hijauan Harian (Total):</span>
                                                                     <span className="font-bold text-slate-800 dark:text-slate-200">{recs.totalForageAsFed.toFixed(2)} kg</span>
                                                                 </div>
                                                                 <div className="flex justify-between items-center">
@@ -2683,10 +2725,11 @@ const Livestock = () => {
                             </form>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
-            {showBulkNutritionModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 backdrop-blur-sm p-4" onClick={() => { setShowBulkNutritionModal(false); setFeedZoneFilter('ALL'); }}>
+            {showBulkNutritionModal && createPortal(
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/55 backdrop-blur-sm p-4" onClick={() => { setShowBulkNutritionModal(false); setFeedZoneFilter('ALL'); }}>
                     <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-md max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
                         <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-purple-50 dark:bg-purple-950/15">
                             <div className="flex items-center gap-2.5">
@@ -2782,7 +2825,8 @@ const Livestock = () => {
                             </form>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );
