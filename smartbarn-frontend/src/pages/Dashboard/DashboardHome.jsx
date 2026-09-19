@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, useRef, useMemo, memo, useCallback, Suspense } from 'react';
 import { createPortal } from 'react-dom';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from 'recharts';
 import { fetchApi } from '../../utils/api';
@@ -8,16 +8,18 @@ import { Beef, HeartPulse, Activity } from 'lucide-react';
 
 const SensorTrendChart = React.lazy(() => import('../../components/dashboard/SensorTrendChart'));
 
-const MultiSelectDropdown = ({ options = [], selectedIds = [], onChange, maxSelection, placeholder }) => {
+const MultiSelectDropdown = memo(({ options = [], selectedIds = [], onChange, maxSelection, placeholder }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
 
     const safeOptions = Array.isArray(options) ? options : [];
     const safeSelectedIds = Array.isArray(selectedIds) ? selectedIds : [];
 
-    const filteredOptions = safeOptions.filter(opt => opt && opt.cattleId && String(opt.cattleId).toLowerCase().includes((searchTerm || '').toLowerCase()));
+    const filteredOptions = useMemo(() => {
+        return safeOptions.filter(opt => opt && opt.cattleId && String(opt.cattleId).toLowerCase().includes((searchTerm || '').toLowerCase()));
+    }, [safeOptions, searchTerm]);
 
-    const handleToggle = (id) => {
+    const handleToggle = useCallback((id) => {
         if (!id) return;
         if (safeSelectedIds.includes(id)) {
             onChange(safeSelectedIds.filter(v => v !== id));
@@ -28,7 +30,7 @@ const MultiSelectDropdown = ({ options = [], selectedIds = [], onChange, maxSele
                 toast.error(`Maksimal ${maxSelection} sapi dapat dipilih.`);
             }
         }
-    };
+    }, [safeSelectedIds, maxSelection, onChange]);
 
     return (
         <div className="relative w-full sm:min-w-[250px]">
@@ -76,9 +78,11 @@ const MultiSelectDropdown = ({ options = [], selectedIds = [], onChange, maxSele
             )}
         </div>
     );
-};
+});
 
-const CustomPerformanceTooltip = ({ active, payload, label }) => {
+MultiSelectDropdown.displayName = 'MultiSelectDropdown';
+
+const CustomPerformanceTooltip = memo(({ active, payload, label }) => {
     try {
         if (active && Array.isArray(payload) && payload.length > 0) {
             return (
@@ -105,9 +109,11 @@ const CustomPerformanceTooltip = ({ active, payload, label }) => {
         return null;
     }
     return null;
-};
+});
 
-const InfoBadge = ({ label = 'Info' }) => (
+CustomPerformanceTooltip.displayName = 'CustomPerformanceTooltip';
+
+const InfoBadge = memo(({ label = 'Info' }) => (
     <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700/80 shadow-2xs hover:bg-amber-500/10 hover:text-amber-600 dark:hover:text-amber-400 transition-all cursor-help" title="Arahkan kursor / klik untuk info">
         <svg className="w-3 h-3 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
             <circle cx="12" cy="12" r="9" />
@@ -116,7 +122,9 @@ const InfoBadge = ({ label = 'Info' }) => (
         </svg>
         {label && <span>{label}</span>}
     </span>
-);
+));
+
+InfoBadge.displayName = 'InfoBadge';
 
 const DashboardHome = ({ isPublicRoute = false }) => {
     const userRole = isPublicRoute ? null : localStorage.getItem('userRole');
@@ -149,65 +157,60 @@ const DashboardHome = ({ isPublicRoute = false }) => {
     const [performanceMultiSummaries, setPerformanceMultiSummaries] = useState([]);
     const [selectedCowsForChart, setSelectedCowsForChart] = useState([]);
     const [isDummyChart, setIsDummyChart] = useState(false);
-    const [lastSensorUpdate, setLastSensorUpdate] = useState(0); // Set to 0 initially so it shows offline until data arrives
+    const [lastSensorUpdate, setLastSensorUpdate] = useState(0);
     const [currentTime, setCurrentTime] = useState(Date.now());
 
-    // State & Handler untuk Hover Info Sapi Interaktif Mengikuti Kursor (Desktop & Mobile)
+    // Ref untuk optimasi performa tinggi pelacakan kursor (0 Re-renders on mousemove)
     const [hoveredCowInfo, setHoveredCowInfo] = useState(null);
-    const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+    const tooltipRef = useRef(null);
+    const lastMousePosRef = useRef({ clientX: 0, clientY: 0 });
+    const lastVitalsTimeRef = useRef(0);
 
-    const updateTooltipPosition = (clientX, clientY, sum) => {
-        const isMobile = window.innerWidth < 640;
-        if (isMobile) {
-            setHoveredCowInfo(sum);
-            return;
-        }
-
-        const tooltipWidth = 320; // Lebar tooltip (sm:w-80 = 320px)
-        const tooltipHeight = 140; // Estimasi tinggi tooltip
-        const offset = 16; // Jarak aman dari kursor
+    const applyTooltipPosition = useCallback((clientX, clientY) => {
+        if (!tooltipRef.current || window.innerWidth < 640) return;
+        const tooltipWidth = 320;
+        const tooltipHeight = 140;
+        const offset = 16;
 
         let x = clientX + offset;
         let y = clientY + offset;
 
-        // Auto-adjust horizontal: jika tooltip melebihi batas kanan layar, pindah ke sisi kiri kursor
         if (x + tooltipWidth > window.innerWidth - 16) {
             x = clientX - tooltipWidth - offset;
         }
-        // Batasi agar tidak terpotong di tepi kiri layar
-        if (x < 12) {
-            x = 12;
-        }
+        if (x < 12) x = 12;
 
-        // Auto-adjust vertikal: jika tooltip melebihi batas bawah layar, pindah ke atas kursor
         if (y + tooltipHeight > window.innerHeight - 16) {
             y = clientY - tooltipHeight - offset;
         }
-        // Batasi agar tidak terpotong di tepi atas layar
-        if (y < 12) {
-            y = 12;
-        }
+        if (y < 12) y = 12;
 
-        setTooltipPos({ x, y });
-        if (sum) {
-            setHoveredCowInfo(sum);
-        }
-    };
+        tooltipRef.current.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+    }, []);
 
-    const handleShowCowInfo = (e, sum) => {
+    const handleShowCowInfo = useCallback((e, sum) => {
         e.stopPropagation();
-        updateTooltipPosition(e.clientX, e.clientY, sum);
-    };
+        lastMousePosRef.current = { clientX: e.clientX, clientY: e.clientY };
+        setHoveredCowInfo(sum);
+    }, []);
 
-    const handleMouseMoveCowInfo = (e, sum) => {
-        updateTooltipPosition(e.clientX, e.clientY, sum);
-    };
+    const handleMouseMoveCowInfo = useCallback((e) => {
+        lastMousePosRef.current = { clientX: e.clientX, clientY: e.clientY };
+        applyTooltipPosition(e.clientX, e.clientY);
+    }, [applyTooltipPosition]);
 
-    const handleHideCowInfo = () => {
+    const handleHideCowInfo = useCallback(() => {
         if (window.innerWidth >= 640) {
             setHoveredCowInfo(null);
         }
-    };
+    }, []);
+
+    // Posisikan tooltip seketika saat data hover berubah
+    useEffect(() => {
+        if (hoveredCowInfo && lastMousePosRef.current) {
+            applyTooltipPosition(lastMousePosRef.current.clientX, lastMousePosRef.current.clientY);
+        }
+    }, [hoveredCowInfo, applyTooltipPosition]);
 
     // Daily Checklist & Input History States
     const [checklist, setChecklist] = useState({
@@ -454,17 +457,20 @@ const DashboardHome = ({ isPublicRoute = false }) => {
 
         // WebSocket Event Listeners
         const onConnect = () => {
-            console.log('Socket Connected in Dashboard');
             setIsWsConnected(true);
+            fetchInitialData();
         };
-        const onDisconnect = () => setIsWsConnected(false);
+        const onDisconnect = () => {
+            setIsWsConnected(false);
+        };
         
         const onEnvironmentData = (incomingData) => {
-            // Kita terima data, kalau zoneId cocok atau bahkan nggak usah terlalu strict
             if (incomingData && incomingData.zoneId == selectedZoneId) {
-                setLastSensorUpdate(Date.now());
+                const now = Date.now();
+                lastVitalsTimeRef.current = now;
+                setLastSensorUpdate(now);
                 updateDashboardWithData({
-                    timestamp: incomingData.timestamp || Date.now(),
+                    timestamp: incomingData.timestamp || now,
                     temp: incomingData.temperature || 0,
                     hum: incomingData.humidity || 0,
                     nh3: incomingData.ammonia || 0,
@@ -475,7 +481,9 @@ const DashboardHome = ({ isPublicRoute = false }) => {
 
         const onWindspeedData = (data) => {
             if (data && data.zoneId == selectedZoneId) {
-                setLastSensorUpdate(Date.now());
+                const now = Date.now();
+                lastVitalsTimeRef.current = now;
+                setLastSensorUpdate(now);
                 setCurrentWindspeed(parseFloat(data.windspeed || 0));
                 const isLongRange = ['5d', '7d', '30d'].includes(timeRange);
                 setWindHistory(prev => {
@@ -517,9 +525,11 @@ const DashboardHome = ({ isPublicRoute = false }) => {
         };
 
         const onVitalsData = () => {
-            // Walaupun data sapi tidak ditampilkan di halaman ini, kita gunakan detak jantungnya
-            // (yang masuk setiap 1 detik) sebagai bukti bahwa sistem IoT sedang "Live"
-            setLastSensorUpdate(Date.now());
+            const now = Date.now();
+            if (now - lastVitalsTimeRef.current > 10000) {
+                lastVitalsTimeRef.current = now;
+                setLastSensorUpdate(now);
+            }
         };
 
         // Subscribe to events
@@ -529,10 +539,14 @@ const DashboardHome = ({ isPublicRoute = false }) => {
         socket.on('websocket:windspeed', onWindspeedData);
         socket.on('vital-update', onVitalsData);
 
+        // Smart Polling: Hanya lakukan full HTTP poll jika WebSocket sedang offline / reconnecting
         const pollInterval = setInterval(() => {
-            fetchInitialData();
-            setIsWsConnected(socket.connected); // FORCE CHECK SOCKET STATUS EVERY 30S
-        }, 30000); // Sinkronisasi setiap 30 detik
+            const connected = socket.connected;
+            setIsWsConnected(connected);
+            if (!connected) {
+                fetchInitialData();
+            }
+        }, 30000);
 
         return () => {
             clearInterval(pollInterval);
@@ -737,22 +751,26 @@ const DashboardHome = ({ isPublicRoute = false }) => {
     }; 
 
     // --- 3. RENDER UI ---
-    // Ambil data spesifik untuk zona yang sedang dipilih
-    const rawHistory = Array.isArray(historyDataBySection) ? historyDataBySection : [];
-    const currentHistory = rawHistory.map((envItem, index) => {
-        // Cari data angin yang waktunya sama persis
-        let windItem = (Array.isArray(windHistory) ? windHistory : []).find(w => w.time === envItem.time);
-        
-        // Fallback ke pencocokan indeks jika tidak ada kecocokan waktu
-        if (!windItem && Array.isArray(windHistory) && windHistory[index]) {
-            windItem = windHistory[index];
-        }
-        
-        return {
-            ...envItem,
-            windspeed: windItem ? windItem.speed : null
-        };
-    });
+    // Ambil data spesifik untuk zona yang sedang dipilih (Di-cache dengan useMemo & Map O(N) lookup)
+    const currentHistory = useMemo(() => {
+        const rawHistory = Array.isArray(historyDataBySection) ? historyDataBySection : [];
+        const windArr = Array.isArray(windHistory) ? windHistory : [];
+        const windMap = new Map();
+        windArr.forEach(w => {
+            if (w && w.time) windMap.set(w.time, w.speed);
+        });
+
+        return rawHistory.map((envItem, index) => {
+            let speed = windMap.get(envItem.time);
+            if (speed === undefined && windArr[index]) {
+                speed = windArr[index].speed;
+            }
+            return {
+                ...envItem,
+                windspeed: speed !== undefined ? speed : null
+            };
+        });
+    }, [historyDataBySection, windHistory]);
     
     // Status Live Data
     // Kita anggap offline (merah) jika update terakhir lebih dari 2 menit (120000 ms)
@@ -1694,17 +1712,20 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                     />
 
                     <div 
+                        ref={tooltipRef}
                         style={
                             window.innerWidth >= 640 
                                 ? { 
-                                    left: `${tooltipPos.x}px`, 
-                                    top: `${tooltipPos.y}px`,
+                                    top: 0,
+                                    left: 0,
+                                    transform: 'translate3d(-9999px, -9999px, 0)',
+                                    willChange: 'transform'
                                   } 
                                 : {}
                         }
-                        className={`fixed z-[9999] bg-slate-900/95 text-white p-4 rounded-xl shadow-2xl shadow-slate-950/60 backdrop-blur-md border border-slate-700/80 w-[calc(100vw-2rem)] sm:w-80 transition-all duration-75 ease-out opacity-100 ${
+                        className={`fixed z-[9999] bg-slate-900/95 text-white p-4 rounded-xl shadow-2xl shadow-slate-950/60 border border-slate-700/80 w-[calc(100vw-2rem)] sm:w-80 transition-transform duration-75 ease-out opacity-100 ${
                             window.innerWidth < 640 
-                                ? 'bottom-6 left-4 right-4 mx-auto' 
+                                ? 'bottom-6 left-4 right-4 mx-auto pointer-events-auto' 
                                 : 'pointer-events-none'
                         }`}
                     >

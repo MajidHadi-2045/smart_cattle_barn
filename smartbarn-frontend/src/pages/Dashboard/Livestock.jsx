@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Brush } from 'recharts';
 import { socket } from '../../utils/socket';
@@ -271,7 +271,7 @@ const Livestock = () => {
                 });
                 return hasChanged ? newCows : prevCows;
             });
-        }, 1000);
+        }, 5000);
 
         return () => {
             socket.off('connect', onWsConnect);
@@ -458,7 +458,7 @@ const Livestock = () => {
         );
     };
 
-    const getBulkFeedBkPercent = (feedType) => {
+    const getBulkFeedBkPercent = useCallback((feedType) => {
         let totalVal = 0;
         let count = 0;
         
@@ -484,9 +484,9 @@ const Livestock = () => {
             case 'Tmr': return avg;
             default: return 50;
         }
-    };
+    }, [selectedFeedWeightCows, cows]);
 
-    const calculateGroupRecommendations = () => {
+    const calculateGroupRecommendations = useCallback(() => {
         let totalBk = 0;
         let totalForageAsFed = 0;
         let totalConcentrateAsFed = 0;
@@ -536,9 +536,9 @@ const Livestock = () => {
             totalTmrAsFed,
             avgFeedingFreq
         };
-    };
+    }, [selectedFeedWeightCows, cows]);
 
-    const getCowCardAsFed = (cow) => {
+    const getCowCardAsFed = useCallback((cow) => {
         const weight = cow.weight || 300;
         const bkReq = weight * ((cow.targetBkPercent ?? 2.5) / 100);
         const forageRatio = cow.forageRatio ?? 60;
@@ -558,7 +558,7 @@ const Livestock = () => {
             const concentrateAsFed = (bkReq * (concentrateRatio / 100)) / (concentrateDM / 100);
             return (forageAsFed + concentrateAsFed).toFixed(2);
         }
-    };
+    }, []);
 
     const handleBulkNutritionSubmit = async (e) => {
         e.preventDefault();
@@ -1019,21 +1019,27 @@ const Livestock = () => {
         );
     };
 
-    const filteredCows = cows.filter(cow => {
-        const matchesSearch = cow.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            cow.status.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            cow.zone.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesStatus = filterStatus === 'ALL' || cow.status === filterStatus;
-        return matchesSearch && matchesStatus;
-    });
+    const filteredCows = useMemo(() => {
+        const lowerSearch = searchTerm.toLowerCase();
+        return cows.filter(cow => {
+            const matchesSearch = !lowerSearch ||
+                                (cow.id && cow.id.toLowerCase().includes(lowerSearch)) ||
+                                (cow.status && cow.status.toLowerCase().includes(lowerSearch)) ||
+                                (cow.zone && cow.zone.toLowerCase().includes(lowerSearch));
+            const matchesStatus = filterStatus === 'ALL' || cow.status === filterStatus;
+            return matchesSearch && matchesStatus;
+        });
+    }, [cows, searchTerm, filterStatus]);
 
     // Reset pagination ketika filter/search berubah
     useEffect(() => {
         setCurrentPage(1);
     }, [searchTerm, filterStatus]);
 
-    const totalPages = Math.ceil(filteredCows.length / ITEMS_PER_PAGE);
-    const paginatedCows = filteredCows.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+    const totalPages = useMemo(() => Math.ceil(filteredCows.length / ITEMS_PER_PAGE), [filteredCows.length]);
+    const paginatedCows = useMemo(() => {
+        return filteredCows.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+    }, [filteredCows, currentPage]);
 
     return (
         <div className="space-y-6 animate-fade-in pb-20">

@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush } from 'recharts';
 
-const SensorTrendChart = ({ currentHistory, timeRange, setTimeRange }) => {
+const SensorTrendChart = memo(({ currentHistory, timeRange, setTimeRange }) => {
   return (
     <div className="mt-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
@@ -48,11 +48,11 @@ const SensorTrendChart = ({ currentHistory, timeRange, setTimeRange }) => {
               <Tooltip contentStyle={{backgroundColor: '#fff', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
               <Legend wrapperStyle={{ paddingTop: '20px' }} />
 
-              {/* Garis Grafik */}
-              <Line yAxisId="left" type="monotone" dataKey="temp" stroke="#f97316" strokeWidth={3} dot={{r: 4}} activeDot={{r: 6}} name="Suhu (°C)" />
-              <Line yAxisId="left" type="monotone" dataKey="nh3" stroke="#ef4444" strokeWidth={3} dot={{r: 4}} activeDot={{r: 6}} name="Amonia (ppm)" />
-              <Line yAxisId="left" type="monotone" dataKey="windspeed" stroke="#0ea5e9" strokeWidth={3} dot={{r: 4}} activeDot={{r: 6}} name="Kecepatan Angin (m/s)" />
-              <Line yAxisId="right" type="monotone" dataKey="hum" stroke="#3b82f6" strokeWidth={3} dot={{r: 4}} activeDot={{r: 6}} name="Kelembapan (%)" />
+              {/* Garis Grafik - isAnimationActive={false} untuk efisiensi CPU real-time */}
+              <Line yAxisId="left" type="monotone" dataKey="temp" stroke="#f97316" strokeWidth={3} dot={{r: 4}} activeDot={{r: 6}} name="Suhu (°C)" isAnimationActive={false} />
+              <Line yAxisId="left" type="monotone" dataKey="nh3" stroke="#ef4444" strokeWidth={3} dot={{r: 4}} activeDot={{r: 6}} name="Amonia (ppm)" isAnimationActive={false} />
+              <Line yAxisId="left" type="monotone" dataKey="windspeed" stroke="#0ea5e9" strokeWidth={3} dot={{r: 4}} activeDot={{r: 6}} name="Kecepatan Angin (m/s)" isAnimationActive={false} />
+              <Line yAxisId="right" type="monotone" dataKey="hum" stroke="#3b82f6" strokeWidth={3} dot={{r: 4}} activeDot={{r: 6}} name="Kelembapan (%)" isAnimationActive={false} />
               <Brush dataKey="time" height={30} stroke="#cbd5e1" />
             </LineChart>
           </ResponsiveContainer>
@@ -64,6 +64,8 @@ const SensorTrendChart = ({ currentHistory, timeRange, setTimeRange }) => {
       </div>
     </div>
   );
-};
+});
+
+SensorTrendChart.displayName = 'SensorTrendChart';
 
 export default SensorTrendChart;
