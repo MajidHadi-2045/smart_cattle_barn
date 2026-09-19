@@ -314,21 +314,21 @@ const PublicDashboardScreen = ({ navigation }: any) => {
         <View style={styles.statsGrid}>
           <StatCard 
             title="Total Sapi" 
-            value={stats.totalCattle} 
+            value={`${stats.totalCattle} Ekor`} 
             icon={Beef} 
             color="#3b82f6" 
             infoDesc="Jumlah keseluruhan ekor sapi yang terdaftar dalam sistem peternakan saat ini."
           />
           <StatCard 
             title="Kondisi Sehat" 
-            value={stats.totalCattle - stats.activeAlerts} 
+            value={`${stats.totalCattle - stats.activeAlerts} Ekor`} 
             icon={HeartPulse} 
             color="#10b981" 
             infoDesc="Jumlah sapi yang dalam kondisi sehat dan tidak memiliki catatan medis aktif."
           />
           <StatCard 
             title="Kondisi Sakit" 
-            value={stats.activeAlerts} 
+            value={`${stats.activeAlerts} Ekor`} 
             icon={Activity} 
             color="#ef4444" 
             infoDesc="Jumlah sapi yang sedang mengalami gangguan kesehatan / dalam penanganan medis dokter hewan."

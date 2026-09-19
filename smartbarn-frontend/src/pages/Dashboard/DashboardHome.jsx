@@ -1031,7 +1031,7 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                         {isLoading ? (
                             <div className="h-8 animate-shimmer rounded w-16 mt-2"></div>
                         ) : (
-                            <p className="text-3xl font-bold text-green-600 mt-2">{livestockStats.healthy}</p>
+                            <p className="text-3xl font-bold text-green-600 mt-2">{livestockStats.healthy} <span className="text-sm font-normal text-slate-500">Ekor</span></p>
                         )}
                     </div>
                     <div className="p-3 bg-green-50 dark:bg-green-900/30 rounded-xl">
@@ -1044,7 +1044,7 @@ const DashboardHome = ({ isPublicRoute = false }) => {
                         {isLoading ? (
                             <div className="h-8 animate-shimmer rounded w-16 mt-2"></div>
                         ) : (
-                            <p className="text-3xl font-bold text-red-500 mt-2">{livestockStats.sick}</p>
+                            <p className="text-3xl font-bold text-red-500 mt-2">{livestockStats.sick} <span className="text-sm font-normal text-slate-500">Ekor</span></p>
                         )}
                     </div>
                     <div className="p-3 bg-red-50 dark:bg-red-900/30 rounded-xl">
