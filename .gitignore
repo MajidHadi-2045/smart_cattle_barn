@@ -71,8 +71,25 @@ DIAGRAM_JALUR_PENGUJIAN_K6.html
 generate_svg_diagram.py
 fix_svg.py
 
+# Postman Environments & Test Runs
+*environment.json
+*Environment.json
+*postman_env*.json
+*.postman_test_run.json
+postman-environment.json
+
+# Environment Variables
+.env
+.env.*
+!.env.example
+
+# Temporary & Test Log Files
+test_output.txt
+tmp/
+
 # PDF Files & Scripts
 generate_pdf.py
 generate_5_pdfs.py
 *.pdf
+thesis_extracted_testing_sections.txt
 
