@@ -1,0 +1,9 @@
+{
+  "name": "SmartBarn - Super Admin",
+  "values": [
+    { "key": "baseUrl", "value": "http://localhost:4000/api", "type": "default", "enabled": true },
+    { "key": "token", "value": "", "type": "secret", "enabled": true },
+    { "key": "currentRole", "value": "SUPER_ADMIN", "type": "default", "enabled": true }
+  ],
+  "_postman_variable_scope": "environment"
+}
