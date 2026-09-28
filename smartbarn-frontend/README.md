@@ -39,3 +39,4 @@ Developer by : Majid Solihin Hadi
 ##  Global Cache Module
 - Memakai RAM lokal dengan batas waktu **30 menit**.
 - Data lama yang jarang dipakai otomatis dibersihkan lewat garbage collection.
+.
