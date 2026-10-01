@@ -29,7 +29,16 @@ const dataReceivingTime = new Trend('network_data_receiving');
 const cacheHitCount = new Counter('total_cache_hits');
 const cacheMissCount = new Counter('total_cache_misses');
 
+const targetVUs = parseInt(__ENV.VUS || '100', 10);
+const warmupVUs = Math.max(1, Math.floor(targetVUs * 0.4));
+
 export const options = {
+  stages: [
+    { duration: '5s', target: warmupVUs },   // Tahap 1: Ramp-up bertahap awal
+    { duration: '5s', target: targetVUs },   // Tahap 2: Naik ke beban target (10, 50, atau 100 VU)
+    { duration: '15s', target: targetVUs },  // Tahap 3: Tahan stabil di beban puncak
+    { duration: '5s', target: 0 },           // Tahap 4: Ramp-down pendinginan ke 0 VU
+  ],
   thresholds: {
     http_req_failed: ['rate<0.01'],
 
@@ -54,7 +63,7 @@ export function setup() {
     });
 
     const headers = { 'Content-Type': 'application/json' };
-    const res = http.post(`${BASE_URL}/auth/login`, loginPayload, { headers, timeout: '5s' });
+    const res = http.post(`${BASE_URL}/auth/login`, loginPayload, { headers, timeout: '15s' });
 
     if (res.status === 200 || res.status === 201) {
       const body = res.json();

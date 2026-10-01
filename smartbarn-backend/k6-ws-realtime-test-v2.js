@@ -16,11 +16,15 @@ const isLocal = __ENV.LOCAL === 'true' || __ENV.TARGET === 'local';
 const MQTT_URL = __ENV.MQTT_URL || (isLocal ? 'mqtt://127.0.0.1:1883' : 'mqtt://77.37.63.21:1883');
 const WS_URL = __ENV.WS_URL || (isLocal ? 'ws://127.0.0.1:4000/socket.io/?EIO=4&transport=websocket' : 'ws://smartcattlebarn.site:4000/socket.io/?EIO=4&transport=websocket');
 
+const targetVUs = parseInt(__ENV.VUS || '100', 10);
+const warmupVUs = Math.max(1, Math.floor(targetVUs * 0.4));
+
 export const options = {
   stages: [
-    { duration: '5s', target: 10 },   // Ramp-up 10 VUs
-    { duration: '20s', target: 30 },  // 30 Virtual Users simultan
-    { duration: '5s', target: 0 },    // Ramp-down
+    { duration: '5s', target: warmupVUs },   // Tahap 1: Ramp-up bertahap awal
+    { duration: '5s', target: targetVUs },   // Tahap 2: Naik ke beban target (10, 50, atau 100 VU)
+    { duration: '15s', target: targetVUs },  // Tahap 3: Tahan stabil di beban puncak
+    { duration: '5s', target: 0 },           // Tahap 4: Ramp-down pendinginan ke 0 VU
   ],
   thresholds: {
     ws_vital_e2e_latency: ['p(95)<1000'],

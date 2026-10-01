@@ -16,6 +16,7 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { IotModule } from './iot/iot.module';
 import { WebsocketModule } from './websocket/websocket.module';
 import { ActivityModule } from './activity/activity.module';
+import { SystemModule } from './system/system.module';
 
 @Module({
   imports: [
@@ -43,7 +44,8 @@ import { ActivityModule } from './activity/activity.module';
     IotModule,
     WebsocketModule,
     ZoneModule,
-    ActivityModule
+    ActivityModule,
+    SystemModule
   ],
   controllers: [AppController],
   providers: [AppService],

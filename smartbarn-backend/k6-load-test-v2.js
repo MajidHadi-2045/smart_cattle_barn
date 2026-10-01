@@ -30,7 +30,16 @@ const mixedVitalSent = new Counter('mixed_vital_messages_sent');
 const mixedEnvSent = new Counter('mixed_env_messages_sent');
 const mixedHttpReqs = new Counter('mixed_web_http_requests');
 
+const targetVUs = parseInt(__ENV.VUS || '100', 10);
+const warmupVUs = Math.max(1, Math.floor(targetVUs * 0.4));
+
 export const options = {
+  stages: [
+    { duration: '5s', target: warmupVUs },   // Tahap 1: Ramp-up bertahap awal
+    { duration: '5s', target: targetVUs },   // Tahap 2: Naik ke beban target (10, 50, atau 100 VU)
+    { duration: '15s', target: targetVUs },  // Tahap 3: Tahan stabil di beban puncak
+    { duration: '5s', target: 0 },           // Tahap 4: Ramp-down pendinginan ke 0 VU
+  ],
   thresholds: {
     http_req_failed: ['rate<0.01'],
 

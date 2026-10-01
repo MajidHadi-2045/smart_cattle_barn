@@ -26,11 +26,15 @@ const totalHttpDuration = new Trend('total_http_duration');
 // 6. Request Counter
 const totalDashboardRequests = new Counter('total_dashboard_requests');
 
+const targetVUs = parseInt(__ENV.VUS || '100', 10);
+const warmupVUs = Math.max(1, Math.floor(targetVUs * 0.4));
+
 export const options = {
   stages: [
-    { duration: '5s', target: 20 },
-    { duration: '20s', target: 50 },
-    { duration: '5s', target: 0 },
+    { duration: '5s', target: warmupVUs },   // Tahap 1: Ramp-up bertahap awal (40% beban)
+    { duration: '5s', target: targetVUs },   // Tahap 2: Naik ke beban target (10, 50, atau 100 VU)
+    { duration: '15s', target: targetVUs },  // Tahap 3: Tahan stabil di beban puncak
+    { duration: '5s', target: 0 },           // Tahap 4: Ramp-down pendinginan ke 0 VU
   ],
   thresholds: {
     // 1. Error Rate < 1% (Standar Google SRE)

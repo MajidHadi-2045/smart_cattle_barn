@@ -13,15 +13,16 @@ const mqttEnvProcessed = new Counter('mqtt_env_messages_processed');       // To
 const isLocal = __ENV.LOCAL === 'true' || __ENV.TARGET === 'local';
 const MQTT_URL = __ENV.MQTT_URL || (isLocal ? 'mqtt://127.0.0.1:1883' : 'mqtt://77.37.63.21:1883');
 
+const targetVUs = parseInt(__ENV.VUS || '100', 10);
+const warmupVUs = Math.max(1, Math.floor(targetVUs * 0.4));
+
 export const options = {
-  scenarios: {
-    env_sensor_load: {
-      executor: 'per-vu-iterations',
-      vus: __ENV.VUS ? parseInt(__ENV.VUS) : 10,
-      iterations: 1,
-      maxDuration: '60s',
-    },
-  },
+  stages: [
+    { duration: '5s', target: warmupVUs },   // Tahap 1: Ramp-up bertahap awal (40% beban)
+    { duration: '5s', target: targetVUs },   // Tahap 2: Naik ke beban target (10, 50, atau 100 VU)
+    { duration: '15s', target: targetVUs },  // Tahap 3: Tahan stabil di beban puncak
+    { duration: '5s', target: 0 },           // Tahap 4: Ramp-down pendinginan ke 0 VU
+  ],
   thresholds: {
     mqtt_env_publish_latency: ['p(95)<100'],
     mqtt_env_processing_latency: ['p(95)<1000'],
