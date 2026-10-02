@@ -10,11 +10,11 @@ export class SystemService {
   private lastCpuTime = Date.now();
 
   constructor() {
-    this.redis = new Redis({
+    const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+    this.redis = new Redis(redisUrl, {
       host: process.env.REDIS_HOST || 'localhost',
       port: parseInt(process.env.REDIS_PORT || '6379', 10),
       maxRetriesPerRequest: 1,
-      lazyConnect: true,
     });
     this.redis.on('error', () => {});
   }
@@ -42,7 +42,7 @@ export class SystemService {
     // 2. Baca Memory Redis secara native non-blocking
     let redisMem = 'N/A';
     try {
-      if (this.redis.status === 'ready') {
+      if (this.redis && this.redis.status !== 'end') {
         const info = await this.redis.info('memory');
         const match = info.match(/used_memory_human:(.+)/);
         if (match) redisMem = match[1].trim();
