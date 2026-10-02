@@ -135,17 +135,15 @@ async function dynamicWarmup(targetCpu = 1.0) {
 function executeK6WithMonitoring(scriptName, vus, duration, isMqtt, envVars = {}) {
   return new Promise((resolve) => {
     let k6Binary = 'k6';
-    if (isMqtt) {
-      if (process.platform === 'win32') {
-        k6Binary = fs.existsSync(path.join(__dirname, 'k6-mqtt.exe')) ? '.\\k6-mqtt.exe' : 'k6';
+    if (process.platform === 'win32') {
+      k6Binary = fs.existsSync(path.join(__dirname, 'k6-mqtt.exe')) ? '.\\k6-mqtt.exe' : 'k6';
+    } else {
+      if (fs.existsSync(path.join(__dirname, 'k6-linux-mqtt'))) {
+        k6Binary = './k6-linux-mqtt';
+      } else if (fs.existsSync(path.join(__dirname, 'k6-mqtt'))) {
+        k6Binary = './k6-mqtt';
       } else {
-        if (fs.existsSync(path.join(__dirname, 'k6-linux-mqtt'))) {
-          k6Binary = './k6-linux-mqtt';
-        } else if (fs.existsSync(path.join(__dirname, 'k6-mqtt'))) {
-          k6Binary = './k6-mqtt';
-        } else {
-          k6Binary = 'k6';
-        }
+        k6Binary = 'k6';
       }
     }
 

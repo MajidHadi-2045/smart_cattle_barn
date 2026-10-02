@@ -106,3 +106,8 @@ k6-mqtt.exe
 k6-linux-mqtt
 checkpoint.json
 **/checkpoint.json
+iperf3.exe
+**/iperf3.exe
+cygwin1.dll
+**/cygwin1.dll
+
