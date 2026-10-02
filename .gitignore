@@ -92,4 +92,17 @@ generate_pdf.py
 generate_5_pdfs.py
 *.pdf
 thesis_extracted_testing_sections.txt
-*.pdf
+
+# Benchmark & Load Test Logs (Excluded from Git)
+benchmark_logs/
+**/benchmark_logs/
+benchmark_logs_backup*/
+**/benchmark_logs_backup*/
+benchmark_logs*/
+**/benchmark_logs*/
+*.csv
+**/*.csv
+k6-mqtt.exe
+k6-linux-mqtt
+checkpoint.json
+**/checkpoint.json

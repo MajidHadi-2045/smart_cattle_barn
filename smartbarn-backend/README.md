@@ -69,6 +69,17 @@ $ pm2 logs smartbarn-api-4000
 #Batasi RAM
 $ pm2 start smartbarn-api-4000 --max-memory-restart 200M
 $ pm2 restart smartbarn-api-4000 --max-memory-restart 200M
+# 1-Line Super Fast Auto Deploy Backend (Jalankan ini di VPS untuk Update Otomatis 10 Detik)
+$ git fetch origin && git reset --hard origin/main && npm run build && pm2 restart smartbarn-api-4000
+
+## PENGUJIAN OTOMATIS (BENCHMARK SUITE)
+# Jalankan dari Laptop via Internet (72 Sesi Uji Otomatis + Pre/Post Network Test + CPU/RAM Polling):
+$ npm run test:auto:remote
+# Jalankan langsung di Server VPS Lokal:
+$ npm run test:auto:local
+# Bersihkan seluruh log pengujian:
+$ npm run test:clean
+# (Panduan lengkap lihat file K6_TESTING_GUIDE.md)
 
 ## FRONTEND (Vite / Website UI)
 #Masuk ke folder Frontend
@@ -149,3 +160,21 @@ $ node test-notifikasi.js web
 $ node reset-sensor.js
 #nginx config
 sudo nano /etc/nginx/sites-available/default
+
+# A. Cadangkan folder log lama menjadi folder arsip
+Copy-Item -Path "benchmark_logs" -Destination "benchmark_logs_backup_v2" -Recurse -Force
+# B. Bersihkan folder log aktif & checkpoint
+node clean-benchmark.js
+
+# Opsi 1: Dijalankan dari LAPTOP menuju SERVER VPS (Remote Testing)
+node auto-benchmark-remote.js
+# Opsi 2: Dijalankan langsung DI DALAM SERVER VPS (Local Testing)
+node auto-benchmark-local.js
+
+# Cek Resource CPU, RAM, & Redis Server secara Live (Polling tiap 1 detik)
+node monitor-remote.js
+# Cek Jumlah Data Antrean BullMQ di Redis
+node check-bullmq.js
+# Cek Jumlah Data di Database PostgreSQL
+node check-db-counts.js
+

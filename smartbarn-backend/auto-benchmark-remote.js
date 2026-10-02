@@ -16,7 +16,7 @@ const { measurePingAndJitter, measureSpeedtest } = require('./benchmark-network-
 const BASE_URL = process.env.TARGET_API_URL || 'http://smartcattlebarn.site:4000';
 const TARGET_HOST = 'smartcattlebarn.site';
 const TEST_DURATION = '30s';
-const COOLDOWN_SECONDS = 120; // 2 Menit
+const COOLDOWN_SECONDS = 60; // 1 Menit
 
 // DIRECTORY LOGS
 const LOGS_DIR = path.join(__dirname, 'benchmark_logs');
@@ -25,16 +25,17 @@ const SYS_DIR = path.join(LOGS_DIR, 'system_resource_logs');
 const CHECKPOINT_FILE = path.join(LOGS_DIR, 'checkpoint.json');
 const CSV_SUMMARY_FILE = path.join(LOGS_DIR, 'summary_results.csv');
 
-// DAFTAR LENGKAP JALUR PENGUJIAN (MENGGUNAKAN SKRIP V2 BERTAHAP / STAGES)
+// DAFTAR LENGKAP JALUR PENGUJIAN (DEFAULT MENGGUNAKAN VERSI 4 BERTAHAP TANPA RAMP-DOWN KE 0)
+const SCRIPT_VER = process.env.VERSION || 'v4';
 const SCENARIOS = [
-  { id: 'jalur1', name: 'Jalur 1 - Sensor Vital Sapi (MQTT)', script: 'k6-sensor-test-v2.js', isMqtt: true, env: {} },
-  { id: 'jalur2', name: 'Jalur 2 - Sensor Lingkungan (MQTT)', script: 'k6-env-test-v2.js', isMqtt: true, env: {} },
-  { id: 'jalur3', name: 'Jalur 3 - WebSocket Real-Time', script: 'k6-ws-realtime-test-v2.js', isMqtt: false, env: {} },
-  { id: 'jalur4', name: 'Jalur 4 - Web Dashboard 5-API', script: 'k6-web-test-v2.js', isMqtt: false, env: {} },
-  { id: 'jalur5', name: 'Jalur 5 - Mixed Workload (50:20:30)', script: 'k6-load-test-v2.js', isMqtt: true, env: {} },
-  { id: 'jalur6_simultan', name: 'Jalur 6A - Redis Cache Simultan (Hit & Miss)', script: 'k6-cache-benchmark-v2.js', isMqtt: false, env: { MODE: 'both' } },
-  { id: 'jalur6_hit', name: 'Jalur 6B - Redis Cache Isolasi HIT (RAM)', script: 'k6-cache-benchmark-v2.js', isMqtt: false, env: { MODE: 'hit' } },
-  { id: 'jalur6_miss', name: 'Jalur 6C - Redis Cache Isolasi MISS (DB)', script: 'k6-cache-benchmark-v2.js', isMqtt: false, env: { MODE: 'miss' } },
+  { id: 'jalur1', name: 'Jalur 1 - Sensor Vital Sapi (MQTT)', script: `k6-sensor-test-${SCRIPT_VER}.js`, isMqtt: true, env: {} },
+  { id: 'jalur2', name: 'Jalur 2 - Sensor Lingkungan (MQTT)', script: `k6-env-test-${SCRIPT_VER}.js`, isMqtt: true, env: {} },
+  { id: 'jalur3', name: 'Jalur 3 - WebSocket Real-Time', script: `k6-ws-realtime-test-${SCRIPT_VER}.js`, isMqtt: false, env: {} },
+  { id: 'jalur4', name: 'Jalur 4 - Web Dashboard 5-API', script: `k6-web-test-${SCRIPT_VER}.js`, isMqtt: false, env: {} },
+  { id: 'jalur5', name: 'Jalur 5 - Mixed Workload (50:20:30)', script: `k6-load-test-${SCRIPT_VER}.js`, isMqtt: true, env: {} },
+  { id: 'jalur6_simultan', name: 'Jalur 6A - Redis Cache Simultan (Hit & Miss)', script: `k6-cache-benchmark-${SCRIPT_VER}.js`, isMqtt: false, env: { MODE: 'both' } },
+  { id: 'jalur6_hit', name: 'Jalur 6B - Redis Cache Isolasi HIT (RAM)', script: `k6-cache-benchmark-${SCRIPT_VER}.js`, isMqtt: false, env: { MODE: 'hit' } },
+  { id: 'jalur6_miss', name: 'Jalur 6C - Redis Cache Isolasi MISS (DB)', script: `k6-cache-benchmark-${SCRIPT_VER}.js`, isMqtt: false, env: { MODE: 'miss' } },
 ];
 
 const VU_LEVELS = [10, 50, 100];
@@ -118,23 +119,24 @@ function requestRemotePm2Restart() {
   });
 }
 
-// Dynamic Warm-up: Tunggu CPU backend <= 1.0%
-async function dynamicWarmup() {
-  console.log('\n[WARM-UP] Menunggu inisialisasi backend & CPU stabil <= 1.0%...');
-  const start = Date.now();
+// Dynamic Warm-up: Tunggu CPU backend benar-benar mendingin & stabil <= 1.0%
+async function dynamicWarmup(targetCpu = 1.0) {
+  console.log(`\n[WARM-UP] Menunggu pendinginan CPU backend stabil <= ${targetCpu}%...`);
   let stableCount = 0;
   let lastMetric = { cpu: 0, memoryMb: 0, redisMemory: 'N/A' };
+  let attempts = 0;
 
-  while ((Date.now() - start) < 35000) {
+  while (true) {
     await sleep(1500);
+    attempts++;
     const m = await fetchServerMetrics();
     if (m.success) {
       lastMetric = m;
-      process.stdout.write(`\r  > Current CPU: ${m.cpu}% | RAM: ${m.memoryMb} MB | Redis: ${m.redisMemory}`);
-      if (m.cpu <= 1.5) {
+      process.stdout.write(`\r  > Current CPU: ${m.cpu}% | RAM: ${m.memoryMb} MB | Redis: ${m.redisMemory} (Stabil <= ${targetCpu}%: ${stableCount}/3)  `);
+      if (m.cpu <= targetCpu) {
         stableCount++;
-        if (stableCount >= 2) {
-          console.log(`\n[WARM-UP READY] Backend idle dan stabil (${m.cpu}% CPU).`);
+        if (stableCount >= 3) {
+          console.log(`\n[WARM-UP READY] Backend 100% idle & stabil pada ${m.cpu}% CPU (${m.memoryMb} MB RAM). Pengujian dimulai.`);
           return lastMetric;
         }
       } else {
@@ -142,8 +144,6 @@ async function dynamicWarmup() {
       }
     }
   }
-  console.log(`\n[WARM-UP TIMEOUT] Batas warm-up 35s tercapai. Melanjutkan pengujian.`);
-  return lastMetric;
 }
 
 // Eksekusi K6 & Polling Resource
@@ -208,7 +208,7 @@ function executeK6WithMonitoring(scriptName, vus, duration, isMqtt, envVars = {}
   });
 }
 
-function parseK6Metrics(output) {
+function parseK6Metrics(output, scenarioId = '') {
   const parsed = {
     totalReqs: 0,
     rps: 0,
@@ -220,37 +220,122 @@ function parseK6Metrics(output) {
   };
 
   try {
-    const reqsMatch = output.match(/http_reqs\.+:\s*(\d+)\s+([\d.]+)\/s/);
-    if (reqsMatch) {
-      parsed.totalReqs = parseInt(reqsMatch[1], 10);
-      parsed.rps = parseFloat(reqsMatch[2]);
-    } else {
-      const iterMatch = output.match(/iterations\.+:\s*(\d+)\s+([\d.]+)\/s/);
-      if (iterMatch) {
-        parsed.totalReqs = parseInt(iterMatch[1], 10);
-        parsed.rps = parseFloat(iterMatch[2]);
-      }
-    }
-
-    const durMatch = output.match(/http_req_duration\.+avg=([\d.]+)ms.+p\(95\)=([\d.]+)ms/);
-    if (durMatch) {
-      parsed.avgLatency = parseFloat(durMatch[1]);
-      parsed.p95Latency = parseFloat(durMatch[2]);
-    }
-
-    const ttfbMatch = output.match(/http_req_waiting\.+avg=([\d.]+)ms/);
-    if (ttfbMatch) {
-      parsed.ttfbAvg = parseFloat(ttfbMatch[1]);
-    }
-
+    // 1. Checks pass & error rate
     const checkMatch = output.match(/checks_succeeded\.+:\s*([\d.]+)%/);
-    if (checkMatch) {
-      parsed.checksPass = parseFloat(checkMatch[1]);
-    }
+    if (checkMatch) parsed.checksPass = parseFloat(checkMatch[1]);
 
     const failedMatch = output.match(/http_req_failed\.+:\s*([\d.]+)%/);
-    if (failedMatch) {
-      parsed.errorRate = parseFloat(failedMatch[1]);
+    if (failedMatch) parsed.errorRate = parseFloat(failedMatch[1]);
+
+    // 2. JALUR 1: Sensor Vital Sapi (MQTT) -> Data ditangani backend sampai antrean BullMQ
+    if (scenarioId.startsWith('jalur1')) {
+      const procMatch = output.match(/mqtt_vital_messages_processed\.+:\s*(\d+)\s+([\d.]+)\/s/);
+      const sentMatch = output.match(/mqtt_vital_messages_sent\.+:\s*(\d+)\s+([\d.]+)\/s/);
+      if (procMatch) {
+        parsed.totalReqs = parseInt(procMatch[1], 10);
+        parsed.rps = parseFloat(procMatch[2]);
+      } else if (sentMatch) {
+        parsed.totalReqs = parseInt(sentMatch[1], 10);
+        parsed.rps = parseFloat(sentMatch[2]);
+      }
+
+      const procLatMatch = output.match(/mqtt_vital_processing_latency\.+avg=([\d.]+)\s*min=[\d.]+\s*med=[\d.]+\s*max=[\d.]+\s*p\(90\)=[\d.]+\s*p\(95\)=([\d.]+)/);
+      if (procLatMatch) {
+        parsed.avgLatency = parseFloat(procLatMatch[1]);
+        parsed.p95Latency = parseFloat(procLatMatch[2]);
+      }
+
+      const pubLatMatch = output.match(/mqtt_vital_publish_latency\.+avg=([\d.]+)/);
+      if (pubLatMatch) parsed.ttfbAvg = parseFloat(pubLatMatch[1]);
+    }
+    // 3. JALUR 2: Sensor Lingkungan (MQTT) -> Data ditangani backend sampai buffer RAM & THI
+    else if (scenarioId.startsWith('jalur2')) {
+      const procMatch = output.match(/mqtt_env_messages_processed\.+:\s*(\d+)\s+([\d.]+)\/s/);
+      const sentMatch = output.match(/mqtt_env_messages_sent\.+:\s*(\d+)\s+([\d.]+)\/s/);
+      if (procMatch) {
+        parsed.totalReqs = parseInt(procMatch[1], 10);
+        parsed.rps = parseFloat(procMatch[2]);
+      } else if (sentMatch) {
+        parsed.totalReqs = parseInt(sentMatch[1], 10);
+        parsed.rps = parseFloat(sentMatch[2]);
+      }
+
+      const procLatMatch = output.match(/mqtt_env_processing_latency\.+avg=([\d.]+)\s*min=[\d.]+\s*med=[\d.]+\s*max=[\d.]+\s*p\(90\)=[\d.]+\s*p\(95\)=([\d.]+)/);
+      if (procLatMatch) {
+        parsed.avgLatency = parseFloat(procLatMatch[1]);
+        parsed.p95Latency = parseFloat(procLatMatch[2]);
+      }
+
+      const pubLatMatch = output.match(/mqtt_env_publish_latency\.+avg=([\d.]+)/);
+      if (pubLatMatch) parsed.ttfbAvg = parseFloat(pubLatMatch[1]);
+    }
+    // 4. JALUR 3: WebSocket Real-Time Broadcast -> Pesan disiarkan & diterima klien web
+    else if (scenarioId.startsWith('jalur3')) {
+      const bcMatch = output.match(/ws_broadcast_received\.+:\s*(\d+)\s+([\d.]+)\/s/);
+      const msgsMatch = output.match(/ws_msgs_received\.+:\s*(\d+)\s+([\d.]+)\/s/);
+      if (bcMatch) {
+        parsed.totalReqs = parseInt(bcMatch[1], 10);
+        parsed.rps = parseFloat(bcMatch[2]);
+      } else if (msgsMatch) {
+        parsed.totalReqs = parseInt(msgsMatch[1], 10);
+        parsed.rps = parseFloat(msgsMatch[2]);
+      }
+
+      const e2eLatMatch = output.match(/ws_vital_e2e_latency\.+avg=([\d.]+)\s*min=[\d.]+\s*med=[\d.]+\s*max=[\d.]+\s*p\(90\)=[\d.]+\s*p\(95\)=([\d.]+)/);
+      if (e2eLatMatch) {
+        parsed.avgLatency = parseFloat(e2eLatMatch[1]);
+        parsed.p95Latency = parseFloat(e2eLatMatch[2]);
+      }
+
+      const connMatch = output.match(/ws_handshake_connecting_time\.+avg=([\d.]+)/);
+      if (connMatch) parsed.ttfbAvg = parseFloat(connMatch[1]);
+    }
+    // 5. JALUR 5: Mixed Workload (50:20:30)
+    else if (scenarioId.startsWith('jalur5')) {
+      let httpRps = 0;
+      let mqttRps = 0;
+      let total = 0;
+
+      const httpMatch = output.match(/mixed_web_http_requests\.+:\s*(\d+)\s+([\d.]+)\/s/);
+      if (httpMatch) {
+        total += parseInt(httpMatch[1], 10);
+        httpRps = parseFloat(httpMatch[2]);
+      }
+
+      const mqttMatch = output.match(/mqtt_messages_sent\.+:\s*(\d+)\s+([\d.]+)\/s/);
+      if (mqttMatch) {
+        total += parseInt(mqttMatch[1], 10);
+        mqttRps = parseFloat(mqttMatch[2]);
+      }
+
+      parsed.totalReqs = total;
+      parsed.rps = parseFloat((httpRps + mqttRps).toFixed(2));
+
+      const durMatch = output.match(/mixed_web_http_duration\.+avg=([\d.]+)\s*min=[\d.]+\s*med=[\d.]+\s*max=[\d.]+\s*p\(90\)=[\d.]+\s*p\(95\)=([\d.]+)/);
+      if (durMatch) {
+        parsed.avgLatency = parseFloat(durMatch[1]);
+        parsed.p95Latency = parseFloat(durMatch[2]);
+      }
+
+      const ttfbMatch = output.match(/mixed_web_server_ttfb\.+avg=([\d.]+)/);
+      if (ttfbMatch) parsed.ttfbAvg = parseFloat(ttfbMatch[1]);
+    }
+    // 6. JALUR 4 & JALUR 6 (HTTP REST & Redis Cache) -> Request sampai klien terima response
+    else {
+      const reqsMatch = output.match(/http_reqs\.+:\s*(\d+)\s+([\d.]+)\/s/);
+      if (reqsMatch) {
+        parsed.totalReqs = parseInt(reqsMatch[1], 10);
+        parsed.rps = parseFloat(reqsMatch[2]);
+      }
+
+      const durMatch = output.match(/http_req_duration\.+avg=([\d.]+)ms.+p\(95\)=([\d.]+)ms/);
+      if (durMatch) {
+        parsed.avgLatency = parseFloat(durMatch[1]);
+        parsed.p95Latency = parseFloat(durMatch[2]);
+      }
+
+      const ttfbMatch = output.match(/http_req_waiting\.+avg=([\d.]+)ms/);
+      if (ttfbMatch) parsed.ttfbAvg = parseFloat(ttfbMatch[1]);
     }
   } catch (e) {}
 
@@ -306,31 +391,32 @@ async function main() {
         await requestRemotePm2Restart();
         await sleep(3000); // Jeda transisi restart
 
-        // 2. Dynamic Warm-up
-        const baselineMetrics = await dynamicWarmup();
-
-        // 3. Pre-Test Network Benchmark
+        // 2. Pre-Test Network Benchmark (Dijalankan awal agar sisa beban speedtest hilang saat warm-up)
         console.log('\n[STEP 2/6] PRE-TEST JARINGAN: Mengukur Ping RTT, Jitter & Speedtest...');
         const prePing = measurePingAndJitter(TARGET_HOST, 10);
         console.log(`  > Pre-Ping: Avg=${prePing.avgRtt}ms | Jitter=${prePing.jitter}ms | Min/Max=${prePing.minRtt}/${prePing.maxRtt}ms`);
         const preSpeed = await measureSpeedtest(BASE_URL, 3);
         console.log(`  > Pre-Speedtest: Download=${preSpeed.downloadMbps} Mbps | Upload=${preSpeed.uploadMbps} Mbps`);
 
-        // 4. Eksekusi K6 Test + Resource Polling
-        console.log(`\n[STEP 3/6] EKSEKUSI K6 LOAD TEST (${vus} VUs, ${TEST_DURATION})...`);
+        // 3. Strict Warm-Up (Tunggu sampai CPU backend benar-benar dingin & stabil <= 1.0%)
+        console.log('\n[STEP 3/6] PENDINGINAN & STABILISASI (WARM-UP BASELINE)...');
+        const baselineMetrics = await dynamicWarmup(1.0);
+
+        // 4. Eksekusi K6 Test + Resource Polling per Detik
+        console.log(`\n[STEP 4/6] EKSEKUSI K6 LOAD TEST (${vus} VUs, ${TEST_DURATION})...`);
         const { terminalOutput, metricsLog } = await executeK6WithMonitoring(scenario.script, vus, TEST_DURATION, scenario.isMqtt, scenario.env);
 
         // 5. Post-Test Network Benchmark
-        console.log('\n[STEP 4/6] POST-TEST JARINGAN: Mengukur Ping RTT, Jitter & Speedtest...');
+        console.log('\n[STEP 5/6] POST-TEST JARINGAN: Mengukur Ping RTT, Jitter & Speedtest...');
         const postPing = measurePingAndJitter(TARGET_HOST, 10);
         console.log(`  > Post-Ping: Avg=${postPing.avgRtt}ms | Jitter=${postPing.jitter}ms | Min/Max=${postPing.minRtt}/${postPing.maxRtt}ms`);
         const postSpeed = await measureSpeedtest(BASE_URL, 3);
         console.log(`  > Post-Speedtest: Download=${postSpeed.downloadMbps} Mbps | Upload=${postSpeed.uploadMbps} Mbps`);
 
-        // Hitung Peak Resource
-        let peakCpu = baselineMetrics.cpu;
-        let peakRam = baselineMetrics.memoryMb;
-        let peakRedis = baselineMetrics.redisMemory;
+        // Hitung Peak Resource 100% murni dari nilai tertinggi selama K6 berjalan
+        let peakCpu = metricsLog.length > 0 ? metricsLog[0].cpu : baselineMetrics.cpu;
+        let peakRam = metricsLog.length > 0 ? metricsLog[0].memoryMb : baselineMetrics.memoryMb;
+        let peakRedis = metricsLog.length > 0 ? metricsLog[0].redisMemory : baselineMetrics.redisMemory;
 
         for (const m of metricsLog) {
           if (m.cpu > peakCpu) peakCpu = m.cpu;
@@ -338,7 +424,7 @@ async function main() {
           if (m.redisMemory !== 'N/A') peakRedis = m.redisMemory;
         }
 
-        const k6Stats = parseK6Metrics(terminalOutput);
+        const k6Stats = parseK6Metrics(terminalOutput, scenario.id);
 
         // 6. Simpan Seluruh Hasil (Terminal txt, System log, CSV, Checkpoint)
         console.log('\n[STEP 5/6] MENYIMPAN LOG & REKAP DATA...');

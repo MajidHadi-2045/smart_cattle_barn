@@ -62,3 +62,12 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 prisma/*.db
 prisma/*.db-journal
 .eslintcache
+
+# Benchmark & Load Test Logs (Excluded from Git)
+benchmark_logs/
+benchmark_logs_backup*/
+benchmark_logs*/
+*.csv
+k6-mqtt.exe
+k6-linux-mqtt
+checkpoint.json
