@@ -193,6 +193,21 @@ function executeK6WithMonitoring(scriptName, vus, duration, isMqtt, envVars = {}
   });
 }
 
+function extractK6Trend(output, metricName) {
+  const lineRegex = new RegExp(metricName + '[^\\n]+', 'i');
+  const lineMatch = output.match(lineRegex);
+  if (!lineMatch) return { avg: 0, p95: 0 };
+
+  const line = lineMatch[0];
+  const avgMatch = line.match(/avg=([0-9.]+)(?:ms|s)?/);
+  const p95Match = line.match(/p\(95\)=([0-9.]+)(?:ms|s)?/);
+
+  return {
+    avg: avgMatch ? parseFloat(avgMatch[1]) : 0,
+    p95: p95Match ? parseFloat(p95Match[1]) : 0
+  };
+}
+
 function parseK6Metrics(output, scenarioId = '') {
   const parsed = {
     totalReqs: 0,
@@ -205,15 +220,15 @@ function parseK6Metrics(output, scenarioId = '') {
   };
 
   try {
-    const checkMatch = output.match(/checks_succeeded\.+:\s*([\d.]+)%/);
+    const checkMatch = output.match(/checks_succeeded[^\n]+?:\s*([\d.]+)%/);
     if (checkMatch) parsed.checksPass = parseFloat(checkMatch[1]);
 
-    const failedMatch = output.match(/http_req_failed\.+:\s*([\d.]+)%/);
+    const failedMatch = output.match(/http_req_failed[^\n]+?:\s*([\d.]+)%/);
     if (failedMatch) parsed.errorRate = parseFloat(failedMatch[1]);
 
     if (scenarioId.startsWith('jalur1')) {
-      const procMatch = output.match(/mqtt_vital_messages_processed\.+:\s*(\d+)\s+([\d.]+)\/s/);
-      const sentMatch = output.match(/mqtt_vital_messages_sent\.+:\s*(\d+)\s+([\d.]+)\/s/);
+      const procMatch = output.match(/mqtt_vital_messages_processed[^\n]+?:\s*(\d+)\s+([\d.]+)\/s/);
+      const sentMatch = output.match(/mqtt_vital_messages_sent[^\n]+?:\s*(\d+)\s+([\d.]+)\/s/);
       if (procMatch) {
         parsed.totalReqs = parseInt(procMatch[1], 10);
         parsed.rps = parseFloat(procMatch[2]);
@@ -221,16 +236,15 @@ function parseK6Metrics(output, scenarioId = '') {
         parsed.totalReqs = parseInt(sentMatch[1], 10);
         parsed.rps = parseFloat(sentMatch[2]);
       }
-      const procLatMatch = output.match(/mqtt_vital_processing_latency\.+avg=([\d.]+)\s*min=[\d.]+\s*med=[\d.]+\s*max=[\d.]+\s*p\(90\)=[\d.]+\s*p\(95\)=([\d.]+)/);
-      if (procLatMatch) {
-        parsed.avgLatency = parseFloat(procLatMatch[1]);
-        parsed.p95Latency = parseFloat(procLatMatch[2]);
-      }
-      const pubLatMatch = output.match(/mqtt_vital_publish_latency\.+avg=([\d.]+)/);
-      if (pubLatMatch) parsed.ttfbAvg = parseFloat(pubLatMatch[1]);
+      const lat = extractK6Trend(output, 'mqtt_vital_processing_latency');
+      parsed.avgLatency = lat.avg;
+      parsed.p95Latency = lat.p95;
+
+      const pubLat = extractK6Trend(output, 'mqtt_vital_publish_latency');
+      parsed.ttfbAvg = pubLat.avg;
     } else if (scenarioId.startsWith('jalur2')) {
-      const procMatch = output.match(/mqtt_env_messages_processed\.+:\s*(\d+)\s+([\d.]+)\/s/);
-      const sentMatch = output.match(/mqtt_env_messages_sent\.+:\s*(\d+)\s+([\d.]+)\/s/);
+      const procMatch = output.match(/mqtt_env_messages_processed[^\n]+?:\s*(\d+)\s+([\d.]+)\/s/);
+      const sentMatch = output.match(/mqtt_env_messages_sent[^\n]+?:\s*(\d+)\s+([\d.]+)\/s/);
       if (procMatch) {
         parsed.totalReqs = parseInt(procMatch[1], 10);
         parsed.rps = parseFloat(procMatch[2]);
@@ -238,16 +252,15 @@ function parseK6Metrics(output, scenarioId = '') {
         parsed.totalReqs = parseInt(sentMatch[1], 10);
         parsed.rps = parseFloat(sentMatch[2]);
       }
-      const procLatMatch = output.match(/mqtt_env_processing_latency\.+avg=([\d.]+)\s*min=[\d.]+\s*med=[\d.]+\s*max=[\d.]+\s*p\(90\)=[\d.]+\s*p\(95\)=([\d.]+)/);
-      if (procLatMatch) {
-        parsed.avgLatency = parseFloat(procLatMatch[1]);
-        parsed.p95Latency = parseFloat(procLatMatch[2]);
-      }
-      const pubLatMatch = output.match(/mqtt_env_publish_latency\.+avg=([\d.]+)/);
-      if (pubLatMatch) parsed.ttfbAvg = parseFloat(pubLatMatch[1]);
+      const lat = extractK6Trend(output, 'mqtt_env_processing_latency');
+      parsed.avgLatency = lat.avg;
+      parsed.p95Latency = lat.p95;
+
+      const pubLat = extractK6Trend(output, 'mqtt_env_publish_latency');
+      parsed.ttfbAvg = pubLat.avg;
     } else if (scenarioId.startsWith('jalur3')) {
-      const bcMatch = output.match(/ws_broadcast_received\.+:\s*(\d+)\s+([\d.]+)\/s/);
-      const msgsMatch = output.match(/ws_msgs_received\.+:\s*(\d+)\s+([\d.]+)\/s/);
+      const bcMatch = output.match(/ws_broadcast_received[^\n]+?:\s*(\d+)\s+([\d.]+)\/s/);
+      const msgsMatch = output.match(/ws_msgs_received[^\n]+?:\s*(\d+)\s+([\d.]+)\/s/);
       if (bcMatch) {
         parsed.totalReqs = parseInt(bcMatch[1], 10);
         parsed.rps = parseFloat(bcMatch[2]);
@@ -255,82 +268,53 @@ function parseK6Metrics(output, scenarioId = '') {
         parsed.totalReqs = parseInt(msgsMatch[1], 10);
         parsed.rps = parseFloat(msgsMatch[2]);
       }
-      const e2eLatMatch = output.match(/ws_vital_e2e_latency\.+avg=([\d.]+)\s*min=[\d.]+\s*med=[\d.]+\s*max=[\d.]+\s*p\(90\)=[\d.]+\s*p\(95\)=([\d.]+)/);
-      if (e2eLatMatch) {
-        parsed.avgLatency = parseFloat(e2eLatMatch[1]);
-        parsed.p95Latency = parseFloat(e2eLatMatch[2]);
-      }
-      const connLatMatch = output.match(/ws_connecting\.+avg=([\d.]+)/);
-      if (connLatMatch) parsed.ttfbAvg = parseFloat(connLatMatch[1]);
-    } else if (scenarioId.startsWith('jalur4')) {
-      const reqsMatch = output.match(/http_reqs\.+:\s*(\d+)\s+([\d.]+)\/s/);
-      if (reqsMatch) {
-        parsed.totalReqs = parseInt(reqsMatch[1], 10);
-        parsed.rps = parseFloat(reqsMatch[2]);
-      }
-      const durMatch = output.match(/http_req_duration\.+avg=([\d.]+)\s*min=[\d.]+\s*med=[\d.]+\s*max=[\d.]+\s*p\(90\)=[\d.]+\s*p\(95\)=([\d.]+)/);
-      if (durMatch) {
-        parsed.avgLatency = parseFloat(durMatch[1]);
-        parsed.p95Latency = parseFloat(durMatch[2]);
-      }
-      const ttfbMatch = output.match(/http_req_waiting\.+avg=([\d.]+)/);
-      if (ttfbMatch) parsed.ttfbAvg = parseFloat(ttfbMatch[1]);
+      const lat = extractK6Trend(output, 'ws_vital_e2e_latency');
+      parsed.avgLatency = lat.avg;
+      parsed.p95Latency = lat.p95;
+
+      const connLat = extractK6Trend(output, 'ws_handshake_connecting_time');
+      parsed.ttfbAvg = connLat.avg;
     } else if (scenarioId.startsWith('jalur5')) {
-      let tot = 0;
-      let totalRps = 0;
-      const httpReqsMatch = output.match(/http_reqs\.+:\s*(\d+)\s+([\d.]+)\/s/);
-      if (httpReqsMatch) {
-        tot += parseInt(httpReqsMatch[1], 10);
-        totalRps += parseFloat(httpReqsMatch[2]);
+      let httpRps = 0;
+      let mqttRps = 0;
+      let total = 0;
+
+      const httpMatch = output.match(/mixed_web_http_requests[^\n]+?:\s*(\d+)\s+([\d.]+)\/s/);
+      if (httpMatch) {
+        total += parseInt(httpMatch[1], 10);
+        httpRps = parseFloat(httpMatch[2]);
       }
-      const mqttSentMatch = output.match(/mixed_mqtt_sent\.+:\s*(\d+)\s+([\d.]+)\/s/);
-      if (mqttSentMatch) {
-        tot += parseInt(mqttSentMatch[1], 10);
-        totalRps += parseFloat(mqttSentMatch[2]);
+
+      const mqttMatch = output.match(/mqtt_messages_sent[^\n]+?:\s*(\d+)\s+([\d.]+)\/s/);
+      if (mqttMatch) {
+        total += parseInt(mqttMatch[1], 10);
+        mqttRps = parseFloat(mqttMatch[2]);
       }
-      parsed.totalReqs = tot;
-      parsed.rps = parseFloat(totalRps.toFixed(2));
-      const webDurMatch = output.match(/mixed_web_http_duration\.+avg=([\d.]+)\s*min=[\d.]+\s*med=[\d.]+\s*max=[\d.]+\s*p\(90\)=[\d.]+\s*p\(95\)=([\d.]+)/);
-      if (webDurMatch) {
-        parsed.avgLatency = parseFloat(webDurMatch[1]);
-        parsed.p95Latency = parseFloat(webDurMatch[2]);
-      }
-      const ttfbMatch = output.match(/http_req_waiting\.+avg=([\d.]+)/);
-      if (ttfbMatch) parsed.ttfbAvg = parseFloat(ttfbMatch[1]);
-    } else if (scenarioId.startsWith('jalur6')) {
-      const reqsMatch = output.match(/http_reqs\.+:\s*(\d+)\s+([\d.]+)\/s/);
-      if (reqsMatch) {
-        parsed.totalReqs = parseInt(reqsMatch[1], 10);
-        parsed.rps = parseFloat(reqsMatch[2]);
-      }
-      const durMatch = output.match(/http_req_duration\.+avg=([\d.]+)\s*min=[\d.]+\s*med=[\d.]+\s*max=[\d.]+\s*p\(90\)=[\d.]+\s*p\(95\)=([\d.]+)/);
-      if (durMatch) {
-        parsed.avgLatency = parseFloat(durMatch[1]);
-        parsed.p95Latency = parseFloat(durMatch[2]);
-      }
-      const ttfbMatch = output.match(/http_req_waiting\.+avg=([\d.]+)/);
-      if (ttfbMatch) parsed.ttfbAvg = parseFloat(ttfbMatch[1]);
+
+      parsed.totalReqs = total;
+      parsed.rps = parseFloat((httpRps + mqttRps).toFixed(2));
+
+      const durMatch = extractK6Trend(output, 'mixed_web_http_duration');
+      parsed.avgLatency = durMatch.avg;
+      parsed.p95Latency = durMatch.p95;
+
+      const ttfbMatch = extractK6Trend(output, 'mixed_web_server_ttfb');
+      parsed.ttfbAvg = ttfbMatch.avg;
     } else {
-      const reqsMatch = output.match(/http_reqs\.+:\s*(\d+)\s+([\d.]+)\/s/);
+      const reqsMatch = output.match(/http_reqs[^\n]+?:\s*(\d+)\s+([\d.]+)\/s/);
       if (reqsMatch) {
         parsed.totalReqs = parseInt(reqsMatch[1], 10);
         parsed.rps = parseFloat(reqsMatch[2]);
-      } else {
-        const iterMatch = output.match(/iterations\.+:\s*(\d+)\s+([\d.]+)\/s/);
-        if (iterMatch) {
-          parsed.totalReqs = parseInt(iterMatch[1], 10);
-          parsed.rps = parseFloat(iterMatch[2]);
-        }
       }
-      const durMatch = output.match(/http_req_duration\.+avg=([\d.]+)ms.+p\(95\)=([\d.]+)ms/);
-      if (durMatch) {
-        parsed.avgLatency = parseFloat(durMatch[1]);
-        parsed.p95Latency = parseFloat(durMatch[2]);
-      }
-      const ttfbMatch = output.match(/http_req_waiting\.+avg=([\d.]+)ms/);
-      if (ttfbMatch) parsed.ttfbAvg = parseFloat(ttfbMatch[1]);
+
+      const durMatch = extractK6Trend(output, 'http_req_duration');
+      parsed.avgLatency = durMatch.avg;
+      parsed.p95Latency = durMatch.p95;
+
+      const ttfbMatch = extractK6Trend(output, 'http_req_waiting');
+      parsed.ttfbAvg = ttfbMatch.avg;
     }
-  } catch (e) { }
+  } catch (e) {}
 
   return parsed;
 }

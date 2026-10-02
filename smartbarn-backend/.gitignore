@@ -71,3 +71,5 @@ benchmark_logs*/
 k6-mqtt.exe
 k6-linux-mqtt
 checkpoint.json
+iperf3.exe
+cygwin1.dll
