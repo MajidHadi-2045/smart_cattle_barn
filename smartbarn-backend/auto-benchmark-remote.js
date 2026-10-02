@@ -386,7 +386,7 @@ async function main() {
 
         // 2. Pre-Test Network Benchmark (iPerf3: Ping, Jitter, Packet Loss, Download, Upload)
         console.log('\n[STEP 2/6] PRE-TEST JARINGAN (iPerf3 & ICMP): Mengukur Ping, Jitter, Loss & Bandwidth...');
-        const preNet = measureIperf3Benchmark(TARGET_HOST, { duration: 3, udpBitrate: '10M' });
+        const preNet = await measureIperf3Benchmark(TARGET_HOST, { duration: 3, udpBitrate: '10M' });
         console.log(`  > Pre-Network: Ping=${preNet.pingAvgMs}ms | Jitter=${preNet.jitterMs}ms | Loss=${preNet.packetLossPercent}% | Down=${preNet.downloadMbps} Mbps | Up=${preNet.uploadMbps} Mbps`);
         
         console.log('  > [JEDA 15s] Menunggu 15 detik stabilisasi jaringan sebelum Baseline Warm-Up...');
@@ -405,7 +405,7 @@ async function main() {
 
         // 5. Post-Test Network Benchmark (iPerf3: Ping, Jitter, Packet Loss, Download, Upload)
         console.log('\n[STEP 5/6] POST-TEST JARINGAN (iPerf3 & ICMP): Mengukur Ping, Jitter, Loss & Bandwidth...');
-        const postNet = measureIperf3Benchmark(TARGET_HOST, { duration: 3, udpBitrate: '10M' });
+        const postNet = await measureIperf3Benchmark(TARGET_HOST, { duration: 3, udpBitrate: '10M' });
         console.log(`  > Post-Network: Ping=${postNet.pingAvgMs}ms | Jitter=${postNet.jitterMs}ms | Loss=${postNet.packetLossPercent}% | Down=${postNet.downloadMbps} Mbps | Up=${postNet.uploadMbps} Mbps`);
 
         // Hitung Peak Resource 100% murni dari nilai tertinggi selama K6 berjalan
