@@ -10,7 +10,7 @@ const path = require('path');
 const http = require('http');
 const https = require('https');
 const { spawn } = require('child_process');
-const { measurePingAndJitter, measureSpeedtest } = require('./benchmark-network-utils');
+const { measureIperf3Benchmark } = require('./benchmark-network-utils');
 
 // KONFIGURASI TARGET REMOTE VPS
 const BASE_URL = process.env.TARGET_API_URL || 'http://smartcattlebarn.site:4000';
@@ -49,11 +49,11 @@ function ensureDirectories() {
   if (!fs.existsSync(CSV_SUMMARY_FILE)) {
     const csvHeader = [
       'Session_ID', 'Jalur', 'Beban_VUs', 'Iterasi', 'Timestamp',
-      'Pre_Ping_Avg_ms', 'Pre_Jitter_ms', 'Pre_Down_Mbps', 'Pre_Up_Mbps',
+      'Pre_Ping_Avg_ms', 'Pre_Jitter_ms', 'Pre_Loss_Percent', 'Pre_Down_Mbps', 'Pre_Up_Mbps',
       'Baseline_CPU_Percent', 'Baseline_RAM_MB', 'Baseline_RAM_Redis',
       'K6_Total_Reqs', 'Throughput_RPS', 'Latency_Avg_ms', 'Latency_P95_ms', 'TTFB_Avg_ms', 'Checks_Pass_Percent', 'Error_Rate_Percent',
       'Peak_CPU_Percent', 'Peak_RAM_MB', 'Peak_RAM_Redis',
-      'Post_Ping_Avg_ms', 'Post_Jitter_ms', 'Post_Down_Mbps', 'Post_Up_Mbps'
+      'Post_Ping_Avg_ms', 'Post_Jitter_ms', 'Post_Loss_Percent', 'Post_Down_Mbps', 'Post_Up_Mbps'
     ].join(',') + '\n';
     fs.writeFileSync(CSV_SUMMARY_FILE, csvHeader, 'utf-8');
   }
@@ -381,14 +381,16 @@ async function main() {
         // 1. Remote PM2 Restart
         console.log('[STEP 1/6] Mengirim sinyal restart PM2 ke VPS (smartbarn-api-4000)...');
         await requestRemotePm2Restart();
-        await sleep(3000); // Jeda transisi restart
+        console.log('  > [JEDA 15s] Menunggu 15 detik inisialisasi backend, database pool & Redis...');
+        await sleep(15000);
 
-        // 2. Pre-Test Network Benchmark (Dijalankan awal agar sisa beban speedtest hilang saat warm-up)
-        console.log('\n[STEP 2/6] PRE-TEST JARINGAN: Mengukur Ping RTT, Jitter & Speedtest...');
-        const prePing = measurePingAndJitter(TARGET_HOST, 10);
-        console.log(`  > Pre-Ping: Avg=${prePing.avgRtt}ms | Jitter=${prePing.jitter}ms | Min/Max=${prePing.minRtt}/${prePing.maxRtt}ms`);
-        const preSpeed = await measureSpeedtest(BASE_URL, 3);
-        console.log(`  > Pre-Speedtest: Download=${preSpeed.downloadMbps} Mbps | Upload=${preSpeed.uploadMbps} Mbps`);
+        // 2. Pre-Test Network Benchmark (iPerf3: Ping, Jitter, Packet Loss, Download, Upload)
+        console.log('\n[STEP 2/6] PRE-TEST JARINGAN (iPerf3 & ICMP): Mengukur Ping, Jitter, Loss & Bandwidth...');
+        const preNet = measureIperf3Benchmark(TARGET_HOST, { duration: 3, udpBitrate: '10M' });
+        console.log(`  > Pre-Network: Ping=${preNet.pingAvgMs}ms | Jitter=${preNet.jitterMs}ms | Loss=${preNet.packetLossPercent}% | Down=${preNet.downloadMbps} Mbps | Up=${preNet.uploadMbps} Mbps`);
+        
+        console.log('  > [JEDA 15s] Menunggu 15 detik stabilisasi jaringan sebelum Baseline Warm-Up...');
+        await sleep(15000);
 
         // 3. Strict Warm-Up (Tunggu sampai CPU backend benar-benar dingin & stabil <= 1.0%)
         console.log('\n[STEP 3/6] PENDINGINAN & STABILISASI (WARM-UP BASELINE)...');
@@ -398,12 +400,13 @@ async function main() {
         console.log(`\n[STEP 4/6] EKSEKUSI K6 LOAD TEST (${vus} VUs, ${TEST_DURATION})...`);
         const { terminalOutput, metricsLog } = await executeK6WithMonitoring(scenario.script, vus, TEST_DURATION, scenario.isMqtt, scenario.env);
 
-        // 5. Post-Test Network Benchmark
-        console.log('\n[STEP 5/6] POST-TEST JARINGAN: Mengukur Ping RTT, Jitter & Speedtest...');
-        const postPing = measurePingAndJitter(TARGET_HOST, 10);
-        console.log(`  > Post-Ping: Avg=${postPing.avgRtt}ms | Jitter=${postPing.jitter}ms | Min/Max=${postPing.minRtt}/${postPing.maxRtt}ms`);
-        const postSpeed = await measureSpeedtest(BASE_URL, 3);
-        console.log(`  > Post-Speedtest: Download=${postSpeed.downloadMbps} Mbps | Upload=${postSpeed.uploadMbps} Mbps`);
+        console.log('\n  > [JEDA 15s] Menunggu 15 detik bagi server untuk melepaskan sisa soket K6 (Socket Drain)...');
+        await sleep(15000);
+
+        // 5. Post-Test Network Benchmark (iPerf3: Ping, Jitter, Packet Loss, Download, Upload)
+        console.log('\n[STEP 5/6] POST-TEST JARINGAN (iPerf3 & ICMP): Mengukur Ping, Jitter, Loss & Bandwidth...');
+        const postNet = measureIperf3Benchmark(TARGET_HOST, { duration: 3, udpBitrate: '10M' });
+        console.log(`  > Post-Network: Ping=${postNet.pingAvgMs}ms | Jitter=${postNet.jitterMs}ms | Loss=${postNet.packetLossPercent}% | Down=${postNet.downloadMbps} Mbps | Up=${postNet.uploadMbps} Mbps`);
 
         // Hitung Peak Resource 100% murni dari nilai tertinggi selama K6 berjalan
         let peakCpu = metricsLog.length > 0 ? metricsLog[0].cpu : baselineMetrics.cpu;
@@ -419,7 +422,7 @@ async function main() {
         const k6Stats = parseK6Metrics(terminalOutput, scenario.id);
 
         // 6. Simpan Seluruh Hasil (Terminal txt, System log, CSV, Checkpoint)
-        console.log('\n[STEP 5/6] MENYIMPAN LOG & REKAP DATA...');
+        console.log('\n[STEP 6/6] MENYIMPAN LOG & REKAP DATA...');
 
         // Simpan Terminal Output K6 Asli
         const terminalFile = path.join(K6_DIR, `${sessionId}.txt`);
@@ -442,14 +445,14 @@ async function main() {
         ].join('\n');
         fs.writeFileSync(sysLogFile, sysLogContent, 'utf-8');
 
-        // Append ke CSV Summary
+        // Append ke CSV Summary (Lengkap dengan Loss Percent)
         const csvRow = [
           sessionId, `"${scenario.name}"`, vus, iter, `"${new Date().toISOString()}"`,
-          prePing.avgRtt, prePing.jitter, preSpeed.downloadMbps, preSpeed.uploadMbps,
+          preNet.pingAvgMs, preNet.jitterMs, preNet.packetLossPercent, preNet.downloadMbps, preNet.uploadMbps,
           baselineMetrics.cpu, baselineMetrics.memoryMb, `"${baselineMetrics.redisMemory}"`,
           k6Stats.totalReqs, k6Stats.rps, k6Stats.avgLatency, k6Stats.p95Latency, k6Stats.ttfbAvg, k6Stats.checksPass, k6Stats.errorRate,
           peakCpu, peakRam, `"${peakRedis}"`,
-          postPing.avgRtt, postPing.jitter, postSpeed.downloadMbps, postSpeed.uploadMbps
+          postNet.pingAvgMs, postNet.jitterMs, postNet.packetLossPercent, postNet.downloadMbps, postNet.uploadMbps
         ].join(',') + '\n';
         fs.appendFileSync(CSV_SUMMARY_FILE, csvRow, 'utf-8');
 
@@ -460,7 +463,7 @@ async function main() {
 
         console.log(`[BERHASIL DISIMPAN] Data Sesi ${sessionId} tersimpan ke CSV dan Folder Log.`);
 
-        // 7. Jeda Cooldown 2 Menit (Kecuali jika ini sesi terakhir)
+        // 7. Jeda Cooldown 1 Menit (Kecuali jika ini sesi terakhir)
         if (sessionIndex < totalSessions) {
           console.log('\n[STEP 6/6] MEMULAI JEDA COOLDOWN...');
           await runCooldown(COOLDOWN_SECONDS);

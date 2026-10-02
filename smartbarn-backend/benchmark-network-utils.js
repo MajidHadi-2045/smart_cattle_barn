@@ -2,14 +2,30 @@ const http = require('http');
 const https = require('https');
 const { execSync } = require('child_process');
 const os = require('os');
+const path = require('path');
+const fs = require('fs');
 const crypto = require('crypto');
 
 /**
- * Mengukur Ping RTT (Min, Max, Avg) dan Jitter (ms)
- * Menggunakan 10 paket ping ke target host
+ * Mencari binary iperf3 lokal di folder backend atau di sistem PATH
+ */
+function resolveIperfPath() {
+  const isWin = os.platform() === 'win32';
+  const localWinPath = path.join(__dirname, 'iperf3.exe');
+  const localLinuxPath = path.join(__dirname, 'iperf3');
+
+  if (isWin && fs.existsSync(localWinPath)) {
+    return `"${localWinPath}"`;
+  } else if (!isWin && fs.existsSync(localLinuxPath)) {
+    return `"${localLinuxPath}"`;
+  }
+  return 'iperf3';
+}
+
+/**
+ * Mengukur Ping RTT (Min, Max, Avg) dan Jitter (ms) dengan 10 paket ICMP
  */
 function measurePingAndJitter(targetHost, packetCount = 10) {
-  // Bersihkan hostname dari URL jika ada http/https/port
   let cleanHost = targetHost.replace(/^https?:\/\//i, '').replace(/:\d+.*$/, '').replace(/\/.*$/, '');
   if (cleanHost === 'localhost' || cleanHost === '127.0.0.1') {
     return { minRtt: 0.1, maxRtt: 0.5, avgRtt: 0.2, jitter: 0.05, packetLoss: 0, packetsSent: packetCount };
@@ -25,21 +41,14 @@ function measurePingAndJitter(targetHost, packetCount = 10) {
     const rtts = [];
 
     if (isWin) {
-      // Format Windows: time=18ms atau time<1ms
       const matches = rawOut.matchAll(/time[=<](\d+)ms/gi);
-      for (const m of matches) {
-        rtts.push(parseFloat(m[1]));
-      }
+      for (const m of matches) rtts.push(parseFloat(m[1]));
     } else {
-      // Format Linux: time=18.4 ms
       const matches = rawOut.matchAll(/time=([\d.]+)\s*ms/gi);
-      for (const m of matches) {
-        rtts.push(parseFloat(m[1]));
-      }
+      for (const m of matches) rtts.push(parseFloat(m[1]));
     }
 
     if (rtts.length === 0) {
-      // Fallback socket latency jika ICMP diblokir firewall
       return { minRtt: 0, maxRtt: 0, avgRtt: 0, jitter: 0, packetLoss: 100, packetsSent: packetCount };
     }
 
@@ -48,8 +57,6 @@ function measurePingAndJitter(targetHost, packetCount = 10) {
     const sumRtt = rtts.reduce((a, b) => a + b, 0);
     const avgRtt = parseFloat((sumRtt / rtts.length).toFixed(2));
 
-    // Rumus Jitter Standar RFC 1889 / RFC 3550:
-    // Jitter = Sum(|RTT[i+1] - RTT[i]|) / (N - 1)
     let jitterSum = 0;
     for (let i = 0; i < rtts.length - 1; i++) {
       jitterSum += Math.abs(rtts[i + 1] - rtts[i]);
@@ -64,83 +71,94 @@ function measurePingAndJitter(targetHost, packetCount = 10) {
 }
 
 /**
- * Mengukur Speed Test Download & Upload (Mbps) langsung ke Backend
+ * Pengukuran Jaringan Berstandar Industri & Akademis menggunakan iPerf3 (L4 Transport Layer)
+ * Mengukur: Ping RTT, Jitter (RFC 3550), Packet Loss (%), Download Mbps (TCP Reverse), Upload Mbps (TCP)
  */
-async function measureSpeedtest(baseUrl, sizeMb = 3) {
-  const result = { downloadMbps: 0, uploadMbps: 0, sizeMb };
-  const targetUrl = new URL(baseUrl);
-  const client = targetUrl.protocol === 'https:' ? https : http;
+function measureIperf3Benchmark(targetHost, options = { duration: 3, udpBitrate: '10M' }) {
+  let cleanHost = targetHost.replace(/^https?:\/\//i, '').replace(/:\d+.*$/, '').replace(/\/.*$/, '');
+  
+  // Jika localhost / 127.0.0.1
+  if (cleanHost === 'localhost' || cleanHost === '127.0.0.1') {
+    return {
+      success: true,
+      pingAvgMs: 0.1,
+      jitterMs: 0.05,
+      packetLossPercent: 0,
+      downloadMbps: 1000.0,
+      uploadMbps: 1000.0,
+      protocol: 'iPerf3 (Loopback)'
+    };
+  }
 
-  // 1. Download Test
+  const iperfBin = resolveIperfPath();
+  const dur = options.duration || 3;
+  const result = {
+    success: false,
+    pingAvgMs: 0,
+    jitterMs: 0,
+    packetLossPercent: 0,
+    downloadMbps: 0,
+    uploadMbps: 0,
+    protocol: 'iPerf3'
+  };
+
+  // 1. Ambil Latensi RTT Dasar dari Ping ICMP
+  const icmp = measurePingAndJitter(cleanHost, 10);
+  result.pingAvgMs = icmp.avgRtt;
+  result.jitterMs = icmp.jitter;
+  result.packetLossPercent = icmp.packetLoss;
+
+  // 2. Uji UDP iPerf3 untuk Jitter & Packet Loss Transmisi Aktif
   try {
-    const downloadStart = Date.now();
-    let totalBytesReceived = 0;
+    const udpCmd = `${iperfBin} -c ${cleanHost} -u -b ${options.udpBitrate || '10M'} -t 2 -J`;
+    const udpOut = execSync(udpCmd, { encoding: 'utf-8', timeout: 15000 });
+    const udpJson = JSON.parse(udpOut);
+    
+    if (udpJson && udpJson.end && udpJson.end.sum) {
+      if (typeof udpJson.end.sum.jitter_ms === 'number') {
+        result.jitterMs = parseFloat(udpJson.end.sum.jitter_ms.toFixed(2));
+      }
+      if (typeof udpJson.end.sum.lost_percent === 'number') {
+        result.packetLossPercent = parseFloat(udpJson.end.sum.lost_percent.toFixed(2));
+      }
+    }
+  } catch (e) {
+    // Fallback ke nilai ICMP jika UDP diblokir
+  }
 
-    await new Promise((resolve, reject) => {
-      const req = client.get(`${baseUrl}/api/system/speedtest/download?size=${sizeMb}`, (res) => {
-        res.on('data', (chunk) => {
-          totalBytesReceived += chunk.length;
-        });
-        res.on('end', () => resolve());
-        res.on('error', (err) => reject(err));
-      });
-      req.on('error', (err) => reject(err));
-      req.setTimeout(15000, () => {
-        req.destroy();
-        reject(new Error('Download timeout'));
-      });
-    });
+  // 3. Uji Download Throughput via TCP Reverse Mode (-R)
+  try {
+    const downCmd = `${iperfBin} -c ${cleanHost} -R -t ${dur} -J`;
+    const downOut = execSync(downCmd, { encoding: 'utf-8', timeout: 25000 });
+    const downJson = JSON.parse(downOut);
 
-    const downloadDurationSec = (Date.now() - downloadStart) / 1000;
-    if (downloadDurationSec > 0 && totalBytesReceived > 0) {
-      const bits = totalBytesReceived * 8;
-      result.downloadMbps = parseFloat(((bits / downloadDurationSec) / (1024 * 1024)).toFixed(2));
+    if (downJson && downJson.end) {
+      const bps = downJson.end.sum_sent?.bits_per_second || downJson.end.sum_received?.bits_per_second || 0;
+      result.downloadMbps = parseFloat((bps / 1000000).toFixed(2));
     }
   } catch (e) {
     result.downloadError = e.message;
   }
 
-  // 2. Upload Test
+  // 4. Uji Upload Throughput via TCP Normal Mode
   try {
-    const uploadPayload = crypto.randomBytes(sizeMb * 1024 * 1024);
-    const uploadStart = Date.now();
+    const upCmd = `${iperfBin} -c ${cleanHost} -t ${dur} -J`;
+    const upOut = execSync(upCmd, { encoding: 'utf-8', timeout: 25000 });
+    const upJson = JSON.parse(upOut);
 
-    await new Promise((resolve, reject) => {
-      const req = client.request(`${baseUrl}/api/system/speedtest/upload`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/octet-stream',
-          'Content-Length': uploadPayload.length,
-        },
-      }, (res) => {
-        let body = '';
-        res.on('data', (chunk) => body += chunk);
-        res.on('end', () => resolve(body));
-      });
-
-      req.on('error', (err) => reject(err));
-      req.setTimeout(15000, () => {
-        req.destroy();
-        reject(new Error('Upload timeout'));
-      });
-
-      req.write(uploadPayload);
-      req.end();
-    });
-
-    const uploadDurationSec = (Date.now() - uploadStart) / 1000;
-    if (uploadDurationSec > 0) {
-      const bits = uploadPayload.length * 8;
-      result.uploadMbps = parseFloat(((bits / uploadDurationSec) / (1024 * 1024)).toFixed(2));
+    if (upJson && upJson.end) {
+      const bps = upJson.end.sum_received?.bits_per_second || upJson.end.sum_sent?.bits_per_second || 0;
+      result.uploadMbps = parseFloat((bps / 1000000).toFixed(2));
     }
   } catch (e) {
     result.uploadError = e.message;
   }
 
+  result.success = true;
   return result;
 }
 
 module.exports = {
   measurePingAndJitter,
-  measureSpeedtest,
+  measureIperf3Benchmark,
 };
