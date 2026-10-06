@@ -119,6 +119,22 @@ function requestRemotePm2Restart() {
   });
 }
 
+// Remote Flush Redis
+function requestRemoteFlushRedis() {
+  return new Promise((resolve) => {
+    const client = BASE_URL.startsWith('https') ? https : http;
+    const req = client.request(`${BASE_URL}/api/system/flush-redis`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    }, (res) => {
+      resolve(true);
+    });
+    req.on('error', () => resolve(false));
+    req.setTimeout(4000, () => { req.destroy(); resolve(false); });
+    req.end();
+  });
+}
+
 // Dynamic Warm-up: Tunggu CPU backend benar-benar mendingin & stabil <= 1.0%
 async function dynamicWarmup(targetCpu = 2.0, maxAttempts = 10) {
   console.log(`\n[WARM-UP] Menunggu pendinginan CPU backend stabil <= ${targetCpu}% (Maks ${maxAttempts * 1.5}s)...`);
@@ -379,10 +395,11 @@ async function main() {
           continue;
         }
 
-        // 1. Remote PM2 Restart
-        console.log('[STEP 1/6] Mengirim sinyal restart PM2 ke VPS (smartbarn-api-4000)...');
+        // 1. Remote PM2 Restart & Flush Redis
+        console.log('[STEP 1/6] Me-restart PM2 & Mengosongkan Cache Redis VPS...');
         await requestRemotePm2Restart();
-        console.log('  > [JEDA 15s] Menunggu 15 detik inisialisasi backend, database pool & Redis...');
+        await requestRemoteFlushRedis();
+        console.log('  > [JEDA 15s] Menunggu 15 detik inisialisasi backend & Redis clean state...');
         await sleep(15000);
 
         // 2. Pre-Test Network Benchmark (iPerf3: Ping, Jitter, Packet Loss, Download, Upload)

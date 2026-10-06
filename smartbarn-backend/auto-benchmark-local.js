@@ -377,10 +377,11 @@ async function main() {
           continue;
         }
 
-        // 1. Local PM2 Restart
-        console.log('[STEP 1/6] Me-restart PM2 Lokal (smartbarn-api-4000)...');
+        // 1. Local PM2 Restart & Flush Redis
+        console.log('[STEP 1/6] Me-restart PM2 & Mengosongkan Cache Redis Lokal...');
         restartLocalPm2();
-        console.log('  > [JEDA 15s] Menunggu 15 detik inisialisasi backend, database pool & Redis...');
+        try { execSync('redis-cli flushall', { stdio: 'ignore' }); } catch (e) {}
+        console.log('  > [JEDA 15s] Menunggu 15 detik inisialisasi backend & Redis clean state...');
         await sleep(15000);
 
         // 2. Pre-Test Network Benchmark (iPerf3: Ping, Jitter, Packet Loss, Download, Upload)

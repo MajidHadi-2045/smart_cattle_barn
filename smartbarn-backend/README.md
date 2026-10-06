@@ -177,4 +177,15 @@ node monitor-remote.js
 node check-bullmq.js
 # Cek Jumlah Data di Database PostgreSQL
 node check-db-counts.js
-
+#Membersihkan Log
+sudo truncate -s 0 /var/log/xrdp.log
+#Membersihkan log pm2
+pm2 flush
+#Membersihkan cache npm
+npm cache clean --force
+#Cek ruang Disk
+df -h
+# Membersihkan cache redis (remote)
+node flush-redis-remote.js
+# Membersihkan cache redis (local)
+redis-cli flushall
