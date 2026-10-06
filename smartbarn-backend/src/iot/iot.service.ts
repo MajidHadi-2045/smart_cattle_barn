@@ -61,6 +61,11 @@ export class IotService implements OnModuleInit, OnModuleDestroy {
   }
 
   private async handleMessage(topic: string, data: any) {
+    // ABORT IF TOPIC IS AN ACKNOWLEDGEMENT (Prevent Infinite MQTT Echo Loop)
+    if (topic.endsWith('/ack') || topic.includes('/ack')) {
+      return;
+    }
+
     const segments = topic.split('/');
     
     const receiveTime = Date.now();

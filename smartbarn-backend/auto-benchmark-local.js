@@ -107,21 +107,23 @@ function restartLocalPm2() {
 }
 
 // Dynamic Warm-up: Tunggu CPU backend benar-benar mendingin & stabil <= 1.0%
-async function dynamicWarmup(targetCpu = 1.0) {
-  console.log(`\n[WARM-UP] Menunggu pendinginan CPU backend stabil <= ${targetCpu}%...`);
+async function dynamicWarmup(targetCpu = 2.0, maxAttempts = 10) {
+  console.log(`\n[WARM-UP] Menunggu pendinginan CPU backend stabil <= ${targetCpu}% (Maks ${maxAttempts * 1.5}s)...`);
   let stableCount = 0;
+  let attempts = 0;
   let lastMetric = { cpu: 0, memoryMb: 0, redisMemory: 'N/A' };
 
-  while (true) {
+  while (attempts < maxAttempts) {
+    attempts++;
     await sleep(1500);
     const m = await fetchServerMetrics();
     if (m.success) {
       lastMetric = m;
-      process.stdout.write(`\r  > Current CPU: ${m.cpu}% | RAM: ${m.memoryMb} MB | Redis: ${m.redisMemory} (Stabil <= ${targetCpu}%: ${stableCount}/3)  `);
+      process.stdout.write(`\r  > Current CPU: ${m.cpu}% | RAM: ${m.memoryMb} MB | Redis: ${m.redisMemory} (Stabil <= ${targetCpu}%: ${stableCount}/3, Attempt ${attempts}/${maxAttempts})  `);
       if (m.cpu <= targetCpu) {
         stableCount++;
         if (stableCount >= 3) {
-          console.log(`\n[WARM-UP READY] Backend 100% idle & stabil pada ${m.cpu}% CPU (${m.memoryMb} MB RAM). Pengujian dimulai.`);
+          console.log(`\n[WARM-UP READY] Backend idle & stabil pada ${m.cpu}% CPU (${m.memoryMb} MB RAM). Pengujian dimulai.`);
           return lastMetric;
         }
       } else {
@@ -129,6 +131,9 @@ async function dynamicWarmup(targetCpu = 1.0) {
       }
     }
   }
+
+  console.log(`\n[WARM-UP TIMEOUT] Batas waktu pendinginan (15s) tercapai. Melanjutkan dengan CPU ${lastMetric.cpu}% (${lastMetric.memoryMb} MB RAM).`);
+  return lastMetric;
 }
 
 // Eksekusi K6 & Polling Resource
