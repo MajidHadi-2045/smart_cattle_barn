@@ -38,13 +38,18 @@ function flushRemoteRedis() {
     });
   });
 
+  let isDestroyed = false;
+
   req.on('error', (err) => {
-    console.log(`❌ ERROR: Gagal menghubungi server VPS: ${err.message}`);
+    if (!isDestroyed) {
+      console.log(`❌ ERROR: Gagal menghubungi server VPS: ${err.message}`);
+    }
   });
 
-  req.setTimeout(5000, () => {
+  req.setTimeout(10000, () => {
+    isDestroyed = true;
     req.destroy();
-    console.log(`❌ ERROR: Request timeout ke VPS.`);
+    console.log(`❌ ERROR: Request timeout ke VPS (Pastikan VPS sudah di-update dengan git pull & npm run build).`);
   });
 
   req.end();
