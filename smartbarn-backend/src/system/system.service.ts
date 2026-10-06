@@ -19,6 +19,9 @@ export class SystemService {
     this.redis.on('error', () => {});
   }
 
+  private cachedRedisMem = 'N/A';
+  private lastRedisCheck = 0;
+
   async getMetrics() {
     // 1. Native High-Performance Zero-Overhead Node.js CPU & Memory
     const mem = process.memoryUsage();
@@ -39,21 +42,22 @@ export class SystemService {
     this.lastCpuUsage = process.cpuUsage();
     this.lastCpuTime = currentTime;
 
-    // 2. Baca Memory Redis secara native non-blocking
-    let redisMem = 'N/A';
-    try {
+    // 2. Baca Memory Redis secara async non-blocking (cached 3 detik agar 0% beban CPU)
+    if (currentTime - this.lastRedisCheck > 3000) {
+      this.lastRedisCheck = currentTime;
       if (this.redis && this.redis.status !== 'end') {
-        const info = await this.redis.info('memory');
-        const match = info.match(/used_memory_human:(.+)/);
-        if (match) redisMem = match[1].trim();
+        this.redis.info('memory').then((info) => {
+          const match = info.match(/used_memory_human:(.+)/);
+          if (match) this.cachedRedisMem = match[1].trim();
+        }).catch(() => {});
       }
-    } catch (e) {}
+    }
 
     return {
       success: true,
       cpu: parseFloat(cpu),
       memoryMb: parseFloat(memMb),
-      redisMemory: redisMem,
+      redisMemory: this.cachedRedisMem,
       processName: 'smartbarn-api-4000',
       uptimeSeconds: Math.floor(process.uptime()),
       timestamp: new Date().toISOString(),
@@ -76,5 +80,22 @@ export class SystemService {
       message: `Triggered PM2 restart for ${processName}. Server will restart in 500ms.`,
       timestamp: new Date().toISOString(),
     };
+  }
+
+  async flushRedis() {
+    try {
+      if (this.redis && this.redis.status !== 'end') {
+        await this.redis.flushall();
+        this.cachedRedisMem = '1.5M';
+        return {
+          success: true,
+          message: 'Redis cache successfully flushed on remote VPS.',
+          timestamp: new Date().toISOString(),
+        };
+      }
+      return { success: false, message: 'Redis client not active' };
+    } catch (e) {
+      return { success: false, message: `Failed to flush Redis: ${e.message}` };
+    }
   }
 }

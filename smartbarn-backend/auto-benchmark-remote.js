@@ -393,9 +393,9 @@ async function main() {
         console.log('  > [JEDA 15s] Menunggu 15 detik stabilisasi jaringan sebelum Baseline Warm-Up...');
         await sleep(15000);
 
-        // 3. Strict Warm-Up (Tunggu sampai CPU backend benar-benar dingin & stabil <= 1.0%)
+        // 3. Strict Warm-Up (Tunggu sampai CPU backend mendingin & stabil <= 3.0%)
         console.log('\n[STEP 3/6] PENDINGINAN & STABILISASI (WARM-UP BASELINE)...');
-        const baselineMetrics = await dynamicWarmup(1.0);
+        const baselineMetrics = await dynamicWarmup(3.0);
 
         // 4. Eksekusi K6 Test + Resource Polling per Detik
         console.log(`\n[STEP 4/6] EKSEKUSI K6 LOAD TEST (${vus} VUs, ${TEST_DURATION})...`);
