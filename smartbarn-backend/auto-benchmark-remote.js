@@ -481,6 +481,21 @@ async function main() {
 
         console.log(`[BERHASIL DISIMPAN] Data Sesi ${sessionId} tersimpan ke CSV dan Folder Log.`);
 
+        console.log(`\n=====================================================================`);
+        console.log(`RINGKASAN METRIK SESI: ${sessionId.toUpperCase()}`);
+        console.log(`---------------------------------------------------------------------`);
+        console.log(`• Total Transaksi (Total) : ${k6Stats.totalReqs} Transaksi`);
+        console.log(`• Throughput (RPS)        : ${k6Stats.rps} req/s (atau msg/s)`);
+        console.log(`• Rerata Latensi (Avg)    : ${k6Stats.avgLatency} ms`);
+        console.log(`• Latensi P95 (95th)      : ${k6Stats.p95Latency} ms`);
+        console.log(`• Waktu Respon Pure TTFB  : ${k6Stats.ttfbAvg} ms`);
+        console.log(`• Error Rate              : ${k6Stats.errorRate}%`);
+        console.log(`• Baseline Resource       : CPU=${baselineMetrics.cpu}% | RAM=${baselineMetrics.memoryMb} MB | Redis=${baselineMetrics.redisMemory}`);
+        console.log(`• Peak Resource (Beban)   : CPU=${peakCpu}% | RAM=${peakRam} MB | Redis=${peakRedis}`);
+        console.log(`• Jaringan Pre-Test       : Ping=${preNet.pingAvgMs} ms | Jitter=${preNet.jitterMs} ms | Loss=${preNet.packetLossPercent}%`);
+        console.log(`• Jaringan Post-Test      : Ping=${postNet.pingAvgMs} ms | Jitter=${postNet.jitterMs} ms | Loss=${postNet.packetLossPercent}%`);
+        console.log(`=====================================================================\n`);
+
         // 7. Jeda Cooldown 1 Menit (Kecuali jika ini sesi terakhir)
         if (sessionIndex < totalSessions) {
           console.log('\n[STEP 6/6] MEMULAI JEDA COOLDOWN...');
