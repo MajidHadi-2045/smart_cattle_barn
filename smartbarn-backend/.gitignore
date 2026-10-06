@@ -73,3 +73,10 @@ k6-linux-mqtt
 checkpoint.json
 iperf3.exe
 cygwin1.dll
+ar51an.iPerf3_Microsoft.Winget.Source_8wekyb3d8bbwe.db
+# Reports & Python Generator Scripts
+Laporan_*.md
+*.py
+scratch_*
+fix_*
+pengujian_*

@@ -63,14 +63,16 @@ export class IotService implements OnModuleInit, OnModuleDestroy {
   private async handleMessage(topic: string, data: any) {
     const segments = topic.split('/');
     
-    const messageTimestamp = data.timestamp ? new Date(data.timestamp).getTime() : Date.now();
-    const isStale = (Date.now() - messageTimestamp) > 120000; // Lebih dari 2 menit dianggap usang
+    const receiveTime = Date.now();
+    const clientTs = data.clientTimestamp ? Number(data.clientTimestamp) : (data.timestamp ? new Date(data.timestamp).getTime() : receiveTime);
+    const pureProcessingLatency = Math.max(0, receiveTime - clientTs);
+    const isStale = (receiveTime - clientTs) > 120000; // Lebih dari 2 menit dianggap usang
 
     // STRUCTURE: barn/zone/{zoneId}/windspeed
     if (segments[1] === 'zone' && segments[3] === 'windspeed') {
       const zoneId = parseInt(segments[2]);
       try {
-        this.redisPub.publish('websocket:windspeed', JSON.stringify({ ...data, zoneId }));
+        this.redisPub.publish('websocket:windspeed', JSON.stringify({ ...data, zoneId, pureProcessingLatency }));
       } catch (err) {}
       
       if (isStale) {
@@ -83,11 +85,22 @@ export class IotService implements OnModuleInit, OnModuleDestroy {
         await this.redisPub.set(`live:zone:${zoneId}:windspeed`, JSON.stringify({
             ...data,
             zoneId,
+            pureProcessingLatency,
             type: 'wind_sensor'
         }), 'EX', 70);
       } catch (err) {}
 
       await this.environmentService.saveWindData(zoneId, data.windspeed);
+
+      // Broadcast ACK for v6 Benchmark Monitoring
+      try {
+        this.mqttClient.publish(`barn/zone/${zoneId}/windspeed/ack`, JSON.stringify({
+          zoneId,
+          pureProcessingLatency,
+          clientTimestamp: data.clientTimestamp,
+          timestamp: receiveTime
+        }));
+      } catch (err) {}
     } 
     // STRUCTURE: barn/zone/{zoneId}/environment OR barn/section/{sectionId}/environment
     else if ((segments[1] === 'zone' || segments[1] === 'section') && segments[3] === 'environment') {
@@ -231,6 +244,7 @@ export class IotService implements OnModuleInit, OnModuleDestroy {
             ...data, 
             zoneId, 
             thi: parseFloat(thi.toFixed(2)),
+            pureProcessingLatency,
             type: 'zone_sensor' 
         }), 'EX', 70);
       } catch (err) {}
@@ -239,6 +253,16 @@ export class IotService implements OnModuleInit, OnModuleDestroy {
           ...data, 
           thi: parseFloat(thi.toFixed(2)) 
       });
+
+      // Broadcast ACK for v6 Benchmark Monitoring
+      try {
+        this.mqttClient.publish(`barn/zone/${zoneId}/environment/ack`, JSON.stringify({
+          zoneId,
+          pureProcessingLatency,
+          clientTimestamp: data.clientTimestamp,
+          timestamp: receiveTime
+        }));
+      } catch (err) {}
     } 
     // STRUCTURE: barn/cow/{cattleId}/vitals
     else if (segments[1] === 'cow' && segments[3] === 'vitals') {
@@ -246,25 +270,36 @@ export class IotService implements OnModuleInit, OnModuleDestroy {
       
       // Hot Path
       try {
-        const latency = Date.now() - messageTimestamp;
         this.logger.log(
-          `[Telemetry] Cow ${cattleId} - Latency: ${latency}ms, RSSI: ${data.rssi || 'N/A'} dBm, Battery: ${data.batteryVoltage || 'N/A'} V`
+          `[Telemetry] Cow ${cattleId} - Ingestion Latency: ${pureProcessingLatency}ms, RSSI: ${data.rssi || 'N/A'} dBm, Battery: ${data.batteryVoltage || 'N/A'} V`
         );
 
         this.redisPub.publish('websocket:vital-update', JSON.stringify({ 
             cattleId, 
             heartRate: data.heartRate,
             bodyTemperature: data.temp,
-            timestamp: data.timestamp || new Date().toISOString()
+            timestamp: data.timestamp || new Date().toISOString(),
+            pureProcessingLatency,
+            clientTimestamp: data.clientTimestamp
         }));
       } catch (err) {}
       
       // Cold Path (via BullMQ)
       try {
-        await this.heartrateQueue.add('process-heartrate', { ...data, cattleId }, {
+        await this.heartrateQueue.add('process-heartrate', { ...data, cattleId, pureProcessingLatency }, {
             removeOnComplete: true,
             removeOnFail: 1000
         });
+      } catch (err) {}
+
+      // Broadcast ACK for v6 Benchmark Monitoring
+      try {
+        this.mqttClient.publish(`barn/cow/${cattleId}/vitals/ack`, JSON.stringify({
+          cattleId,
+          pureProcessingLatency,
+          clientTimestamp: data.clientTimestamp,
+          timestamp: receiveTime
+        }));
       } catch (err) {}
     }
   }

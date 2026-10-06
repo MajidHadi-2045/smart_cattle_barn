@@ -110,4 +110,9 @@ iperf3.exe
 **/iperf3.exe
 cygwin1.dll
 **/cygwin1.dll
-
+# Reports & Python Generator Scripts
+Laporan_*.md
+*.py
+scratch_*
+fix_*
+pengujian_*

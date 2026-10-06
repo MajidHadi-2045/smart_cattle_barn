@@ -24,8 +24,8 @@ const SYS_DIR = path.join(LOGS_DIR, 'system_resource_logs');
 const CHECKPOINT_FILE = path.join(LOGS_DIR, 'checkpoint.json');
 const CSV_SUMMARY_FILE = path.join(LOGS_DIR, 'summary_results.csv');
 
-// DAFTAR LENGKAP JALUR PENGUJIAN (DEFAULT MENGGUNAKAN VERSI 4 BERTAHAP TANPA RAMP-DOWN KE 0)
-const SCRIPT_VER = process.env.VERSION || 'v4';
+// DAFTAR LENGKAP JALUR PENGUJIAN (DEFAULT MENGGUNAKAN VERSI 6 INGESTION LATENCY)
+const SCRIPT_VER = process.env.VERSION || 'v6';
 const SCENARIOS = [
   { id: 'jalur1', name: 'Jalur 1 - Sensor Vital Sapi (MQTT)', script: `k6-sensor-test-${SCRIPT_VER}.js`, isMqtt: true, env: {} },
   { id: 'jalur2', name: 'Jalur 2 - Sensor Lingkungan (MQTT)', script: `k6-env-test-${SCRIPT_VER}.js`, isMqtt: true, env: {} },
@@ -320,8 +320,8 @@ function parseK6Metrics(output, scenarioId = '') {
       parsed.avgLatency = durMatch.avg;
       parsed.p95Latency = durMatch.p95;
 
-      const ttfbMatch = extractK6Trend(output, 'http_req_waiting');
-      parsed.ttfbAvg = ttfbMatch.avg;
+      const ttfbMatch = extractK6Trend(output, 'server_processing_ttFB') || extractK6Trend(output, 'ttfb_cache_hit_ram') || extractK6Trend(output, 'http_req_waiting');
+      parsed.ttfbAvg = ttfbMatch.avg || durMatch.avg;
     }
   } catch (e) {}
 
