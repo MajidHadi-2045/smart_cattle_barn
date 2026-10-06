@@ -130,9 +130,8 @@ export default function () {
         });
 
         socket.setTimeout(() => {
-          socket.clearInterval(intervalId);
-          socket.close();
-          mqttClient.end();
+          try { socket.close(); } catch (e) {}
+          try { mqttClient.end(); } catch (e) {}
         }, 20000);
       });
 
