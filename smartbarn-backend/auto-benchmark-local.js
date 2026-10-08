@@ -368,7 +368,14 @@ async function runCooldown(seconds) {
 
 async function main() {
   ensureDirectories();
-  const checkpoint = loadCheckpoint();
+  let checkpoint = loadCheckpoint();
+  if (shouldReset) {
+    const targetIds = SCENARIOS.map(s => s.id);
+    checkpoint.completed = checkpoint.completed.filter(id => !targetIds.some(tid => id.startsWith(tid)));
+    saveCheckpoint(checkpoint);
+    console.log(`[RESET] Checkpoint untuk skenario [${targetIds.join(', ')}] telah di-reset!`);
+  }
+
   const totalSessions = SCENARIOS.length * VU_LEVELS.length * ITERATIONS.length;
 
   console.log('=====================================================================');
