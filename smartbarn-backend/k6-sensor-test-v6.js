@@ -42,15 +42,21 @@ export default function () {
     const now = Date.now();
     try {
       const data = JSON.parse(String.fromCharCode.apply(null, new Uint8Array(message)));
-      if (typeof data.pureProcessingLatency === 'number') {
-        mqttVitalProcessingLatency.add(data.pureProcessingLatency);
-        mqttVitalProcessed.add(1);
+      let latency = -1;
+
+      if (!isLocal && data.clientTimestamp) {
+        const rtt = now - data.clientTimestamp;
+        latency = rtt >= 0 ? rtt : (typeof data.pureProcessingLatency === 'number' ? data.pureProcessingLatency : -1);
+      } else if (typeof data.pureProcessingLatency === 'number') {
+        latency = data.pureProcessingLatency;
       } else if (data.clientTimestamp) {
-        const latency = now - data.clientTimestamp;
-        if (latency >= 0) {
-          mqttVitalProcessingLatency.add(latency);
-          mqttVitalProcessed.add(1);
-        }
+        const rtt = now - data.clientTimestamp;
+        latency = rtt >= 0 ? rtt : -1;
+      }
+
+      if (latency >= 0) {
+        mqttVitalProcessingLatency.add(latency);
+        mqttVitalProcessed.add(1);
       }
     } catch (e) {}
   });

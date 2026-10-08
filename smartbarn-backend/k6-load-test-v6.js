@@ -100,9 +100,13 @@ export default function (data) {
     const client = new Client();
 
     client.on('message', (topic, message) => {
+      const now = Date.now();
       try {
         const payload = JSON.parse(String.fromCharCode.apply(null, new Uint8Array(message)));
-        if (typeof payload.pureProcessingLatency === 'number') {
+        if (!isLocal && payload.clientTimestamp) {
+          const rtt = now - payload.clientTimestamp;
+          if (rtt >= 0) mixedMqttVitalLatency.add(rtt);
+        } else if (typeof payload.pureProcessingLatency === 'number') {
           mixedMqttVitalLatency.add(payload.pureProcessingLatency);
         }
       } catch (err) {}
