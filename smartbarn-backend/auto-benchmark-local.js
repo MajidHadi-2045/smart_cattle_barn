@@ -25,6 +25,7 @@ const CHECKPOINT_FILE = path.join(LOGS_DIR, 'checkpoint.json');
 const CSV_SUMMARY_FILE = path.join(LOGS_DIR, 'summary_results.csv');
 
 // DAFTAR LENGKAP JALUR PENGUJIAN (DEFAULT MENGGUNAKAN VERSI 6 INGESTION LATENCY)
+const SCRIPT_VER = process.env.VERSION || 'v6';
 const ALL_SCENARIOS = [
   { id: 'jalur1', name: 'Jalur 1 - Sensor Vital Sapi (MQTT)', script: `k6-sensor-test-${SCRIPT_VER}.js`, isMqtt: true, env: {} },
   { id: 'jalur2', name: 'Jalur 2 - Sensor Lingkungan (MQTT)', script: `k6-env-test-${SCRIPT_VER}.js`, isMqtt: true, env: {} },
