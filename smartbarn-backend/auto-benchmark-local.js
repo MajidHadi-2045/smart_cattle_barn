@@ -25,8 +25,7 @@ const CHECKPOINT_FILE = path.join(LOGS_DIR, 'checkpoint.json');
 const CSV_SUMMARY_FILE = path.join(LOGS_DIR, 'summary_results.csv');
 
 // DAFTAR LENGKAP JALUR PENGUJIAN (DEFAULT MENGGUNAKAN VERSI 6 INGESTION LATENCY)
-const SCRIPT_VER = process.env.VERSION || 'v6';
-const SCENARIOS = [
+const ALL_SCENARIOS = [
   { id: 'jalur1', name: 'Jalur 1 - Sensor Vital Sapi (MQTT)', script: `k6-sensor-test-${SCRIPT_VER}.js`, isMqtt: true, env: {} },
   { id: 'jalur2', name: 'Jalur 2 - Sensor Lingkungan (MQTT)', script: `k6-env-test-${SCRIPT_VER}.js`, isMqtt: true, env: {} },
   { id: 'jalur3', name: 'Jalur 3 - WebSocket Real-Time', script: `k6-ws-realtime-test-${SCRIPT_VER}.js`, isMqtt: false, env: {} },
@@ -36,6 +35,19 @@ const SCENARIOS = [
   { id: 'jalur6_hit', name: 'Jalur 6B - Redis Cache Isolasi HIT (RAM)', script: `k6-cache-benchmark-${SCRIPT_VER}.js`, isMqtt: false, env: { MODE: 'hit' } },
   { id: 'jalur6_miss', name: 'Jalur 6C - Redis Cache Isolasi MISS (DB)', script: `k6-cache-benchmark-${SCRIPT_VER}.js`, isMqtt: false, env: { MODE: 'miss' } },
 ];
+
+// CLI Filtering (Contoh: node auto-benchmark-local.js jalur1,jalur2 --reset)
+const rawArg = process.argv.slice(2).join(' ').toLowerCase();
+const shouldReset = rawArg.includes('--reset') || rawArg.includes('-r');
+const filterTarget = rawArg.replace('--reset', '').replace('-r', '').trim();
+
+let SCENARIOS = ALL_SCENARIOS;
+if (filterTarget) {
+  const filters = filterTarget.split(',').map(f => f.trim()).filter(Boolean);
+  SCENARIOS = ALL_SCENARIOS.filter(s => {
+    return filters.some(f => s.id.toLowerCase().includes(f) || f === s.id.replace('jalur', ''));
+  });
+}
 
 const VU_LEVELS = [10, 50, 100];
 const ITERATIONS = [1, 2, 3];
