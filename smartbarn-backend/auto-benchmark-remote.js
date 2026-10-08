@@ -334,8 +334,18 @@ function parseK6Metrics(output, scenarioId = '') {
       parsed.rps = parseFloat((httpRps + mqttRps).toFixed(2));
 
       const durMatch = extractK6Trend(output, 'mixed_web_http_duration');
-      parsed.avgLatency = durMatch.avg;
-      parsed.p95Latency = durMatch.p95;
+      const vitalMatch = extractK6Trend(output, 'mixed_mqtt_vital_latency');
+      const envMatch = extractK6Trend(output, 'mixed_mqtt_env_latency');
+
+      if (vitalMatch.avg > 0 || envMatch.avg > 0) {
+        const weightedAvg = (vitalMatch.avg * 0.5) + (envMatch.avg * 0.2) + (durMatch.avg * 0.3);
+        const weightedP95 = Math.max(vitalMatch.p95, envMatch.p95, durMatch.p95);
+        parsed.avgLatency = parseFloat(weightedAvg.toFixed(2));
+        parsed.p95Latency = parseFloat(weightedP95.toFixed(2));
+      } else {
+        parsed.avgLatency = durMatch.avg;
+        parsed.p95Latency = durMatch.p95;
+      }
 
       const ttfbMatch = extractK6Trend(output, 'mixed_web_server_ttfb');
       parsed.ttfbAvg = ttfbMatch.avg;

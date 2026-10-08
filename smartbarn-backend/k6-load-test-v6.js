@@ -126,9 +126,7 @@ export default function (data) {
         clientTimestamp: sendTime,
       });
 
-      const t0 = Date.now();
       client.publish(`barn/cow/${cattleId}/vitals`, payload);
-      mixedMqttVitalLatency.add(Date.now() - t0);
       mixedVitalSent.add(1);
 
       setTimeout(() => client.end(), 850);
@@ -146,9 +144,15 @@ export default function (data) {
     const isWind = (slot === 6);
 
     client.on('message', (topic, message) => {
+      const now = Date.now();
       try {
         const payload = JSON.parse(String.fromCharCode.apply(null, new Uint8Array(message)));
-        if (typeof payload.pureProcessingLatency === 'number') {
+        if (!isLocal && payload.clientTimestamp) {
+          // Mode Remote: Gunakan Half-RTT IETF RFC 2681
+          const rtt = now - payload.clientTimestamp;
+          if (rtt >= 0) mixedMqttEnvLatency.add(parseFloat((rtt / 2).toFixed(2)));
+        } else if (typeof payload.pureProcessingLatency === 'number') {
+          // Mode Local VPS: Gunakan Pure Server Ingestion Latency langsung
           mixedMqttEnvLatency.add(payload.pureProcessingLatency);
         }
       } catch (err) {}
@@ -168,9 +172,7 @@ export default function (data) {
           clientTimestamp: sendTime,
         });
 
-        const t0 = Date.now();
         client.publish(`barn/zone/${zoneId}/environment`, payload);
-        mixedMqttEnvLatency.add(Date.now() - t0);
         mixedEnvSent.add(1);
       } else {
         client.subscribe(`barn/zone/${zoneId}/windspeed/ack`);
@@ -182,9 +184,7 @@ export default function (data) {
           clientTimestamp: sendTime,
         });
 
-        const t0 = Date.now();
         client.publish(`barn/zone/${zoneId}/windspeed`, payload);
-        mixedMqttEnvLatency.add(Date.now() - t0);
         mixedEnvSent.add(1);
       }
 
