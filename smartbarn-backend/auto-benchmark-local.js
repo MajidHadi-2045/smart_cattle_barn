@@ -385,6 +385,20 @@ async function main() {
     checkpoint.completed = checkpoint.completed.filter(id => !targetIds.some(tid => id.startsWith(tid)));
     saveCheckpoint(checkpoint);
     console.log(`[RESET] Checkpoint untuk skenario [${targetIds.join(', ')}] telah di-reset!`);
+
+    if (fs.existsSync(CSV_SUMMARY_FILE)) {
+      try {
+        const lines = fs.readFileSync(CSV_SUMMARY_FILE, 'utf-8').split('\n');
+        const header = lines[0];
+        const filteredRows = lines.slice(1).filter(line => {
+          if (!line.trim()) return false;
+          const sess = line.split(',')[0];
+          return !targetIds.some(tid => sess.startsWith(tid));
+        });
+        fs.writeFileSync(CSV_SUMMARY_FILE, [header, ...filteredRows].join('\n') + '\n', 'utf-8');
+        console.log(`[CSV CLEANUP] Data lama skenario [${targetIds.join(', ')}] dibersihkan dari CSV.`);
+      } catch (e) {}
+    }
   }
 
   const totalSessions = SCENARIOS.length * VU_LEVELS.length * ITERATIONS.length;
