@@ -12,6 +12,14 @@ export class SystemController {
     return this.systemService.getMetrics();
   }
 
+  @Get('time')
+  getSystemTime() {
+    return {
+      timestamp: Date.now(),
+      iso: new Date().toISOString()
+    };
+  }
+
   @Post('restart')
   async restartServer(@Body() body: any) {
     const processName = body?.processName || 'smartbarn-api-4000';
