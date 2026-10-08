@@ -45,13 +45,15 @@ export default function () {
       let latency = -1;
 
       if (!isLocal && data.clientTimestamp) {
+        // Mode Remote (Laptop Internet): Gunakan Standar Half-RTT IETF RFC 2681
         const rtt = now - data.clientTimestamp;
-        latency = rtt >= 0 ? rtt : (typeof data.pureProcessingLatency === 'number' ? data.pureProcessingLatency : -1);
+        latency = rtt >= 0 ? parseFloat((rtt / 2).toFixed(2)) : (typeof data.pureProcessingLatency === 'number' ? data.pureProcessingLatency : -1);
       } else if (typeof data.pureProcessingLatency === 'number') {
+        // Mode Local VPS: Gunakan Pure Server Ingestion Latency langsung (1 domain jam VPS)
         latency = data.pureProcessingLatency;
       } else if (data.clientTimestamp) {
-        const rtt = now - data.clientTimestamp;
-        latency = rtt >= 0 ? rtt : -1;
+        const diff = now - data.clientTimestamp;
+        latency = diff >= 0 ? diff : -1;
       }
 
       if (latency >= 0) {

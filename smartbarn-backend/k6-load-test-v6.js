@@ -104,9 +104,11 @@ export default function (data) {
       try {
         const payload = JSON.parse(String.fromCharCode.apply(null, new Uint8Array(message)));
         if (!isLocal && payload.clientTimestamp) {
+          // Mode Remote: Gunakan Half-RTT IETF RFC 2681
           const rtt = now - payload.clientTimestamp;
-          if (rtt >= 0) mixedMqttVitalLatency.add(rtt);
+          if (rtt >= 0) mixedMqttVitalLatency.add(parseFloat((rtt / 2).toFixed(2)));
         } else if (typeof payload.pureProcessingLatency === 'number') {
+          // Mode Local VPS: Gunakan Pure Server Ingestion Latency langsung
           mixedMqttVitalLatency.add(payload.pureProcessingLatency);
         }
       } catch (err) {}
