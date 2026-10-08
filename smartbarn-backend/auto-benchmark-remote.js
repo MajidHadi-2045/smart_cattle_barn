@@ -27,7 +27,7 @@ const CSV_SUMMARY_FILE = path.join(LOGS_DIR, 'summary_results.csv');
 
 // DAFTAR LENGKAP JALUR PENGUJIAN (DEFAULT MENGGUNAKAN VERSI 6 INGESTION LATENCY)
 const SCRIPT_VER = process.env.VERSION || 'v6';
-const SCENARIOS = [
+const ALL_SCENARIOS = [
   { id: 'jalur1', name: 'Jalur 1 - Sensor Vital Sapi (MQTT)', script: `k6-sensor-test-${SCRIPT_VER}.js`, isMqtt: true, env: {} },
   { id: 'jalur2', name: 'Jalur 2 - Sensor Lingkungan (MQTT)', script: `k6-env-test-${SCRIPT_VER}.js`, isMqtt: true, env: {} },
   { id: 'jalur3', name: 'Jalur 3 - WebSocket Real-Time', script: `k6-ws-realtime-test-${SCRIPT_VER}.js`, isMqtt: false, env: {} },
@@ -37,6 +37,19 @@ const SCENARIOS = [
   { id: 'jalur6_hit', name: 'Jalur 6B - Redis Cache Isolasi HIT (RAM)', script: `k6-cache-benchmark-${SCRIPT_VER}.js`, isMqtt: false, env: { MODE: 'hit' } },
   { id: 'jalur6_miss', name: 'Jalur 6C - Redis Cache Isolasi MISS (DB)', script: `k6-cache-benchmark-${SCRIPT_VER}.js`, isMqtt: false, env: { MODE: 'miss' } },
 ];
+
+// CLI Filtering (Contoh: node auto-benchmark-remote.js jalur1,jalur2,jalur5 --reset)
+const rawArg = process.argv.slice(2).join(' ').toLowerCase();
+const shouldReset = rawArg.includes('--reset') || rawArg.includes('-r');
+const filterTarget = rawArg.replace('--reset', '').replace('-r', '').trim();
+
+let SCENARIOS = ALL_SCENARIOS;
+if (filterTarget) {
+  const filters = filterTarget.split(',').map(f => f.trim()).filter(Boolean);
+  SCENARIOS = ALL_SCENARIOS.filter(s => {
+    return filters.some(f => s.id.toLowerCase().includes(f) || f === s.id.replace('jalur', ''));
+  });
+}
 
 const VU_LEVELS = [10, 50, 100];
 const ITERATIONS = [1, 2, 3];
@@ -384,7 +397,28 @@ async function runCooldown(seconds) {
 
 async function main() {
   ensureDirectories();
-  const checkpoint = loadCheckpoint();
+  let checkpoint = loadCheckpoint();
+  if (shouldReset) {
+    const targetIds = SCENARIOS.map(s => s.id);
+    checkpoint.completed = checkpoint.completed.filter(id => !targetIds.some(tid => id.startsWith(tid)));
+    saveCheckpoint(checkpoint);
+    console.log(`[RESET] Checkpoint untuk skenario [${targetIds.join(', ')}] telah di-reset!`);
+
+    if (fs.existsSync(CSV_SUMMARY_FILE)) {
+      try {
+        const lines = fs.readFileSync(CSV_SUMMARY_FILE, 'utf-8').split('\n');
+        const header = lines[0];
+        const filteredRows = lines.slice(1).filter(line => {
+          if (!line.trim()) return false;
+          const sess = line.split(',')[0];
+          return !targetIds.some(tid => sess.startsWith(tid));
+        });
+        fs.writeFileSync(CSV_SUMMARY_FILE, [header, ...filteredRows].join('\n') + '\n', 'utf-8');
+        console.log(`[CSV CLEANUP] Data lama skenario [${targetIds.join(', ')}] dibersihkan dari CSV.`);
+      } catch (e) {}
+    }
+  }
+
   const totalSessions = SCENARIOS.length * VU_LEVELS.length * ITERATIONS.length;
 
   console.log('=====================================================================');
