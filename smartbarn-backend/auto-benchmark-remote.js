@@ -170,8 +170,15 @@ function executeK6WithMonitoring(scriptName, vus, duration, isMqtt, envVars = {}
   return new Promise((resolve) => {
     const k6Binary = fs.existsSync(path.join(__dirname, 'k6-mqtt.exe')) ? '.\\k6-mqtt.exe' : 'k6';
 
-    const args = ['run', '-e', `VUS=${vus}`];
-    
+    const args = [
+      'run',
+      '-e', `VUS=${vus}`,
+      '-e', 'TARGET=remote',
+      '-e', 'LOCAL=false',
+      '-e', 'MQTT_URL=mqtt://77.37.63.21:1883',
+      '-e', 'BASE_URL=http://smartcattlebarn.site:4000/api'
+    ];
+
     // Tambahkan environment variable khusus k6
     for (const [k, v] of Object.entries(envVars)) {
       args.push('-e', `${k}=${v}`);

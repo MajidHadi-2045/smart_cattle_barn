@@ -152,7 +152,14 @@ function executeK6WithMonitoring(scriptName, vus, duration, isMqtt, envVars = {}
       }
     }
 
-    const args = ['run', '-e', `VUS=${vus}`];
+    const args = [
+      'run',
+      '-e', `VUS=${vus}`,
+      '-e', 'TARGET=local',
+      '-e', 'LOCAL=true',
+      '-e', 'MQTT_URL=mqtt://127.0.0.1:1883',
+      '-e', 'BASE_URL=http://127.0.0.1:4000/api'
+    ];
 
     // Tambahkan environment variable khusus k6
     for (const [k, v] of Object.entries(envVars)) {

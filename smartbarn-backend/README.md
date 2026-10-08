@@ -189,3 +189,5 @@ df -h
 node flush-redis-remote.js
 # Membersihkan cache redis (local)
 redis-cli flushall
+#Pindahkan Log
+scp -r majid@77.37.63.21:/home/majid/smart_cattle_barn/smartbarn-backend/benchmark_logs "C:\Users\majid\Downloads"
