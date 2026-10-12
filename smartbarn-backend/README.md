@@ -191,3 +191,28 @@ node flush-redis-remote.js
 redis-cli flushall
 #Pindahkan Log
 scp -r majid@77.37.63.21:/home/majid/smart_cattle_barn/smartbarn-backend/benchmark_logs "C:\Users\majid\Downloads"
+
+# Jalankan hanya Jalur 5 (DB Benchmark) dengan 50VU Iterasi 1, 2, 3 (Lalu otomatis lanjut sisanya)
+node auto-benchmark-remote.js jalur5
+# Reset dan Jalankan hanya Jalur 1, 2, 5
+node auto-benchmark-remote.js jalur1,jalur2,jalur5 --reset
+# Reset dan Jalankan hanya Jalur 1, 2, 5
+node auto-benchmark-remote.js jalur1,jalur2,jalur5 --reset
+cd smartbarn-backend
+
+# 1. Jalankan BEBERAPA PENGUJIAN SEKALIGUS (Batch Multi-Scenario dalam sekali perintah):
+# Contoh: Jalur 1 (50 VU 2x) LALU Jalur 6B (100 VU 2x) otomatis berurutan:
+node run-quick-test.js jalur1:50:2 jalur6b:100:2
+
+# Contoh 3 skenario spesifik sekaligus:
+node run-quick-test.js jalur1:50:2 jalur6b:100:2 jalur4:50:1
+
+# 2. Pengujian Tunggal Spesifik:
+# Jalur 1 (50 VU, 2 Iterasi):
+node run-quick-test.js jalur1 50 2
+
+# Jalur 6B (100 VU, 2 Iterasi):
+node run-quick-test.js jalur6b 100 2
+
+# 3. Mode Local VPS (tambahkan kata 'local' di ujung):
+node run-quick-test.js jalur1:50:2 jalur6b:100:2 local
