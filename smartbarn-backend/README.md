@@ -168,8 +168,11 @@ node clean-benchmark.js
 
 # Opsi 1: Dijalankan dari LAPTOP menuju SERVER VPS (Remote Testing)
 node auto-benchmark-remote.js
+node auto-benchmark-remote.js --iter 4
+
 # Opsi 2: Dijalankan langsung DI DALAM SERVER VPS (Local Testing)
 node auto-benchmark-local.js
+node auto-benchmark-local.js --iter 4
 
 # Cek Resource CPU, RAM, & Redis Server secara Live (Polling tiap 1 detik)
 node monitor-remote.js
