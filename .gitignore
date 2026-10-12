@@ -116,3 +116,16 @@ Laporan_*.md
 scratch_*
 fix_*
 pengujian_*
+generate_thesis_tables*
+
+# Python Cache & Bytecode
+__pycache__/
+**/__pycache__/
+*.pyc
+**/*.pyc
+
+# Terminal Logs & Large Benchmark Logs
+Log_Lengkap_*
+Log_*.txt
+*.log
+**/*.log
