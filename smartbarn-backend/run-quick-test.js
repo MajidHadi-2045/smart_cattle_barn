@@ -551,27 +551,30 @@ async function main() {
       const sessionId = `${item.id}_${item.vus}vu_iterasi${it}`;
       const termPath = path.join(K6_DIR, `${sessionId}.txt`);
 
-      // Cek apakah sesi sudah selesai jika mode resume aktif
+      // Cek apakah sesi sudah selesai & valid jika mode resume aktif
       if (isResumeMode && fs.existsSync(termPath) && fs.statSync(termPath).size > 200) {
-        console.log(`\n---------------------------------------------------------------------`);
-        console.log(`[RESUME SKIP] Sesi ${sessionId.toUpperCase()} sudah pernah selesai sebelumnya. [DILEWATI]`);
-        console.log(`---------------------------------------------------------------------`);
-        try {
-          const prevOutput = fs.readFileSync(termPath, 'utf-8');
-          const prevStats = parseK6Metrics(prevOutput, item.id);
-          summaryResults.push({
-            Sesi: `${sessionId} (Cached)`,
-            Total: prevStats.totalReqs,
-            RPS: prevStats.rps,
-            'Avg(ms)': prevStats.avgLatency,
-            'P95(ms)': prevStats.p95Latency,
-            'TTFB(ms)': prevStats.ttfbAvg,
-            'Err(%)': `${prevStats.errorRate}%`,
-            'CPU Peak': 'Cached',
-            'RAM Peak': 'Cached'
-          });
-        } catch (e) {}
-        continue;
+        const prevOutput = fs.readFileSync(termPath, 'utf-8');
+        const isSuccess = (prevOutput.includes('TOTAL RESULTS') || prevOutput.includes('iterations')) && !prevOutput.includes('unknown module') && !prevOutput.includes('script exception');
+        if (isSuccess) {
+          console.log(`\n---------------------------------------------------------------------`);
+          console.log(`[RESUME SKIP] Sesi ${sessionId.toUpperCase()} valid & sudah selesai sebelumnya. [DILEWATI]`);
+          console.log(`---------------------------------------------------------------------`);
+          try {
+            const prevStats = parseK6Metrics(prevOutput, item.id);
+            summaryResults.push({
+              Sesi: `${sessionId} (Cached)`,
+              Total: prevStats.totalReqs,
+              RPS: prevStats.rps,
+              'Avg(ms)': prevStats.avgLatency,
+              'P95(ms)': prevStats.p95Latency,
+              'TTFB(ms)': prevStats.ttfbAvg,
+              'Err(%)': `${prevStats.errorRate}%`,
+              'CPU Peak': 'Cached',
+              'RAM Peak': 'Cached'
+            });
+          } catch (e) {}
+          continue;
+        }
       }
 
       console.log(`\n---------------------------------------------------------------------`);
