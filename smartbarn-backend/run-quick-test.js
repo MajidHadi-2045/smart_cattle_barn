@@ -272,8 +272,8 @@ async function dynamicWarmup(targetCpu = 3.0, maxAttempts = 10) {
 }
 
 async function runNetworkBenchmark() {
-  if (isFastMode || !measureIperf3Benchmark) {
-    return { pingAvgMs: 0.2, jitterMs: 0.1, packetLossPercent: 0, downloadMbps: 100, uploadMbps: 100 };
+  if (isFastMode || isLocal || !measureIperf3Benchmark) {
+    return { pingAvgMs: 0.2, jitterMs: 0.1, packetLossPercent: 0, downloadMbps: 1000, uploadMbps: 1000 };
   }
   try {
     return await measureIperf3Benchmark(TARGET_HOST, { duration: 3, udpBitrate: '10M' });
@@ -421,6 +421,8 @@ function executeK6WithMonitoring(scenario, vus) {
     if (scenario.isMqtt) {
       if (isWindows && fs.existsSync(path.join(__dirname, 'k6-mqtt.exe'))) {
         k6Binary = '.\\k6-mqtt.exe';
+      } else if (!isWindows && fs.existsSync(path.join(__dirname, 'k6-linux-mqtt'))) {
+        k6Binary = './k6-linux-mqtt';
       } else if (!isWindows && fs.existsSync(path.join(__dirname, 'k6-mqtt'))) {
         k6Binary = './k6-mqtt';
       }
