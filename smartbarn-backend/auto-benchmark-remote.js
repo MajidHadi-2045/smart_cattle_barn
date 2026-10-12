@@ -38,12 +38,32 @@ const ALL_SCENARIOS = [
   { id: 'jalur6_miss', name: 'Jalur 6C - Redis Cache Isolasi MISS (DB)', script: `k6-cache-benchmark-${SCRIPT_VER}.js`, isMqtt: false, env: { MODE: 'miss' } },
 ];
 
-// CLI Filtering (Contoh: node auto-benchmark-remote.js jalur1,jalur2,jalur5 --reset)
-const rawArg = process.argv.slice(2).join(' ').toLowerCase();
-const shouldReset = rawArg.includes('--reset') || rawArg.includes('-r');
-const filterTarget = rawArg.replace('--reset', '').replace('-r', '').trim();
+// CLI Filtering & Options (Contoh: node auto-benchmark-remote.js --iter 4 atau node auto-benchmark-remote.js jalur1,jalur2 --iter 4 --reset)
+const rawArgs = process.argv.slice(2);
+let shouldReset = false;
+let iterCount = 3;
+const filterTokens = [];
+
+for (let i = 0; i < rawArgs.length; i++) {
+  const arg = rawArgs[i].toLowerCase();
+  if (arg === '--reset' || arg === '-r') {
+    shouldReset = true;
+  } else if (arg === '--iter' || arg === '--iters' || arg === '--iterations' || arg === '-i') {
+    iterCount = parseInt(rawArgs[i + 1] || '3', 10);
+    i++;
+  } else if (arg.startsWith('--iter=') || arg.startsWith('--iters=') || arg.startsWith('--iterations=')) {
+    iterCount = parseInt(arg.split('=')[1] || '3', 10);
+  } else {
+    filterTokens.push(arg);
+  }
+}
+
+if (process.env.ITERS || process.env.ITERATIONS) {
+  iterCount = parseInt(process.env.ITERS || process.env.ITERATIONS, 10);
+}
 
 let SCENARIOS = ALL_SCENARIOS;
+const filterTarget = filterTokens.join(',');
 if (filterTarget) {
   const filters = filterTarget.split(',').map(f => f.trim()).filter(Boolean);
   SCENARIOS = ALL_SCENARIOS.filter(s => {
@@ -52,7 +72,7 @@ if (filterTarget) {
 }
 
 const VU_LEVELS = [10, 50, 100];
-const ITERATIONS = [1, 2, 3];
+const ITERATIONS = Array.from({ length: Math.max(1, iterCount) }, (_, i) => i + 1);
 
 function ensureDirectories() {
   if (!fs.existsSync(LOGS_DIR)) fs.mkdirSync(LOGS_DIR, { recursive: true });

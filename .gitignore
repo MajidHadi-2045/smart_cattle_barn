@@ -129,3 +129,9 @@ Log_Lengkap_*
 Log_*.txt
 *.log
 **/*.log
+
+# Reviewer & Internal Methodology Docs (Excluded from Git)
+METODOLOGI_*.md
+**/METODOLOGI_*.md
+*REVIEWER*.md
+**/*REVIEWER*.md

@@ -216,3 +216,4 @@ node run-quick-test.js jalur6b 100 2
 
 # 3. Mode Local VPS (tambahkan kata 'local' di ujung):
 node run-quick-test.js jalur1:50:2 jalur6b:100:2 local
+node run-quick-test.js jalur1:75:6 jalur1:150:6 jalur2:75:6 jalur2:150:6 local --resume
