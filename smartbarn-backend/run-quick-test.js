@@ -64,7 +64,27 @@ const SCENARIO_CONFIG = {
 const rawArgs = process.argv.slice(2);
 let targetEnv = 'remote';
 let isFastMode = false;
+let isResumeMode = false;
 const testQueue = [];
+
+function parseIterations(str) {
+  if (!str) return { start: 1, end: 1, count: 1 };
+  const s = String(str).trim();
+  if (s.includes('..')) {
+    const p = s.split('..');
+    const start = parseInt(p[0], 10) || 1;
+    const end = parseInt(p[1], 10) || start;
+    return { start: Math.min(start, end), end: Math.max(start, end), count: Math.abs(end - start) + 1 };
+  }
+  if (s.includes('-')) {
+    const p = s.split('-');
+    const start = parseInt(p[0], 10) || 1;
+    const end = parseInt(p[1], 10) || start;
+    return { start: Math.min(start, end), end: Math.max(start, end), count: Math.abs(end - start) + 1 };
+  }
+  const count = parseInt(s, 10) || 1;
+  return { start: 1, end: count, count };
+}
 
 const filteredArgs = [];
 for (const a of rawArgs) {
@@ -73,6 +93,8 @@ for (const a of rawArgs) {
     targetEnv = low;
   } else if (low === '--fast' || low === '-f') {
     isFastMode = true;
+  } else if (low === '--resume' || low === '-r') {
+    isResumeMode = true;
   } else {
     filteredArgs.push(a);
   }
@@ -84,23 +106,31 @@ if (filteredArgs.length === 0) {
 PANDUAN PENGGUNAAN TARGETED BENCHMARK RUNNER (PERSIS AUTO-BENCHMARK)
 =====================================================================
 Format:
-  node run-quick-test.js <jalur>:<vus>:<iterasi> <jalur>:<vus>:<iterasi> [remote|local] [--fast]
+  node run-quick-test.js <jalur>:<vus>:<iterasi> [remote|local] [--fast] [--resume]
 
 Contoh Praktis:
-  1. Jalur 1 (50 VU 2x) dan Jalur 6B (100 VU 2x) di Remote VPS:
-     node run-quick-test.js jalur1:50:2 jalur6b:100:2
+  1. Jalur 1 (150 VU, 6 Iterasi):
+     node run-quick-test.js jalur1:150:6
 
-  2. Jalur 1 (50 VU 2x) dan Jalur 6B (100 VU 2x) di Local VPS:
-     node run-quick-test.js jalur1:50:2 jalur6b:100:2 local
+  2. Melanjutkan Iterasi Tertentu (misal iterasi 4 sampai 6):
+     node run-quick-test.js jalur1:150:4-6
+     node run-quick-test.js jalur1:150:4..6
 
-  3. Format Tunggal:
-     node run-quick-test.js jalur1 50 2
+  3. Menjalankan Ulang Hanya 1 Iterasi Spesifik (misal hanya iterasi 3):
+     node run-quick-test.js jalur1:150:3-3
+
+  4. Mode Auto-Resume (otomatis skip iterasi yang sudah ada lognya):
+     node run-quick-test.js jalur1:150:6 --resume
+
+  5. Format Tunggal Terpisah Spasi:
+     node run-quick-test.js jalur1 150 4-6
      node run-quick-test.js jalur6b 100 2
 
 Catatan Alur:
   • Default alur: 7 tahap lengkap persis auto-benchmark (PM2 restart, flush Redis,
     pre-test ping/speedtest, warmup <=3%, K6 run 30s + log resource/detik, post-test, auto-save).
   • Tambahkan flag '--fast' jika ingin melewati pengukuran speedtest iPerf3.
+  • Tambahkan flag '--resume' jika ingin otomatis melewati iterasi yang sudah pernah selesai.
 =====================================================================
 `);
   process.exit(0);
@@ -110,13 +140,13 @@ Catatan Alur:
 if (filteredArgs.length >= 2 && !filteredArgs[0].includes(':')) {
   const jKey = filteredArgs[0].toLowerCase();
   const vus = parseInt(filteredArgs[1] || '50', 10);
-  const iters = parseInt(filteredArgs[2] || '1', 10);
+  const itObj = parseIterations(filteredArgs[2] || '1');
   const sc = SCENARIO_CONFIG[jKey];
   if (!sc) {
     console.error(`[ERROR] Jalur '${jKey}' tidak dikenali!`);
     process.exit(1);
   }
-  testQueue.push({ key: jKey, ...sc, vus, iterations: iters });
+  testQueue.push({ key: jKey, ...sc, vus, startIter: itObj.start, endIter: itObj.end, iterations: itObj.count });
 } else {
   const combinedStr = filteredArgs.join(',');
   const parts = combinedStr.split(',').map(p => p.trim()).filter(Boolean);
@@ -124,13 +154,13 @@ if (filteredArgs.length >= 2 && !filteredArgs[0].includes(':')) {
     const tokens = part.split(':');
     const jKey = tokens[0].toLowerCase();
     const vus = parseInt(tokens[1] || '50', 10);
-    const iters = parseInt(tokens[2] || '1', 10);
+    const itObj = parseIterations(tokens[2] || '1');
     const sc = SCENARIO_CONFIG[jKey];
     if (!sc) {
       console.error(`[ERROR] Jalur '${jKey}' pada '${part}' tidak dikenali!`);
       process.exit(1);
     }
-    testQueue.push({ key: jKey, ...sc, vus, iterations: iters });
+    testQueue.push({ key: jKey, ...sc, vus, startIter: itObj.start, endIter: itObj.end, iterations: itObj.count });
   }
 }
 
@@ -496,6 +526,7 @@ async function main() {
   console.log(`### SMART CATTLE BARN - TARGETED MULTI BENCHMARK RUNNER ###`);
   console.log(`Target Lingkungan : ${targetEnv.toUpperCase()} (${BASE_URL})`);
   console.log(`Mode Jaringan     : ${isFastMode ? 'FAST MODE (Tanpa iPerf3)' : 'FULL STANDARD (Dengan iPerf3 & ICMP)'}`);
+  console.log(`Mode Resume       : ${isResumeMode ? 'AKTIF (Otomatis lewati sesi selesai)' : 'NONAKTIF'}`);
   console.log(`Durasi per Uji    : ${TEST_DURATION}`);
   console.log(`Total Antrean Uji : ${testQueue.length} Skenario`);
   console.log(`Waktu Mulai       : ${new Date().toLocaleString()}`);
@@ -503,7 +534,8 @@ async function main() {
 
   console.log(`DAFTAR ANTREAN PENGUJIAN:`);
   testQueue.forEach((t, idx) => {
-    console.log(`  [${idx + 1}/${testQueue.length}] ${t.name} -> ${t.vus} VU (${t.iterations} Iterasi)`);
+    const iterLabel = t.startIter === t.endIter ? `Iterasi ${t.startIter}` : `Iterasi ${t.startIter}-${t.endIter} (${t.iterations} Iterasi)`;
+    console.log(`  [${idx + 1}/${testQueue.length}] ${t.name} -> ${t.vus} VU (${iterLabel})`);
   });
   console.log(`---------------------------------------------------------------------\n`);
 
@@ -515,10 +547,35 @@ async function main() {
     console.log(`>>> MEMULAI ANTREAN [${qIdx + 1}/${testQueue.length}]: ${item.name} (${item.vus} VU) <<<`);
     console.log(`=====================================================================`);
 
-    for (let it = 1; it <= item.iterations; it++) {
+    for (let it = item.startIter; it <= item.endIter; it++) {
       const sessionId = `${item.id}_${item.vus}vu_iterasi${it}`;
+      const termPath = path.join(K6_DIR, `${sessionId}.txt`);
+
+      // Cek apakah sesi sudah selesai jika mode resume aktif
+      if (isResumeMode && fs.existsSync(termPath) && fs.statSync(termPath).size > 200) {
+        console.log(`\n---------------------------------------------------------------------`);
+        console.log(`[RESUME SKIP] Sesi ${sessionId.toUpperCase()} sudah pernah selesai sebelumnya. [DILEWATI]`);
+        console.log(`---------------------------------------------------------------------`);
+        try {
+          const prevOutput = fs.readFileSync(termPath, 'utf-8');
+          const prevStats = parseK6Metrics(prevOutput, item.id);
+          summaryResults.push({
+            Sesi: `${sessionId} (Cached)`,
+            Total: prevStats.totalReqs,
+            RPS: prevStats.rps,
+            'Avg(ms)': prevStats.avgLatency,
+            'P95(ms)': prevStats.p95Latency,
+            'TTFB(ms)': prevStats.ttfbAvg,
+            'Err(%)': `${prevStats.errorRate}%`,
+            'CPU Peak': 'Cached',
+            'RAM Peak': 'Cached'
+          });
+        } catch (e) {}
+        continue;
+      }
+
       console.log(`\n---------------------------------------------------------------------`);
-      console.log(`[SESI] ${sessionId.toUpperCase()} | Iterasi: ${it}/${item.iterations}`);
+      console.log(`[SESI] ${sessionId.toUpperCase()} | Iterasi: ${it}/${item.endIter}`);
       console.log(`---------------------------------------------------------------------`);
 
       // 1. PM2 Restart & Flush Redis
@@ -569,7 +626,6 @@ async function main() {
 
       // 6. Simpan Seluruh Hasil ke File Log
       console.log('\n[STEP 6/7] MENYIMPAN HASIL PENGUJIAN...');
-      const termPath = path.join(K6_DIR, `${sessionId}.txt`);
       fs.writeFileSync(termPath, terminalOutput, 'utf-8');
 
       const sysPath = path.join(SYS_DIR, `system_${sessionId}.log`);
@@ -614,7 +670,7 @@ async function main() {
       });
 
       // 7. Cooldown
-      if (it < item.iterations) {
+      if (it < item.endIter) {
         console.log(`\n[STEP 7/7: COOLDOWN] Jeda 30 detik sebelum iterasi ${it + 1}...`);
         await sleep(30000);
       }
