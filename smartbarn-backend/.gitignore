@@ -80,3 +80,9 @@ Laporan_*.md
 scratch_*
 fix_*
 pengujian_*
+
+# Packet Captures & Dumps
+*.pcap
+*.cap
+benchmark_pcap_logs/
+scratch/

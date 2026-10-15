@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { exec } from 'child_process';
+import { exec, spawn } from 'child_process';
 import * as os from 'os';
+import * as fs from 'fs';
+import * as path from 'path';
 import { Redis } from 'ioredis';
 
 @Injectable()
@@ -98,4 +100,103 @@ export class SystemService {
       return { success: false, message: `Failed to flush Redis: ${e.message}` };
     }
   }
+
+  // =========================================================================
+  // AUTOMATED REMOTE PCAP CAPTURE (TCPDUMP ON DEMAND FOR BENCHMARKS)
+  // =========================================================================
+  private pcapProcess: any = null;
+  private currentPcapPath: string = '';
+
+  startPcapCapture(sessionId: string, port: number = 1883, clientIp?: string) {
+    this.stopPcapCapture(); // Ensure no dangling previous capture
+
+    const pcapDir = path.resolve(__dirname, '../../../benchmark_pcap_logs');
+    if (!fs.existsSync(pcapDir)) {
+      try {
+        fs.mkdirSync(pcapDir, { recursive: true });
+      } catch (e) {}
+    }
+
+    const cleanSessionId = sessionId.replace(/[^a-zA-Z0-9_\-]/g, '_');
+    this.currentPcapPath = path.join(pcapDir, `${cleanSessionId}.pcap`);
+
+    if (fs.existsSync(this.currentPcapPath)) {
+      try { fs.unlinkSync(this.currentPcapPath); } catch (e) {}
+    }
+
+    let filter = `port ${port}`;
+    if (clientIp && clientIp.trim() !== '') {
+      filter = `host ${clientIp.trim()} and port ${port}`;
+    }
+
+    try {
+      this.pcapProcess = spawn('tcpdump', ['-i', 'any', filter, '-w', this.currentPcapPath], {
+        detached: true,
+        stdio: 'ignore',
+      });
+
+      this.pcapProcess.on('error', () => {
+        try {
+          this.pcapProcess = spawn('sudo', ['tcpdump', '-i', 'any', filter, '-w', this.currentPcapPath], {
+            detached: true,
+            stdio: 'ignore',
+          });
+        } catch (e) {}
+      });
+
+      return {
+        success: true,
+        message: 'TCPDump capture started',
+        sessionId: cleanSessionId,
+        filter,
+        filePath: this.currentPcapPath,
+        timestamp: new Date().toISOString(),
+      };
+    } catch (err: any) {
+      return {
+        success: false,
+        message: `Failed to start tcpdump: ${err?.message || err}`,
+      };
+    }
+  }
+
+  stopPcapCapture() {
+    if (this.pcapProcess) {
+      try {
+        exec('sudo pkill tcpdump || pkill tcpdump');
+        this.pcapProcess.kill('SIGINT');
+      } catch (e) {}
+      this.pcapProcess = null;
+    } else {
+      try {
+        exec('sudo pkill tcpdump || pkill tcpdump');
+      } catch (e) {}
+    }
+
+    let fileSize = 0;
+    if (this.currentPcapPath && fs.existsSync(this.currentPcapPath)) {
+      try {
+        fileSize = fs.statSync(this.currentPcapPath).size;
+      } catch (e) {}
+    }
+
+    return {
+      success: true,
+      message: 'TCPDump capture stopped',
+      filePath: this.currentPcapPath,
+      fileSizeBytes: fileSize,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  getPcapFilePath(filename: string): string | null {
+    const pcapDir = path.resolve(__dirname, '../../../benchmark_pcap_logs');
+    const safeName = path.basename(filename);
+    const fullPath = path.join(pcapDir, safeName);
+    if (fs.existsSync(fullPath)) {
+      return fullPath;
+    }
+    return null;
+  }
 }
+

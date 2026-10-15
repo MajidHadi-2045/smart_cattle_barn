@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Query, Body, Res, Req } from '@nestjs/common';
+import { Controller, Get, Post, Query, Body, Res, Req, Param } from '@nestjs/common';
 import type { Response, Request } from 'express';
 import { SystemService } from './system.service';
 import * as crypto from 'crypto';
@@ -53,4 +53,30 @@ export class SystemController {
       timestamp: new Date().toISOString(),
     };
   }
+
+  // =========================================================================
+  // AUTOMATED REMOTE PCAP CAPTURE ENDPOINTS
+  // =========================================================================
+  @Post('pcap/start')
+  startPcap(@Body() body: any) {
+    const sessionId = body?.sessionId || `benchmark_${Date.now()}`;
+    const port = parseInt(body?.port || '1883', 10);
+    const clientIp = body?.clientIp || '';
+    return this.systemService.startPcapCapture(sessionId, port, clientIp);
+  }
+
+  @Post('pcap/stop')
+  stopPcap() {
+    return this.systemService.stopPcapCapture();
+  }
+
+  @Get('pcap/download/:filename')
+  downloadPcap(@Param('filename') filename: string, @Res() res: Response) {
+    const filePath = this.systemService.getPcapFilePath(filename);
+    if (!filePath) {
+      return res.status(404).json({ success: false, message: 'PCAP file not found' });
+    }
+    res.download(filePath);
+  }
 }
+

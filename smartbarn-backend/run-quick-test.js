@@ -34,37 +34,12 @@ try {
   measureIperf3Benchmark = null;
 }
 
-const SCRIPT_VER = process.env.VERSION || 'v6';
-const TEST_DURATION = '30s';
-
-// MAPPING SKENARIO RESMI SESUAI AUTO-BENCHMARK
-const SCENARIO_CONFIG = {
-  'jalur1': { id: 'jalur1', name: 'Jalur 1 - Sensor Vital Sapi (MQTT)', script: `k6-sensor-test-${SCRIPT_VER}.js`, isMqtt: true, env: {} },
-  '1': { id: 'jalur1', name: 'Jalur 1 - Sensor Vital Sapi (MQTT)', script: `k6-sensor-test-${SCRIPT_VER}.js`, isMqtt: true, env: {} },
-  'jalur2': { id: 'jalur2', name: 'Jalur 2 - Sensor Lingkungan (MQTT)', script: `k6-env-test-${SCRIPT_VER}.js`, isMqtt: true, env: {} },
-  '2': { id: 'jalur2', name: 'Jalur 2 - Sensor Lingkungan (MQTT)', script: `k6-env-test-${SCRIPT_VER}.js`, isMqtt: true, env: {} },
-  'jalur3': { id: 'jalur3', name: 'Jalur 3 - WebSocket Real-Time', script: `k6-ws-realtime-test-${SCRIPT_VER}.js`, isMqtt: false, env: {} },
-  '3': { id: 'jalur3', name: 'Jalur 3 - WebSocket Real-Time', script: `k6-ws-realtime-test-${SCRIPT_VER}.js`, isMqtt: false, env: {} },
-  'jalur4': { id: 'jalur4', name: 'Jalur 4 - Web Dashboard 5-API', script: `k6-web-test-${SCRIPT_VER}.js`, isMqtt: false, env: {} },
-  '4': { id: 'jalur4', name: 'Jalur 4 - Web Dashboard 5-API', script: `k6-web-test-${SCRIPT_VER}.js`, isMqtt: false, env: {} },
-  'jalur5': { id: 'jalur5', name: 'Jalur 5 - Mixed Workload (50:20:30)', script: `k6-load-test-${SCRIPT_VER}.js`, isMqtt: true, env: {} },
-  '5': { id: 'jalur5', name: 'Jalur 5 - Mixed Workload (50:20:30)', script: `k6-load-test-${SCRIPT_VER}.js`, isMqtt: true, env: {} },
-  'jalur6a': { id: 'jalur6_simultan', name: 'Jalur 6A - Redis Cache Simultan', script: `k6-cache-benchmark-${SCRIPT_VER}.js`, isMqtt: false, env: { MODE: 'both' } },
-  '6a': { id: 'jalur6_simultan', name: 'Jalur 6A - Redis Cache Simultan', script: `k6-cache-benchmark-${SCRIPT_VER}.js`, isMqtt: false, env: { MODE: 'both' } },
-  'jalur6_simultan': { id: 'jalur6_simultan', name: 'Jalur 6A - Redis Cache Simultan', script: `k6-cache-benchmark-${SCRIPT_VER}.js`, isMqtt: false, env: { MODE: 'both' } },
-  'jalur6b': { id: 'jalur6_hit', name: 'Jalur 6B - Redis Cache Isolasi HIT (RAM)', script: `k6-cache-benchmark-${SCRIPT_VER}.js`, isMqtt: false, env: { MODE: 'hit' } },
-  '6b': { id: 'jalur6_hit', name: 'Jalur 6B - Redis Cache Isolasi HIT (RAM)', script: `k6-cache-benchmark-${SCRIPT_VER}.js`, isMqtt: false, env: { MODE: 'hit' } },
-  'jalur6_hit': { id: 'jalur6_hit', name: 'Jalur 6B - Redis Cache Isolasi HIT (RAM)', script: `k6-cache-benchmark-${SCRIPT_VER}.js`, isMqtt: false, env: { MODE: 'hit' } },
-  'jalur6c': { id: 'jalur6_miss', name: 'Jalur 6C - Redis Cache Isolasi MISS (DB)', script: `k6-cache-benchmark-${SCRIPT_VER}.js`, isMqtt: false, env: { MODE: 'miss' } },
-  '6c': { id: 'jalur6_miss', name: 'Jalur 6C - Redis Cache Isolasi MISS (DB)', script: `k6-cache-benchmark-${SCRIPT_VER}.js`, isMqtt: false, env: { MODE: 'miss' } },
-  'jalur6_miss': { id: 'jalur6_miss', name: 'Jalur 6C - Redis Cache Isolasi MISS (DB)', script: `k6-cache-benchmark-${SCRIPT_VER}.js`, isMqtt: false, env: { MODE: 'miss' } }
-};
-
 // PARSE COMMAND LINE
 const rawArgs = process.argv.slice(2);
 let targetEnv = 'remote';
 let isFastMode = false;
 let isResumeMode = false;
+let SCRIPT_VER = process.env.VERSION || 'v6';
 const testQueue = [];
 
 function parseIterations(str) {
@@ -95,10 +70,45 @@ for (const a of rawArgs) {
     isFastMode = true;
   } else if (low === '--resume' || low === '-r') {
     isResumeMode = true;
+  } else if (low === '--v7' || low === '-v7' || low === 'v7') {
+    SCRIPT_VER = 'v7';
+  } else if (low.startsWith('--ver=') || low.startsWith('--version=')) {
+    SCRIPT_VER = low.split('=')[1];
   } else {
     filteredArgs.push(a);
   }
 }
+
+const TEST_DURATION = '30s';
+
+function resolveScript(baseName, ver) {
+  const specific = `k6-${baseName}-${ver}.js`;
+  if (fs.existsSync(path.join(__dirname, specific))) return specific;
+  return `k6-${baseName}-v6.js`;
+}
+
+// MAPPING SKENARIO RESMI SESUAI AUTO-BENCHMARK (Mendukung v7 dengan fallback ke v6)
+const SCENARIO_CONFIG = {
+  'jalur1': { id: 'jalur1', name: 'Jalur 1 - Sensor Vital Sapi (MQTT)', script: resolveScript('sensor-test', SCRIPT_VER), isMqtt: true, env: {} },
+  '1': { id: 'jalur1', name: 'Jalur 1 - Sensor Vital Sapi (MQTT)', script: resolveScript('sensor-test', SCRIPT_VER), isMqtt: true, env: {} },
+  'jalur2': { id: 'jalur2', name: 'Jalur 2 - Sensor Lingkungan (MQTT)', script: resolveScript('env-test', SCRIPT_VER), isMqtt: true, env: {} },
+  '2': { id: 'jalur2', name: 'Jalur 2 - Sensor Lingkungan (MQTT)', script: resolveScript('env-test', SCRIPT_VER), isMqtt: true, env: {} },
+  'jalur3': { id: 'jalur3', name: 'Jalur 3 - WebSocket Real-Time', script: resolveScript('ws-realtime-test', SCRIPT_VER), isMqtt: false, env: {} },
+  '3': { id: 'jalur3', name: 'Jalur 3 - WebSocket Real-Time', script: resolveScript('ws-realtime-test', SCRIPT_VER), isMqtt: false, env: {} },
+  'jalur4': { id: 'jalur4', name: 'Jalur 4 - Web Dashboard 5-API', script: resolveScript('web-test', SCRIPT_VER), isMqtt: false, env: {} },
+  '4': { id: 'jalur4', name: 'Jalur 4 - Web Dashboard 5-API', script: resolveScript('web-test', SCRIPT_VER), isMqtt: false, env: {} },
+  'jalur5': { id: 'jalur5', name: 'Jalur 5 - Mixed Workload (50:20:30)', script: resolveScript('load-test', SCRIPT_VER), isMqtt: true, env: {} },
+  '5': { id: 'jalur5', name: 'Jalur 5 - Mixed Workload (50:20:30)', script: resolveScript('load-test', SCRIPT_VER), isMqtt: true, env: {} },
+  'jalur6a': { id: 'jalur6_simultan', name: 'Jalur 6A - Redis Cache Simultan', script: resolveScript('cache-benchmark', SCRIPT_VER), isMqtt: false, env: { MODE: 'both' } },
+  '6a': { id: 'jalur6_simultan', name: 'Jalur 6A - Redis Cache Simultan', script: resolveScript('cache-benchmark', SCRIPT_VER), isMqtt: false, env: { MODE: 'both' } },
+  'jalur6_simultan': { id: 'jalur6_simultan', name: 'Jalur 6A - Redis Cache Simultan', script: resolveScript('cache-benchmark', SCRIPT_VER), isMqtt: false, env: { MODE: 'both' } },
+  'jalur6b': { id: 'jalur6_hit', name: 'Jalur 6B - Redis Cache Isolasi HIT (RAM)', script: resolveScript('cache-benchmark', SCRIPT_VER), isMqtt: false, env: { MODE: 'hit' } },
+  '6b': { id: 'jalur6_hit', name: 'Jalur 6B - Redis Cache Isolasi HIT (RAM)', script: resolveScript('cache-benchmark', SCRIPT_VER), isMqtt: false, env: { MODE: 'hit' } },
+  'jalur6_hit': { id: 'jalur6_hit', name: 'Jalur 6B - Redis Cache Isolasi HIT (RAM)', script: resolveScript('cache-benchmark', SCRIPT_VER), isMqtt: false, env: { MODE: 'hit' } },
+  'jalur6c': { id: 'jalur6_miss', name: 'Jalur 6C - Redis Cache Isolasi MISS (DB)', script: resolveScript('cache-benchmark', SCRIPT_VER), isMqtt: false, env: { MODE: 'miss' } },
+  '6c': { id: 'jalur6_miss', name: 'Jalur 6C - Redis Cache Isolasi MISS (DB)', script: resolveScript('cache-benchmark', SCRIPT_VER), isMqtt: false, env: { MODE: 'miss' } },
+  'jalur6_miss': { id: 'jalur6_miss', name: 'Jalur 6C - Redis Cache Isolasi MISS (DB)', script: resolveScript('cache-benchmark', SCRIPT_VER), isMqtt: false, env: { MODE: 'miss' } }
+};
 
 if (filteredArgs.length === 0) {
   console.log(`

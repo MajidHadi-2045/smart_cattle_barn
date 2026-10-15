@@ -135,3 +135,14 @@ METODOLOGI_*.md
 **/METODOLOGI_*.md
 *REVIEWER*.md
 **/*REVIEWER*.md
+
+# Packet Captures & Network Dumps (Excluded from Git)
+*.pcap
+**/*.pcap
+*.cap
+**/*.cap
+benchmark_pcap_logs/
+**/benchmark_pcap_logs/
+scratch/
+**/scratch/
+

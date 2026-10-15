@@ -24,23 +24,11 @@ const SYS_DIR = path.join(LOGS_DIR, 'system_resource_logs');
 const CHECKPOINT_FILE = path.join(LOGS_DIR, 'checkpoint.json');
 const CSV_SUMMARY_FILE = path.join(LOGS_DIR, 'summary_results.csv');
 
-// DAFTAR LENGKAP JALUR PENGUJIAN (DEFAULT MENGGUNAKAN VERSI 6 INGESTION LATENCY)
-const SCRIPT_VER = process.env.VERSION || 'v6';
-const ALL_SCENARIOS = [
-  { id: 'jalur1', name: 'Jalur 1 - Sensor Vital Sapi (MQTT)', script: `k6-sensor-test-${SCRIPT_VER}.js`, isMqtt: true, env: {} },
-  { id: 'jalur2', name: 'Jalur 2 - Sensor Lingkungan (MQTT)', script: `k6-env-test-${SCRIPT_VER}.js`, isMqtt: true, env: {} },
-  { id: 'jalur3', name: 'Jalur 3 - WebSocket Real-Time', script: `k6-ws-realtime-test-${SCRIPT_VER}.js`, isMqtt: false, env: {} },
-  { id: 'jalur4', name: 'Jalur 4 - Web Dashboard 5-API', script: `k6-web-test-${SCRIPT_VER}.js`, isMqtt: false, env: {} },
-  { id: 'jalur5', name: 'Jalur 5 - Mixed Workload (50:20:30)', script: `k6-load-test-${SCRIPT_VER}.js`, isMqtt: true, env: {} },
-  { id: 'jalur6_simultan', name: 'Jalur 6A - Redis Cache Simultan (Hit & Miss)', script: `k6-cache-benchmark-${SCRIPT_VER}.js`, isMqtt: false, env: { MODE: 'both' } },
-  { id: 'jalur6_hit', name: 'Jalur 6B - Redis Cache Isolasi HIT (RAM)', script: `k6-cache-benchmark-${SCRIPT_VER}.js`, isMqtt: false, env: { MODE: 'hit' } },
-  { id: 'jalur6_miss', name: 'Jalur 6C - Redis Cache Isolasi MISS (DB)', script: `k6-cache-benchmark-${SCRIPT_VER}.js`, isMqtt: false, env: { MODE: 'miss' } },
-];
-
-// CLI Filtering & Options (Contoh: node auto-benchmark-local.js --iter 4 atau node auto-benchmark-local.js jalur1,jalur2 --iter 4 --reset)
+// CLI Filtering & Options (Contoh: node auto-benchmark-local.js --iter 4 atau node auto-benchmark-local.js jalur1,jalur2 --iter 4 --reset --v7)
 const rawArgs = process.argv.slice(2);
 let shouldReset = false;
 let iterCount = 3;
+let SCRIPT_VER = process.env.VERSION || 'v6';
 const filterTokens = [];
 
 for (let i = 0; i < rawArgs.length; i++) {
@@ -52,6 +40,10 @@ for (let i = 0; i < rawArgs.length; i++) {
     i++;
   } else if (arg.startsWith('--iter=') || arg.startsWith('--iters=') || arg.startsWith('--iterations=')) {
     iterCount = parseInt(arg.split('=')[1] || '3', 10);
+  } else if (arg === '--v7' || arg === '-v7' || arg === 'v7') {
+    SCRIPT_VER = 'v7';
+  } else if (arg.startsWith('--ver=') || arg.startsWith('--version=')) {
+    SCRIPT_VER = arg.split('=')[1];
   } else {
     filterTokens.push(arg);
   }
@@ -60,6 +52,24 @@ for (let i = 0; i < rawArgs.length; i++) {
 if (process.env.ITERS || process.env.ITERATIONS) {
   iterCount = parseInt(process.env.ITERS || process.env.ITERATIONS, 10);
 }
+
+function resolveScript(baseName, ver) {
+  const specific = `k6-${baseName}-${ver}.js`;
+  if (fs.existsSync(path.join(__dirname, specific))) return specific;
+  return `k6-${baseName}-v6.js`;
+}
+
+// DAFTAR LENGKAP JALUR PENGUJIAN (Mendukung v7 dengan fallback ke v6)
+const ALL_SCENARIOS = [
+  { id: 'jalur1', name: 'Jalur 1 - Sensor Vital Sapi (MQTT)', script: resolveScript('sensor-test', SCRIPT_VER), isMqtt: true, env: {} },
+  { id: 'jalur2', name: 'Jalur 2 - Sensor Lingkungan (MQTT)', script: resolveScript('env-test', SCRIPT_VER), isMqtt: true, env: {} },
+  { id: 'jalur3', name: 'Jalur 3 - WebSocket Real-Time', script: resolveScript('ws-realtime-test', SCRIPT_VER), isMqtt: false, env: {} },
+  { id: 'jalur4', name: 'Jalur 4 - Web Dashboard 5-API', script: resolveScript('web-test', SCRIPT_VER), isMqtt: false, env: {} },
+  { id: 'jalur5', name: 'Jalur 5 - Mixed Workload (50:20:30)', script: resolveScript('load-test', SCRIPT_VER), isMqtt: true, env: {} },
+  { id: 'jalur6_simultan', name: 'Jalur 6A - Redis Cache Simultan (Hit & Miss)', script: resolveScript('cache-benchmark', SCRIPT_VER), isMqtt: false, env: { MODE: 'both' } },
+  { id: 'jalur6_hit', name: 'Jalur 6B - Redis Cache Isolasi HIT (RAM)', script: resolveScript('cache-benchmark', SCRIPT_VER), isMqtt: false, env: { MODE: 'hit' } },
+  { id: 'jalur6_miss', name: 'Jalur 6C - Redis Cache Isolasi MISS (DB)', script: resolveScript('cache-benchmark', SCRIPT_VER), isMqtt: false, env: { MODE: 'miss' } },
+];
 
 let SCENARIOS = ALL_SCENARIOS;
 const filterTarget = filterTokens.join(',');
