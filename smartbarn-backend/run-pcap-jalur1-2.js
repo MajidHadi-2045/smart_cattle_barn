@@ -399,7 +399,7 @@ async function main() {
 
       // 3. Start Remote PCAP on VPS
       console.log('\n[STEP 3/6] MENGAKTIFKAN TCPDUMP DI VPS...');
-      await startRemotePcap(sessionId, clientIp);
+      await startRemotePcap(sessionId);
       await sleep(1000);
 
       // 4. Eksekusi K6 Load Test

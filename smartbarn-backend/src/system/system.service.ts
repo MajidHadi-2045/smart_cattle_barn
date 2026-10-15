@@ -124,20 +124,25 @@ export class SystemService {
       try { fs.unlinkSync(this.currentPcapPath); } catch (e) {}
     }
 
-    let filter = `port ${port}`;
+    // Bangun argumen tcpdump dengan urutan yang benar sesuai sintaks resmi tcpdump:
+    // Opsi (-i, -U, -w) HARUS DI DEPAN, ekspresi filter HARUS DI PALING BELAKANG!
+    // Flag -U membuat tcpdump packet-buffered (flush instan ke disk tanpa tertahan di memory)
+    const args = ['-i', 'any', '-U', '-w', this.currentPcapPath];
     if (clientIp && clientIp.trim() !== '') {
-      filter = `host ${clientIp.trim()} and port ${port}`;
+      args.push('host', clientIp.trim(), 'and', 'port', port.toString());
+    } else {
+      args.push('port', port.toString());
     }
 
     try {
-      this.pcapProcess = spawn('tcpdump', ['-i', 'any', filter, '-w', this.currentPcapPath], {
+      this.pcapProcess = spawn('tcpdump', args, {
         detached: true,
         stdio: 'ignore',
       });
 
       this.pcapProcess.on('error', () => {
         try {
-          this.pcapProcess = spawn('sudo', ['tcpdump', '-i', 'any', filter, '-w', this.currentPcapPath], {
+          this.pcapProcess = spawn('sudo', ['tcpdump', ...args], {
             detached: true,
             stdio: 'ignore',
           });
@@ -148,7 +153,7 @@ export class SystemService {
         success: true,
         message: 'TCPDump capture started',
         sessionId: cleanSessionId,
-        filter,
+        filter: args.slice(5).join(' '),
         filePath: this.currentPcapPath,
         timestamp: new Date().toISOString(),
       };
@@ -163,13 +168,14 @@ export class SystemService {
   stopPcapCapture() {
     if (this.pcapProcess) {
       try {
-        exec('sudo pkill tcpdump || pkill tcpdump');
+        // Gunakan pkill -INT agar tcpdump mem-flush seluruh sisa paket dan menutup pcap header
+        exec('sudo pkill -INT tcpdump || pkill -INT tcpdump || sudo pkill tcpdump');
         this.pcapProcess.kill('SIGINT');
       } catch (e) {}
       this.pcapProcess = null;
     } else {
       try {
-        exec('sudo pkill tcpdump || pkill tcpdump');
+        exec('sudo pkill -INT tcpdump || pkill -INT tcpdump || sudo pkill tcpdump');
       } catch (e) {}
     }
 
