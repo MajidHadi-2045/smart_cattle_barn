@@ -29,8 +29,8 @@ const https = require('https');
 const { spawn, execSync } = require('child_process');
 
 // KONFIGURASI TARGET REMOTE VPS
-const BASE_URL = process.env.TARGET_API_URL || 'http://77.37.63.21:3000';
-const TARGET_HOST = '77.37.63.21';
+const BASE_URL = process.env.TARGET_API_URL || 'http://smartcattlebarn.site:4000';
+const TARGET_HOST = 'smartcattlebarn.site';
 const MQTT_URL = 'mqtt://77.37.63.21:1883';
 const TEST_DURATION = '30s';
 const SCRIPT_VER = 'v7'; // Default menggunakan versi 7 (max 50 msg/VU)
@@ -146,15 +146,21 @@ function apiRequest(endpoint, method = 'GET', payload = null) {
       res.on('data', c => data += c);
       res.on('end', () => {
         try {
-          resolve(JSON.parse(data));
+          const parsed = JSON.parse(data);
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            if (parsed.success === undefined) parsed.success = true;
+          } else {
+            parsed.success = false;
+          }
+          resolve(parsed);
         } catch (e) {
           resolve({ success: res.statusCode >= 200 && res.statusCode < 300, raw: data });
         }
       });
     });
 
-    req.on('error', (err) => resolve({ success: false, error: err.message }));
-    req.on('timeout', () => { req.destroy(); resolve({ success: false, error: 'Timeout' }); });
+    req.on('error', (err) => resolve({ success: false, error: err.message, message: err.message }));
+    req.on('timeout', () => { req.destroy(); resolve({ success: false, error: 'Timeout', message: 'Connection Timeout' }); });
 
     if (bodyStr) req.write(bodyStr);
     req.end();
@@ -169,10 +175,10 @@ async function startRemotePcap(sessionId, clientIp) {
     port: 1883,
     clientIp
   });
-  if (res.success) {
-    console.log(`    ✓ tcpdump aktif di VPS (Filter: ${res.filter})`);
+  if (res && res.success) {
+    console.log(`    ✓ tcpdump aktif di VPS (Filter: ${res.filter || 'port 1883'})`);
   } else {
-    console.warn(`    ⚠️ Gagal menyalakan tcpdump di VPS: ${res.message || res.error || 'Unknown error'}`);
+    console.warn(`    ⚠️ Gagal menyalakan tcpdump di VPS: ${res?.message || res?.error || JSON.stringify(res)}`);
   }
   return res;
 }

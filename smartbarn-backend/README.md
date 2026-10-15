@@ -223,3 +223,10 @@ node run-quick-test.js jalur1:75:6 jalur1:150:6 jalur2:75:6 jalur2:150:6 local -
 
 
 sudo tcpdump -i any "host <IP_LAPTOP_ANDA> and port 1883" -w benchmark_50vu.pcap
+
+sudo setcap cap_net_raw,cap_net_admin=eip $(which tcpdump)
+
+#Jalankan script PCAP:
+node run-pcap-jalur1-2.js jalur1:50:1 jalur1:100:1
+node run-pcap-jalur1-2.js jalur2:50:1 jalur2:100:1
+node run-pcap-jalur1-2.js --iter=3
