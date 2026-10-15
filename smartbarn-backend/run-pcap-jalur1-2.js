@@ -53,37 +53,79 @@ const SCENARIO_CONFIG = {
 // PARSE COMMAND LINE ARGUMENTS
 const rawArgs = process.argv.slice(2);
 let isFastMode = false;
+let isResumeMode = false;
 let customIter = 1;
 const testQueue = [];
 
+function parseIterations(str, defaultIter = 1) {
+  if (!str) return { start: 1, end: defaultIter, count: defaultIter };
+  const s = String(str).trim();
+  if (s.includes('..')) {
+    const p = s.split('..');
+    const start = parseInt(p[0], 10) || 1;
+    const end = parseInt(p[1], 10) || start;
+    return { start: Math.min(start, end), end: Math.max(start, end), count: Math.abs(end - start) + 1 };
+  }
+  if (s.includes('-')) {
+    const p = s.split('-');
+    const start = parseInt(p[0], 10) || 1;
+    const end = parseInt(p[1], 10) || start;
+    return { start: Math.min(start, end), end: Math.max(start, end), count: Math.abs(end - start) + 1 };
+  }
+  const count = parseInt(s, 10) || defaultIter;
+  return { start: 1, end: count, count };
+}
+
+// First pass: extract global flags like --iter, --fast, --resume
 for (let i = 0; i < rawArgs.length; i++) {
   const arg = rawArgs[i].toLowerCase();
   if (arg === '--fast' || arg === '-f') {
     isFastMode = true;
+  } else if (arg === '--resume' || arg === '-r') {
+    isResumeMode = true;
   } else if (arg.startsWith('--iter=') || arg.startsWith('--iters=')) {
     customIter = parseInt(arg.split('=')[1], 10) || 1;
   } else if (arg === '--iter' || arg === '-i') {
     customIter = parseInt(rawArgs[i + 1] || '1', 10);
     i++;
-  } else if (arg.includes(':')) {
-    // Format: jalur1:50:1 atau jalur2:100:2
-    const parts = arg.split(':');
-    const jKey = parts[0].toLowerCase();
-    const vus = parseInt(parts[1], 10) || 50;
-    const iters = parseInt(parts[2], 10) || customIter;
-    const sc = SCENARIO_CONFIG[jKey];
-    if (sc) {
-      testQueue.push({ ...sc, vus, iterations: iters });
+  }
+}
+
+// Second pass: extract target scenarios
+for (let i = 0; i < rawArgs.length; i++) {
+  const rawArg = rawArgs[i];
+  if (rawArg.startsWith('--') || rawArg.startsWith('-')) continue;
+
+  const subArgs = rawArg.split(',').map(s => s.trim()).filter(Boolean);
+  for (const arg of subArgs) {
+    const low = arg.toLowerCase();
+    if (low.includes(':')) {
+      // Format: jalur1:50:6, jalur2:100:1-6, atau jalur1:50 (menggunakan default / customIter)
+      const parts = low.split(':');
+      const jKey = parts[0];
+      const vus = parseInt(parts[1], 10) || 50;
+      const itObj = parseIterations(parts[2], customIter);
+      const sc = SCENARIO_CONFIG[jKey];
+      if (sc) {
+        testQueue.push({ ...sc, vus, startIter: itObj.start, endIter: itObj.end, iterations: itObj.count });
+      }
+    } else {
+      // Format tanpa titik dua: misal 'jalur1'
+      const sc = SCENARIO_CONFIG[low];
+      if (sc) {
+        testQueue.push({ ...sc, vus: 50, startIter: 1, endIter: customIter, iterations: customIter });
+        testQueue.push({ ...sc, vus: 100, startIter: 1, endIter: customIter, iterations: customIter });
+      }
     }
   }
 }
 
-// JIKA TIDAK ADA ARGUMEN, DEFAULT: JALUR 1 (50 & 100 VU) + JALUR 2 (50 & 100 VU)
+// JIKA TIDAK ADA SKENARIO DITENTUKAN, DEFAULT: JALUR 1 (50 & 100 VU) + JALUR 2 (50 & 100 VU)
 if (testQueue.length === 0) {
-  testQueue.push({ ...SCENARIO_CONFIG['jalur1'], vus: 50, iterations: customIter });
-  testQueue.push({ ...SCENARIO_CONFIG['jalur1'], vus: 100, iterations: customIter });
-  testQueue.push({ ...SCENARIO_CONFIG['jalur2'], vus: 50, iterations: customIter });
-  testQueue.push({ ...SCENARIO_CONFIG['jalur2'], vus: 100, iterations: customIter });
+  testQueue.push({ ...SCENARIO_CONFIG['jalur1'], vus: 50, startIter: 1, endIter: customIter, iterations: customIter });
+  testQueue.push({ ...SCENARIO_CONFIG['jalur1'], vus: 100, startIter: 1, endIter: customIter, iterations: customIter });
+  testQueue.push({ ...SCENARIO_CONFIG['jalur2'], vus: 50, startIter: 1, endIter: customIter, iterations: customIter });
+  testQueue.push({ ...SCENARIO_CONFIG['jalur2'], vus: 100, startIter: 1, endIter: customIter, iterations: customIter });
 }
 
 function ensureDirectories() {
@@ -368,6 +410,13 @@ async function main() {
   console.log(`Folder Output PCAP: ${PCAP_DIR}`);
   console.log(`#####################################################################\n`);
 
+  console.log(`DAFTAR ANTREAN PENGUJIAN:`);
+  testQueue.forEach((t, idx) => {
+    const iterLabel = t.startIter === t.endIter ? `Iterasi ${t.startIter}` : `Iterasi ${t.startIter}-${t.endIter} (${t.iterations} Iterasi)`;
+    console.log(`  [${idx + 1}/${testQueue.length}] ${t.name} -> ${t.vus} VU (${iterLabel})`);
+  });
+  console.log(`---------------------------------------------------------------------\n`);
+
   process.stdout.write('Mendeteksi IP Publik Laptop Penguji...');
   const clientIp = await detectClientIp();
   console.log(` [IP: ${clientIp || 'Semua Host'}]`);
@@ -378,13 +427,22 @@ async function main() {
     console.log(`>>> MEMULAI SKENARIO [${qIdx + 1}/${testQueue.length}]: ${item.name} (${item.vus} VU) <<<`);
     console.log(`=====================================================================`);
 
-    for (let it = 1; it <= item.iterations; it++) {
+    for (let it = item.startIter; it <= item.endIter; it++) {
       const sessionId = `${item.id}_${item.vus}vu_iterasi${it}`;
       const pcapFilename = `${sessionId}.pcap`;
       const localPcapPath = path.join(PCAP_DIR, pcapFilename);
+      const k6LogPath = path.join(K6_DIR, `${sessionId}.txt`);
+
+      // Cek apakah sesi sudah selesai & valid jika mode resume aktif (--resume)
+      if (isResumeMode && fs.existsSync(localPcapPath) && fs.statSync(localPcapPath).size > 1000 && fs.existsSync(k6LogPath)) {
+        console.log(`\n---------------------------------------------------------------------`);
+        console.log(`[RESUME SKIP] Sesi ${sessionId.toUpperCase()} sudah selesai & file PCAP valid. [DILEWATI]`);
+        console.log(`---------------------------------------------------------------------`);
+        continue;
+      }
 
       console.log(`\n---------------------------------------------------------------------`);
-      console.log(`[SESI] ${sessionId.toUpperCase()} | Iterasi ${it}/${item.iterations}`);
+      console.log(`[SESI] ${sessionId.toUpperCase()} | Iterasi ${it}/${item.endIter}`);
       console.log(`---------------------------------------------------------------------`);
 
       // 1. Restart PM2 & Flush Redis
@@ -426,7 +484,7 @@ async function main() {
       const k6Stats = parseK6Metrics(terminalOutput, item.id);
 
       // Simpan log k6
-      fs.writeFileSync(path.join(K6_DIR, `${sessionId}.txt`), terminalOutput, 'utf-8');
+      fs.writeFileSync(k6LogPath, terminalOutput, 'utf-8');
 
       // Catat ke CSV
       const pcapSizeBytes = downloaded && fs.existsSync(localPcapPath) ? fs.statSync(localPcapPath).size : 0;
@@ -445,7 +503,7 @@ async function main() {
       console.log(`  > File PCAP  : ${localPcapPath} (${(pcapSizeBytes / 1024).toFixed(1)} KB)`);
       console.log(`---------------------------------------------------------------------`);
 
-      if (it < item.iterations || qIdx < testQueue.length - 1) {
+      if (it < item.endIter || qIdx < testQueue.length - 1) {
         console.log(`  > Jeda Cooldown 15 detik sebelum iterasi berikutnya...`);
         await sleep(15000);
       }
