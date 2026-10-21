@@ -105,12 +105,14 @@ export class IotService implements OnModuleInit, OnModuleDestroy {
       // Broadcast ACK for v6 Benchmark Monitoring
       try {
         const backendProcMs = parseFloat((performance.now() - tStart).toFixed(3));
+        const ackPublishTs = Date.now();
         this.mqttClient.publish(`barn/zone/${zoneId}/windspeed/ack`, JSON.stringify({
           zoneId,
           pureProcessingLatency,
           backendProcMs,
           clientTimestamp: data.clientTimestamp,
-          timestamp: receiveTime
+          timestamp: receiveTime,
+          ackPublishTs
         }));
       } catch (err) {}
     } 
@@ -269,12 +271,14 @@ export class IotService implements OnModuleInit, OnModuleDestroy {
       // Broadcast ACK for v6 Benchmark Monitoring
       try {
         const backendProcMs = parseFloat((performance.now() - tStart).toFixed(3));
+        const ackPublishTs = Date.now();
         this.mqttClient.publish(`barn/zone/${zoneId}/environment/ack`, JSON.stringify({
           zoneId,
           pureProcessingLatency,
           backendProcMs,
           clientTimestamp: data.clientTimestamp,
-          timestamp: receiveTime
+          timestamp: receiveTime,
+          ackPublishTs
         }));
       } catch (err) {}
     } 
@@ -309,12 +313,14 @@ export class IotService implements OnModuleInit, OnModuleDestroy {
       // Broadcast ACK for v6 Benchmark Monitoring
       try {
         const backendProcMs = parseFloat((performance.now() - tStart).toFixed(3));
+        const ackPublishTs = Date.now();
         this.mqttClient.publish(`barn/cow/${cattleId}/vitals/ack`, JSON.stringify({
           cattleId,
           pureProcessingLatency,
           backendProcMs,
           clientTimestamp: data.clientTimestamp,
-          timestamp: receiveTime
+          timestamp: receiveTime,
+          ackPublishTs
         }));
       } catch (err) {}
     }
