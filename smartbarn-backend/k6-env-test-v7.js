@@ -6,6 +6,7 @@ import { Trend, Counter } from 'k6/metrics';
 // =========================================================================
 const mqttEnvPublishLatency = new Trend('mqtt_env_publish_latency');       // Waktu transmisi soket TCP lokal ke Broker MQTT
 const mqttEnvProcessingLatency = new Trend('mqtt_env_processing_latency'); // Latensi Ingestion Server NestJS (Timestamp Sensor -> Masuk RAM/Redis Buffer)
+const mqttEnvBackendProcLatency = new Trend('mqtt_env_backend_proc_latency'); // Waktu komputasi murni internal NestJS (performance.now)
 const mqttEnvSent = new Counter('mqtt_env_messages_sent');                 // Total pesan dikirim
 const mqttEnvProcessed = new Counter('mqtt_env_messages_processed');       // Total pesan berhasil diproses
 
@@ -14,19 +15,19 @@ const isLocal = __ENV.LOCAL === 'true' || __ENV.TARGET === 'local';
 const MQTT_URL = __ENV.MQTT_URL || (isLocal ? 'mqtt://127.0.0.1:1883' : 'mqtt://77.37.63.21:1883');
 
 const targetVUs = parseInt(__ENV.VUS || '100', 10);
-const warmupVUs = Math.max(1, Math.floor(targetVUs * 0.4));
 
+// =========================================================================
+// OPSI V7: PURE FULL VU DARI DETIK KE-0 (Constant Load Tanpa Ramp-up)
+// =========================================================================
 export const options = {
-  stages: [
-    { duration: '5s', target: warmupVUs },   // Tahap 1: Ramp-up bertahap awal (40% beban)
-    { duration: '5s', target: targetVUs },   // Tahap 2: Naik ke beban target (10, 50, atau 100 VU)
-    { duration: '20s', target: targetVUs },  // Tahap 3: Tahan stabil di beban puncak (tanpa ramp-down ke 0)
-  ],
+  vus: targetVUs,
+  duration: '30s',
   thresholds: {
     mqtt_env_publish_latency: ['p(95)<100'],
     mqtt_env_processing_latency: ['p(95)<1000'],
   },
 };
+
 
 export default function () {
   const vuId = __VU;
@@ -58,6 +59,10 @@ export default function () {
         mqttEnvProcessingLatency.add(latency);
         mqttEnvProcessed.add(1);
       }
+
+      if (typeof data.backendProcMs === 'number') {
+        mqttEnvBackendProcLatency.add(data.backendProcMs);
+      }
     } catch (e) {}
   });
 
@@ -68,7 +73,8 @@ export default function () {
     }
 
     let count = 0;
-    const maxCount = 50; // V7: Ditingkatkan menjadi maks 50 pesan per VU
+    const sendIntervalMs = parseInt(__ENV.INTERVAL_MS || '1000', 10);
+    const maxCount = parseInt(__ENV.MAX_COUNT || String(Math.ceil(35000 / sendIntervalMs) + 10), 10);
 
     const interval = setInterval(() => {
       count++;
@@ -112,7 +118,8 @@ export default function () {
         mqttEnvPublishLatency.add(Date.now() - pubStart);
         mqttEnvSent.add(1);
       }
-    }, 2000);
+    }, sendIntervalMs);
+
   });
 
   client.connect(MQTT_URL);

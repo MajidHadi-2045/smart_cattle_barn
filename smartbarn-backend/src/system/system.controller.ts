@@ -31,6 +31,11 @@ export class SystemController {
     return this.systemService.flushRedis();
   }
 
+  @Post('event-loop/reset')
+  resetEventLoop() {
+    return this.systemService.resetEventLoopMetrics();
+  }
+
   @Get('speedtest/download')
   getSpeedtestDownload(@Query('size') sizeMb: string, @Res() res: Response) {
     const mb = Math.min(10, Math.max(1, parseInt(sizeMb || '3', 10)));

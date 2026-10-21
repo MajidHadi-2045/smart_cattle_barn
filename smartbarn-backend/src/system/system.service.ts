@@ -4,12 +4,14 @@ import * as os from 'os';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Redis } from 'ioredis';
+import { monitorEventLoopDelay, IntervalHistogram } from 'perf_hooks';
 
 @Injectable()
 export class SystemService {
   private redis: Redis;
   private lastCpuUsage = process.cpuUsage();
   private lastCpuTime = Date.now();
+  private eventLoopHistogram: IntervalHistogram;
 
   constructor() {
     const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
@@ -19,6 +21,9 @@ export class SystemService {
       maxRetriesPerRequest: 1,
     });
     this.redis.on('error', () => {});
+
+    this.eventLoopHistogram = monitorEventLoopDelay({ resolution: 10 });
+    this.eventLoopHistogram.enable();
   }
 
   private cachedRedisMem = 'N/A';
@@ -55,14 +60,38 @@ export class SystemService {
       }
     }
 
+    const elCount = this.eventLoopHistogram.count;
+    const elMean = elCount > 0 ? parseFloat((this.eventLoopHistogram.mean / 1e6).toFixed(3)) : 0;
+    const elP50 = elCount > 0 ? parseFloat((this.eventLoopHistogram.percentile(50) / 1e6).toFixed(3)) : 0;
+    const elP95 = elCount > 0 ? parseFloat((this.eventLoopHistogram.percentile(95) / 1e6).toFixed(3)) : 0;
+    const elP99 = elCount > 0 ? parseFloat((this.eventLoopHistogram.percentile(99) / 1e6).toFixed(3)) : 0;
+    const elMax = elCount > 0 ? parseFloat((this.eventLoopHistogram.max / 1e6).toFixed(3)) : 0;
+
     return {
       success: true,
       cpu: parseFloat(cpu),
       memoryMb: parseFloat(memMb),
       redisMemory: this.cachedRedisMem,
+      eventLoopDelayMs: {
+        count: elCount,
+        mean: elMean,
+        p50: elP50,
+        p95: elP95,
+        p99: elP99,
+        max: elMax,
+      },
       processName: 'smartbarn-api-4000',
       uptimeSeconds: Math.floor(process.uptime()),
       timestamp: new Date().toISOString(),
+    };
+  }
+
+  resetEventLoopMetrics() {
+    this.eventLoopHistogram.reset();
+    return {
+      success: true,
+      message: 'Event loop histogram has been reset successfully',
+      timestamp: new Date().toISOString()
     };
   }
 
