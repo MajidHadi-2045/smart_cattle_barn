@@ -345,27 +345,54 @@ const LandingPage = () => {
                                     {/* Speaker Pill Sederhana */}
                                     <div className="w-16 h-3 bg-slate-900 rounded-full mx-auto shadow-inner mb-1 shrink-0"></div>
 
-                                    {/* Layar Aplikasi: Bentuk & Warna Sederhana Bersih (Tanpa Gambar, Angka, atau Teks) */}
+                                    {/* Layar Aplikasi: Bentuk & Warna Sederhana dengan Kontras & Opasitas yang Seimbang */}
                                     <div className="bg-white rounded-[2.3rem] flex-1 w-full p-6 pt-5 flex flex-col justify-between select-none relative overflow-hidden">
                                         <div>
                                             {/* Bentuk Identitas Brand: Squircle Gradien Emerald-Teal */}
-                                            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 shadow-sm shadow-emerald-500/20 mb-5"></div>
+                                            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-500 shadow-md shadow-emerald-500/20 mb-5"></div>
                                             
-                                            {/* Bar Aksen Sederhana */}
-                                            <div className="w-32 h-3.5 bg-slate-100 rounded-full mb-4"></div>
+                                            {/* Bar Aksen: Warna Slate Lembut & Jelas */}
+                                            <div className="w-36 h-3 bg-slate-300/80 rounded-full mb-4"></div>
                                             
-                                            {/* Kartu Utama Beraksen Warna Tema */}
-                                            <div className="h-32 rounded-2xl bg-gradient-to-br from-emerald-50/70 via-slate-50/60 to-slate-50 border border-slate-100/80 mb-3 shadow-2xs"></div>
+                                            {/* Kartu Utama Beraksen Warna Tema Lebih Jelas & Elegan */}
+                                            <div className="h-32 rounded-2xl bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-slate-100/70 border border-emerald-300/50 mb-3.5 shadow-xs p-3.5 flex flex-col justify-between">
+                                                <div className="w-24 h-2.5 bg-emerald-600/35 rounded-full"></div>
+                                                <div className="w-full h-14 rounded-xl bg-white border border-emerald-200/60 shadow-xs flex items-center justify-between px-3.5">
+                                                    <div>
+                                                        <div className="w-20 h-2.5 bg-slate-200 rounded-full mb-1.5"></div>
+                                                        <div className="w-12 h-2 bg-slate-100 rounded-full"></div>
+                                                    </div>
+                                                    <div className="w-8 h-8 rounded-full bg-emerald-500/15 flex items-center justify-center">
+                                                        <div className="w-3.5 h-3.5 rounded-full bg-emerald-500/50"></div>
+                                                    </div>
+                                                </div>
+                                            </div>
                                             
-                                            {/* Dua Kartu Simetris Sederhana */}
+                                            {/* Dua Kartu Simetris dengan Aksen Warna Bertema */}
                                             <div className="grid grid-cols-2 gap-3">
-                                                <div className="h-24 rounded-2xl bg-slate-50 border border-slate-100/80 shadow-2xs"></div>
-                                                <div className="h-24 rounded-2xl bg-slate-50 border border-slate-100/80 shadow-2xs"></div>
+                                                <div className="h-24 rounded-2xl bg-slate-100/80 border border-slate-200/90 p-3.5 flex flex-col justify-between shadow-xs">
+                                                    <div className="w-7 h-7 rounded-xl bg-emerald-500/30 flex items-center justify-center">
+                                                        <div className="w-2.5 h-2.5 rounded-sm bg-emerald-600/50"></div>
+                                                    </div>
+                                                    <div>
+                                                        <div className="w-14 h-2.5 bg-slate-300/90 rounded-full mb-1"></div>
+                                                        <div className="w-8 h-2 bg-slate-200 rounded-full"></div>
+                                                    </div>
+                                                </div>
+                                                <div className="h-24 rounded-2xl bg-slate-100/80 border border-slate-200/90 p-3.5 flex flex-col justify-between shadow-xs">
+                                                    <div className="w-7 h-7 rounded-xl bg-teal-500/30 flex items-center justify-center">
+                                                        <div className="w-2.5 h-2.5 rounded-sm bg-teal-600/50"></div>
+                                                    </div>
+                                                    <div>
+                                                        <div className="w-14 h-2.5 bg-slate-300/90 rounded-full mb-1"></div>
+                                                        <div className="w-8 h-2 bg-slate-200 rounded-full"></div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
 
                                         {/* Home Indicator Bar */}
-                                        <div className="w-20 h-1 bg-slate-200 rounded-full mx-auto"></div>
+                                        <div className="w-20 h-1 bg-slate-300 rounded-full mx-auto"></div>
                                     </div>
                                 </div>
                             </div>
