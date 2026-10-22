@@ -71,7 +71,7 @@ const Typewriter = ({ text = "Jauh Lebih Cerdas.", phrases }) => {
 
     return (
         <span className="text-primary-700 font-black inline">
-            <span className="inline">{displayedText}</span>
+            <span className="inline">{displayedText || '\u200B'}</span>
             <span className="w-[3px] h-[0.85em] bg-primary-700 ml-1 inline-block animate-cursor-blink rounded-sm align-middle"></span>
         </span>
     );
@@ -161,11 +161,13 @@ const LandingPage = () => {
                 {/* --- HERO SECTION (AS A CARD) --- */}
                 <section className="bg-white rounded-[3rem] p-8 md:p-20 shadow-[0_20px_50px_-15px_rgba(0,0,0,0.05)] border border-white relative overflow-hidden">
                     <div className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-primary-50 rounded-full blur-3xl opacity-60"></div>
-                    <div className="relative z-10 grid lg:grid-cols-2 gap-16 items-center">
-                        <div className="text-center lg:text-left">
-                            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-black text-slate-900 leading-[1.22] sm:leading-[1.18] mb-6 tracking-tight">
+                    <div className="relative z-10 grid lg:grid-cols-12 gap-10 xl:gap-14 items-center">
+                        <div className="lg:col-span-7 text-center lg:text-left">
+                            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[2.75rem] xl:text-[3.25rem] font-black text-slate-900 leading-[1.22] sm:leading-[1.18] mb-6 tracking-tight">
                                 <span className="block mb-1 sm:mb-2">Kelola Ternak</span>
-                                <Typewriter text="Jauh Lebih Cerdas." />
+                                <span className="block min-h-[2.4em] sm:min-h-[1.22em] text-primary-700">
+                                    <Typewriter text="Jauh Lebih Cerdas." />
+                                </span>
                             </h1>
                             <p className="text-base sm:text-lg text-slate-600 mb-8 max-w-xl mx-auto lg:mx-0 leading-relaxed font-normal">
                                 Efisiensi tanpa batas dengan integrasi IoT. Pantau kesehatan ternak, manajemen pakan, dan mikroklimat kandang secara terpadu.
@@ -184,7 +186,7 @@ const LandingPage = () => {
                             </div>
                         </div>
 
-                        <div className="relative hidden lg:block">
+                        <div className="relative hidden lg:block lg:col-span-5">
                             {/* NEW HIGH-FIDELITY DASHBOARD MOCKUP */}
                             <div className="bg-slate-900 rounded-[2.5rem] p-2.5 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.3)] border-[6px] border-slate-800/50 transform rotate-1 hover:rotate-0 transition-all duration-700">
                                 <div className="bg-slate-50 rounded-[2rem] overflow-hidden aspect-[4/3] flex flex-col shadow-inner">
