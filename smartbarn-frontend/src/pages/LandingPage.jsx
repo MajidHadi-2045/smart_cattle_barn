@@ -70,9 +70,9 @@ const Typewriter = ({ text = "Jauh Lebih Cerdas.", phrases }) => {
     }, [displayedText, isDeleting, currentPhraseIndex, defaultPhrases, text]);
 
     return (
-        <span className="text-primary-700 font-black inline-flex items-center">
-            <span>{displayedText}</span>
-            <span className="w-[3px] h-[0.85em] bg-primary-700 ml-1 inline-block animate-cursor-blink rounded-sm"></span>
+        <span className="text-primary-700 font-black inline">
+            <span className="inline">{displayedText}</span>
+            <span className="w-[3px] h-[0.85em] bg-primary-700 ml-1 inline-block animate-cursor-blink rounded-sm align-middle"></span>
         </span>
     );
 };
@@ -163,8 +163,8 @@ const LandingPage = () => {
                     <div className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-primary-50 rounded-full blur-3xl opacity-60"></div>
                     <div className="relative z-10 grid lg:grid-cols-2 gap-16 items-center">
                         <div className="text-center lg:text-left">
-                            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 leading-[1.15] mb-6 tracking-tight">
-                                Kelola Peternakan Sapi <br />
+                            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-black text-slate-900 leading-[1.22] sm:leading-[1.18] mb-6 tracking-tight">
+                                <span className="block mb-1 sm:mb-2">Kelola Ternak</span>
                                 <Typewriter text="Jauh Lebih Cerdas." />
                             </h1>
                             <p className="text-base sm:text-lg text-slate-600 mb-8 max-w-xl mx-auto lg:mx-0 leading-relaxed font-normal">
@@ -181,22 +181,6 @@ const LandingPage = () => {
                                 <a href="#mobile-app" className="px-7 py-3.5 bg-white text-slate-700 border border-slate-200 rounded-xl font-bold hover:bg-slate-50 transition shadow-sm flex items-center justify-center gap-2.5">
                                     Unduh Aplikasi
                                 </a>
-                            </div>
-
-                            {/* Ringkasan Kapabilitas Utama untuk Mengisi Ruang Visual */}
-                            <div className="mt-10 pt-8 border-t border-slate-100 grid grid-cols-3 gap-4 sm:gap-6 text-center lg:text-left">
-                                <div>
-                                    <div className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Real-Time</div>
-                                    <div className="text-xs text-slate-500 font-medium mt-1">Sensor Lingkungan & IoT</div>
-                                </div>
-                                <div>
-                                    <div className="text-xl sm:text-2xl font-black text-primary-700 tracking-tight">Presisi</div>
-                                    <div className="text-xs text-slate-500 font-medium mt-1">Rekam Medis & Pakan</div>
-                                </div>
-                                <div>
-                                    <div className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Terpadu</div>
-                                    <div className="text-xs text-slate-500 font-medium mt-1">Web & Aplikasi Mobile</div>
-                                </div>
                             </div>
                         </div>
 
