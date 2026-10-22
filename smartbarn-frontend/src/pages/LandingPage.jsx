@@ -339,148 +339,33 @@ const LandingPage = () => {
                                 {/* Ambient Glow Aura di belakang smartphone */}
                                 <div className="absolute -inset-4 bg-gradient-to-tr from-emerald-500/25 via-teal-500/15 to-primary-600/20 rounded-[3.5rem] blur-2xl opacity-60 group-hover:opacity-90 transition duration-500 -z-10"></div>
 
-                                {/* Bodi Smartphone Flagship Modern */}
-                                <div className="w-[275px] sm:w-[295px] h-[550px] sm:h-[570px] bg-slate-950 rounded-[3.2rem] p-2.5 shadow-[0_30px_70px_-15px_rgba(0,0,0,0.8),0_0_60px_rgba(16,185,129,0.18)] border border-slate-700/60 ring-1 ring-white/10 relative overflow-hidden flex flex-col justify-between">
+                                {/* Bodi Smartphone Minimalis */}
+                                <div className="w-[260px] sm:w-[280px] h-[520px] sm:h-[540px] bg-slate-950 rounded-[3rem] p-3 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8),0_0_50px_rgba(16,185,129,0.15)] border border-slate-800 ring-1 ring-white/10 relative overflow-hidden flex flex-col justify-between">
                                     
-                                    {/* Layar Aplikasi: Tampilan Antarmuka Asli Smart Cattle Barn (Clean & High-Fidelity) */}
-                                    <div className="bg-white rounded-[2.6rem] h-full w-full overflow-hidden flex flex-col justify-between p-4 pt-2.5 text-slate-800 shadow-inner relative select-none">
-                                        
-                                        {/* Status Bar Ponsel (09:41, Dynamic Island, Sinyal & Baterai) */}
-                                        <div className="flex items-center justify-between text-[11px] font-semibold text-slate-700 px-1 pt-1">
-                                            <span>09:41</span>
-                                            {/* Dynamic Island Notch */}
-                                            <div className="w-20 h-4 bg-slate-950 rounded-full flex items-center justify-end pr-1.5 shadow-sm">
-                                                <div className="w-1.5 h-1.5 rounded-full bg-slate-800 border border-slate-700"></div>
-                                            </div>
-                                            <div className="flex items-center gap-1.5 text-slate-700">
-                                                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L12 22l7.03-4.39C20.26 16.07 21 14.12 21 12c0-4.97-4.03-9-9-9z" opacity="0.3"/><path d="M12 6a6 6 0 0 0-6 6c0 1.41.49 2.72 1.32 3.75L12 19l4.68-3.25C17.51 14.72 18 13.41 18 12a6 6 0 0 0-6-6z"/></svg>
-                                                <div className="w-4 h-2 border border-slate-700 rounded-xs p-0.5 flex items-center">
-                                                    <div className="w-full h-full bg-slate-800 rounded-2xs"></div>
-                                                </div>
+                                    {/* Speaker Pill Sederhana */}
+                                    <div className="w-16 h-3 bg-slate-900 rounded-full mx-auto shadow-inner mb-1 shrink-0"></div>
+
+                                    {/* Layar Aplikasi: Bentuk & Warna Sederhana Bersih (Tanpa Gambar, Angka, atau Teks) */}
+                                    <div className="bg-white rounded-[2.3rem] flex-1 w-full p-6 pt-5 flex flex-col justify-between select-none relative overflow-hidden">
+                                        <div>
+                                            {/* Bentuk Identitas Brand: Squircle Gradien Emerald-Teal */}
+                                            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 shadow-sm shadow-emerald-500/20 mb-5"></div>
+                                            
+                                            {/* Bar Aksen Sederhana */}
+                                            <div className="w-32 h-3.5 bg-slate-100 rounded-full mb-4"></div>
+                                            
+                                            {/* Kartu Utama Beraksen Warna Tema */}
+                                            <div className="h-32 rounded-2xl bg-gradient-to-br from-emerald-50/70 via-slate-50/60 to-slate-50 border border-slate-100/80 mb-3 shadow-2xs"></div>
+                                            
+                                            {/* Dua Kartu Simetris Sederhana */}
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div className="h-24 rounded-2xl bg-slate-50 border border-slate-100/80 shadow-2xs"></div>
+                                                <div className="h-24 rounded-2xl bg-slate-50 border border-slate-100/80 shadow-2xs"></div>
                                             </div>
                                         </div>
 
-                                        <div className="space-y-3 mt-2">
-                                            {/* App Top Bar: Logo Resmi Smart Cattle Barn & Status Koneksi */}
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="p-1 bg-slate-50 rounded-lg border border-slate-100 shadow-2xs">
-                                                        <img src="/logoxl.svg" alt="Smart Cattle Barn" className="w-6 h-6" />
-                                                    </div>
-                                                    <div>
-                                                        <div className="text-xs font-black text-slate-900 leading-tight">Smart Cattle Barn</div>
-                                                        <div className="text-[10px] text-emerald-600 font-semibold flex items-center gap-1">
-                                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                                                            Kandang A • Terhubung
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div className="w-7 h-7 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-600 relative">
-                                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
-                                                    <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-red-500 rounded-full"></span>
-                                                </div>
-                                            </div>
-
-                                            {/* Kartu Telemetri Lingkungan Kandang */}
-                                            <div className="rounded-2xl p-3 bg-gradient-to-br from-slate-50 via-white to-emerald-50/40 border border-slate-100 shadow-[0_4px_16px_-4px_rgba(0,0,0,0.05)] relative overflow-hidden">
-                                                <div className="flex items-center justify-between mb-1.5">
-                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Mikroklimat Kandang</span>
-                                                    <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[9px] font-bold">Optimal</span>
-                                                </div>
-                                                <div className="flex items-baseline gap-2 mb-1">
-                                                    <span className="text-2xl font-black text-slate-900 tracking-tight">24.6°C</span>
-                                                    <span className="text-xs font-semibold text-slate-500">68% RH</span>
-                                                    <span className="text-[10px] font-medium text-emerald-600 ml-auto">THI: 72</span>
-                                                </div>
-                                                {/* Grafik Gelombang Tren Suhu Real-Time */}
-                                                <div className="h-10 w-full relative pt-1">
-                                                    <svg className="w-full h-full text-emerald-500 overflow-visible" viewBox="0 0 100 28" fill="none">
-                                                        <defs>
-                                                            <linearGradient id="phoneTelemetryGrad" x1="0" y1="0" x2="0" y2="1">
-                                                                <stop offset="0%" stopColor="#10B981" stopOpacity="0.3" />
-                                                                <stop offset="100%" stopColor="#10B981" stopOpacity="0.0" />
-                                                            </linearGradient>
-                                                        </defs>
-                                                        <path 
-                                                            d="M0 20 Q 15 6, 30 16 T 60 10 T 82 5 T 100 12" 
-                                                            stroke="currentColor" 
-                                                            strokeWidth="2.2" 
-                                                            strokeLinecap="round" 
-                                                        />
-                                                        <path 
-                                                            d="M0 20 Q 15 6, 30 16 T 60 10 T 82 5 T 100 12 L 100 28 L 0 28 Z" 
-                                                            fill="url(#phoneTelemetryGrad)" 
-                                                        />
-                                                        <circle cx="82" cy="5" r="2.5" fill="#10B981" />
-                                                    </svg>
-                                                </div>
-                                            </div>
-
-                                            {/* Grid Metrik Cepat: Populasi Sapi & Pakan Harian */}
-                                            <div className="grid grid-cols-2 gap-2">
-                                                {/* Widget Populasi Ternak */}
-                                                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex flex-col justify-between h-[78px]">
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="w-5 h-5 rounded-md bg-emerald-100 text-emerald-700 flex items-center justify-center">
-                                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
-                                                        </div>
-                                                        <span className="text-[9px] font-bold text-slate-400">Populasi</span>
-                                                    </div>
-                                                    <div>
-                                                        <div className="text-sm font-black text-slate-900 leading-none">142 Ekor</div>
-                                                        <div className="text-[9px] text-emerald-600 font-semibold mt-1">100% Kondisi Sehat</div>
-                                                    </div>
-                                                </div>
-
-                                                {/* Widget Pakan Harian */}
-                                                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex flex-col justify-between h-[78px]">
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="w-5 h-5 rounded-md bg-teal-100 text-teal-700 flex items-center justify-center">
-                                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-                                                        </div>
-                                                        <span className="text-[9px] font-bold text-slate-400">Pakan</span>
-                                                    </div>
-                                                    <div>
-                                                        <div className="text-sm font-black text-slate-900 leading-none">850 Kg</div>
-                                                        <div className="text-[9px] text-teal-600 font-semibold mt-1">Jadwal Terpenuhi</div>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {/* Status Otomasi Aktuator IoT */}
-                                            <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200/80 flex items-center justify-between shadow-2xs">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0">
-                                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7"/></svg>
-                                                    </div>
-                                                    <div>
-                                                        <div className="text-[10px] font-bold text-emerald-950 leading-tight">Sirkulasi & Kipas Aktif</div>
-                                                        <div className="text-[8px] text-emerald-700">Otomasi Berjalan Normal</div>
-                                                    </div>
-                                                </div>
-                                                <span className="px-2 py-0.5 rounded bg-emerald-600 text-white text-[8px] font-black uppercase tracking-wider">AUTO</span>
-                                            </div>
-                                        </div>
-
-                                        {/* Bottom Navigation Dock & Home Bar */}
-                                        <div className="border-t border-slate-100 pt-2 space-y-1.5">
-                                            <div className="flex items-center justify-around text-slate-400">
-                                                <div className="flex flex-col items-center text-emerald-600">
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-                                                    <span className="text-[8px] font-bold mt-0.5">Beranda</span>
-                                                </div>
-                                                <div className="flex flex-col items-center hover:text-slate-600 transition">
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-                                                    <span className="text-[8px] font-medium mt-0.5">Ternak</span>
-                                                </div>
-                                                <div className="flex flex-col items-center hover:text-slate-600 transition">
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
-                                                    <span className="text-[8px] font-medium mt-0.5">Medis</span>
-                                                </div>
-                                            </div>
-                                            {/* Home Indicator */}
-                                            <div className="w-20 h-1 bg-slate-300 rounded-full mx-auto"></div>
-                                        </div>
+                                        {/* Home Indicator Bar */}
+                                        <div className="w-20 h-1 bg-slate-200 rounded-full mx-auto"></div>
                                     </div>
                                 </div>
                             </div>
