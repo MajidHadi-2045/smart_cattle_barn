@@ -364,127 +364,127 @@ const LandingPage = () => {
                                         </div>
                                     </div>
 
-                                    {/* Layar Aplikasi: Tampilan UI Abstrak Menarik Berdasarkan Tema */}
-                                    <div className="h-full w-full bg-gradient-to-b from-slate-900 via-slate-950 to-slate-900 p-4 pt-8 flex flex-col justify-between select-none relative overflow-hidden text-white">
+                                    {/* Layar Aplikasi: Tampilan UI Abstrak Dominan Putih Bersih Sesuai Tema */}
+                                    <div className="h-full w-full bg-white p-4 pt-8 flex flex-col justify-between select-none relative overflow-hidden text-slate-800">
                                         
-                                        {/* Radial Aura Halus di Dalam Layar */}
-                                        <div className="absolute -top-10 -right-10 w-28 h-28 bg-emerald-500/10 rounded-full blur-xl pointer-events-none"></div>
-                                        <div className="absolute top-1/2 -left-10 w-28 h-28 bg-teal-500/10 rounded-full blur-xl pointer-events-none"></div>
+                                        {/* Radial Aura Halus di Dalam Layar Putih */}
+                                        <div className="absolute -top-10 -right-10 w-32 h-32 bg-emerald-100/40 rounded-full blur-2xl pointer-events-none"></div>
+                                        <div className="absolute top-1/2 -left-10 w-32 h-32 bg-teal-100/30 rounded-full blur-2xl pointer-events-none"></div>
 
                                         <div className="space-y-3 relative z-10">
-                                            {/* Header Bar Aplikasi: Logo & Status Live */}
+                                            {/* Header Bar Aplikasi: Logo Hijau Khas & Status Live */}
                                             <div className="flex items-center justify-between pt-1">
                                                 <div className="flex items-center gap-2">
-                                                    <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-emerald-600 to-teal-400 p-1 shadow-sm shadow-emerald-500/30 flex items-center justify-center">
-                                                        <div className="w-3.5 h-3.5 bg-white rounded-xs opacity-90"></div>
+                                                    <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 p-1.5 shadow-sm shadow-emerald-500/25 flex items-center justify-center">
+                                                        <div className="w-3.5 h-3.5 bg-white rounded-xs opacity-95"></div>
                                                     </div>
                                                     <div className="space-y-1">
-                                                        <div className="w-14 h-2 bg-slate-700/80 rounded-full"></div>
-                                                        <div className="w-9 h-1.5 bg-slate-800 rounded-full"></div>
+                                                        <div className="w-16 h-2.5 bg-slate-800/80 rounded-full"></div>
+                                                        <div className="w-10 h-1.5 bg-slate-300 rounded-full"></div>
                                                     </div>
                                                 </div>
-                                                {/* Status Live Dot */}
-                                                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-500/30 shadow-xs">
-                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                                                    <div className="w-6 h-1.5 bg-emerald-400/70 rounded-full"></div>
+                                                {/* Status Live Pill */}
+                                                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200/80 shadow-xs">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                                    <div className="w-7 h-1.5 bg-emerald-600/80 rounded-full"></div>
                                                 </div>
                                             </div>
 
-                                            {/* Kartu Metrik Utama: Grafis Sparkline Lingkungan & THI */}
-                                            <div className="rounded-2xl p-3 bg-gradient-to-br from-slate-800/90 via-slate-900/90 to-emerald-950/40 border border-emerald-500/20 shadow-sm relative overflow-hidden">
+                                            {/* Kartu Metrik Utama: Grafis Sparkline Lingkungan & THI (Dominan Putih dengan Aksen Hijau) */}
+                                            <div className="rounded-2xl p-3.5 bg-white border border-slate-100 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.06)] relative overflow-hidden">
                                                 <div className="flex items-center justify-between mb-2">
-                                                    <div className="w-16 h-2 bg-emerald-400/40 rounded-full"></div>
-                                                    <div className="w-4 h-4 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
+                                                    <div className="w-16 h-2 bg-slate-300 rounded-full"></div>
+                                                    <div className="w-5 h-5 rounded-md bg-emerald-50 border border-emerald-100 flex items-center justify-center">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
                                                     </div>
                                                 </div>
                                                 <div className="flex items-baseline gap-2 mb-2">
-                                                    <div className="w-16 h-4 bg-gradient-to-r from-emerald-400/90 to-teal-300/90 rounded-md"></div>
-                                                    <div className="w-8 h-2 bg-slate-700 rounded-full"></div>
+                                                    <div className="w-20 h-4 bg-slate-900 rounded-md"></div>
+                                                    <div className="w-8 h-2 bg-emerald-500/30 rounded-full"></div>
                                                 </div>
                                                 {/* Gelombang Sensor Abstrak */}
-                                                <div className="h-9 w-full relative pt-1">
-                                                    <svg className="w-full h-full text-emerald-400 overflow-visible" viewBox="0 0 100 28" fill="none">
+                                                <div className="h-10 w-full relative pt-1">
+                                                    <svg className="w-full h-full text-emerald-500 overflow-visible" viewBox="0 0 100 28" fill="none">
                                                         <defs>
-                                                            <linearGradient id="phoneChartGrad" x1="0" y1="0" x2="0" y2="1">
-                                                                <stop offset="0%" stopColor="#10B981" stopOpacity="0.25" />
+                                                            <linearGradient id="phoneWhiteChartGrad" x1="0" y1="0" x2="0" y2="1">
+                                                                <stop offset="0%" stopColor="#10B981" stopOpacity="0.28" />
                                                                 <stop offset="100%" stopColor="#10B981" stopOpacity="0.0" />
                                                             </linearGradient>
                                                         </defs>
                                                         <path 
                                                             d="M0 20 Q 15 5, 30 16 T 60 10 T 82 4 T 100 12" 
                                                             stroke="currentColor" 
-                                                            strokeWidth="2.2" 
+                                                            strokeWidth="2.4" 
                                                             strokeLinecap="round" 
                                                         />
                                                         <path 
                                                             d="M0 20 Q 15 5, 30 16 T 60 10 T 82 4 T 100 12 L 100 28 L 0 28 Z" 
-                                                            fill="url(#phoneChartGrad)" 
+                                                            fill="url(#phoneWhiteChartGrad)" 
                                                         />
                                                     </svg>
                                                 </div>
                                             </div>
 
-                                            {/* Grid Widget Sensor (2 Kotak Abstrak) */}
-                                            <div className="grid grid-cols-2 gap-2">
+                                            {/* Grid Widget Sensor (2 Kotak Abstrak Bersih) */}
+                                            <div className="grid grid-cols-2 gap-2.5">
                                                 {/* Widget A: Vitalitas */}
-                                                <div className="p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/50 flex flex-col justify-between h-[78px]">
+                                                <div className="p-3 rounded-xl bg-slate-50/90 border border-slate-100 flex flex-col justify-between h-[82px] shadow-xs">
                                                     <div className="flex items-center justify-between">
-                                                        <div className="w-4 h-4 rounded-md bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center">
-                                                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
+                                                        <div className="w-5 h-5 rounded-lg bg-emerald-100/70 flex items-center justify-center">
+                                                            <div className="w-2 h-2 rounded-full bg-emerald-600"></div>
                                                         </div>
-                                                        <div className="w-6 h-1.5 bg-slate-600/70 rounded-full"></div>
+                                                        <div className="w-6 h-1.5 bg-slate-300 rounded-full"></div>
                                                     </div>
                                                     <div className="space-y-1">
-                                                        <div className="w-11 h-3 bg-slate-200/90 rounded-xs"></div>
-                                                        <div className="w-7 h-1.5 bg-slate-500/80 rounded-full"></div>
+                                                        <div className="w-12 h-3 bg-slate-800 rounded-xs"></div>
+                                                        <div className="w-8 h-1.5 bg-slate-300 rounded-full"></div>
                                                     </div>
-                                                    <div className="w-full h-1 bg-slate-700 rounded-full overflow-hidden">
-                                                        <div className="w-4/5 h-full bg-emerald-400 rounded-full"></div>
+                                                    <div className="w-full h-1.5 bg-slate-200/80 rounded-full overflow-hidden">
+                                                        <div className="w-4/5 h-full bg-emerald-500 rounded-full"></div>
                                                     </div>
                                                 </div>
 
                                                 {/* Widget B: Suhu & Udara */}
-                                                <div className="p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/50 flex flex-col justify-between h-[78px]">
+                                                <div className="p-3 rounded-xl bg-slate-50/90 border border-slate-100 flex flex-col justify-between h-[82px] shadow-xs">
                                                     <div className="flex items-center justify-between">
-                                                        <div className="w-4 h-4 rounded-md bg-teal-500/20 border border-teal-500/30 flex items-center justify-center">
-                                                            <div className="w-1.5 h-1.5 rounded-full bg-teal-300"></div>
+                                                        <div className="w-5 h-5 rounded-lg bg-teal-100/70 flex items-center justify-center">
+                                                            <div className="w-2 h-2 rounded-full bg-teal-600"></div>
                                                         </div>
-                                                        <div className="w-6 h-1.5 bg-slate-600/70 rounded-full"></div>
+                                                        <div className="w-6 h-1.5 bg-slate-300 rounded-full"></div>
                                                     </div>
                                                     <div className="space-y-1">
-                                                        <div className="w-11 h-3 bg-slate-200/90 rounded-xs"></div>
-                                                        <div className="w-7 h-1.5 bg-slate-500/80 rounded-full"></div>
+                                                        <div className="w-12 h-3 bg-slate-800 rounded-xs"></div>
+                                                        <div className="w-8 h-1.5 bg-slate-300 rounded-full"></div>
                                                     </div>
-                                                    <div className="w-full h-1 bg-slate-700 rounded-full overflow-hidden">
-                                                        <div className="w-3/5 h-full bg-teal-400 rounded-full"></div>
+                                                    <div className="w-full h-1.5 bg-slate-200/80 rounded-full overflow-hidden">
+                                                        <div className="w-3/5 h-full bg-teal-500 rounded-full"></div>
                                                     </div>
                                                 </div>
                                             </div>
 
                                             {/* Notifikasi / Peringatan Cepat (Abstrak) */}
-                                            <div className="p-2.5 rounded-xl bg-slate-800/40 border border-slate-700/40 flex items-center gap-2">
-                                                <div className="w-5 h-5 rounded-md bg-emerald-500/20 border border-emerald-500/30 shrink-0 flex items-center justify-center">
-                                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
+                                            <div className="p-2.5 rounded-xl bg-slate-50/90 border border-slate-100 flex items-center gap-2.5 shadow-xs">
+                                                <div className="w-5 h-5 rounded-md bg-emerald-100 flex items-center justify-center shrink-0">
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-600"></div>
                                                 </div>
                                                 <div className="flex-1 space-y-1">
-                                                    <div className="w-20 h-1.5 bg-slate-300/80 rounded-full"></div>
-                                                    <div className="w-28 h-1 bg-slate-600 rounded-full"></div>
+                                                    <div className="w-24 h-2 bg-slate-400 rounded-full"></div>
+                                                    <div className="w-32 h-1.5 bg-slate-200 rounded-full"></div>
                                                 </div>
-                                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
+                                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
                                             </div>
                                         </div>
 
-                                        {/* Bottom Navigation Bar Abstrak */}
+                                        {/* Bottom Navigation Bar Abstrak Bersih */}
                                         <div className="space-y-2 mt-2">
-                                            <div className="h-9 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center justify-around px-3 shadow-inner">
-                                                <div className="w-3.5 h-3.5 rounded-sm bg-emerald-400 shadow-xs shadow-emerald-400/50"></div>
-                                                <div className="w-3 h-3 rounded-sm bg-slate-700"></div>
-                                                <div className="w-3 h-3 rounded-sm bg-slate-700"></div>
-                                                <div className="w-3 h-3 rounded-sm bg-slate-700"></div>
+                                            <div className="h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-around px-3 shadow-xs">
+                                                <div className="w-4 h-4 rounded-md bg-emerald-600 shadow-xs shadow-emerald-600/30"></div>
+                                                <div className="w-3.5 h-3.5 rounded-md bg-slate-300"></div>
+                                                <div className="w-3.5 h-3.5 rounded-md bg-slate-300"></div>
+                                                <div className="w-3.5 h-3.5 rounded-md bg-slate-300"></div>
                                             </div>
                                             {/* Home Indicator */}
-                                            <div className="w-20 h-1 bg-slate-700/70 rounded-full mx-auto"></div>
+                                            <div className="w-20 h-1 bg-slate-300 rounded-full mx-auto"></div>
                                         </div>
                                     </div>
                                 </div>
