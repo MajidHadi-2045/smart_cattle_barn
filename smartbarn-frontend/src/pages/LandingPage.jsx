@@ -80,6 +80,7 @@ const Typewriter = ({ text = "Jauh Lebih Cerdas.", phrases }) => {
 const LandingPage = () => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [devTilt, setDevTilt] = useState({ x: 0, y: 0 });
+    const [phoneTilt, setPhoneTilt] = useState({ x: 0, y: 0 });
     const [scrolled, setScrolled] = useState(false);
 
     useEffect(() => {
@@ -94,6 +95,17 @@ const LandingPage = () => {
         const x = e.clientX - box.left;
         const y = e.clientY - box.top;
         setDevTilt({ x: (y - (box.height / 2)) / 30, y: ((box.width / 2) - x) / 30 });
+    };
+
+    const handlePhoneMouseMove = (e) => {
+        const card = e.currentTarget;
+        const box = card.getBoundingClientRect();
+        const x = e.clientX - box.left;
+        const y = e.clientY - box.top;
+        setPhoneTilt({
+            x: (y - (box.height / 2)) / 20,
+            y: ((box.width / 2) - x) / 20
+        });
     };
 
     return (
@@ -151,26 +163,40 @@ const LandingPage = () => {
                     <div className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-primary-50 rounded-full blur-3xl opacity-60"></div>
                     <div className="relative z-10 grid lg:grid-cols-2 gap-16 items-center">
                         <div className="text-center lg:text-left">
-                            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary-50 text-primary-700 text-[10px] font-black uppercase tracking-[0.2em] mb-8 border border-primary-100 shadow-sm">
-                                <span className="flex h-2 w-2 rounded-full bg-primary-500 animate-pulse"></span>
-                                Smart Livestock Ecosystem
-                            </div>
-                            <h1 className="text-4xl md:text-6xl font-black text-slate-900 leading-[1.15] mb-8 tracking-tighter">
-                                Kelola Ternak <br />
+                            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 leading-[1.15] mb-6 tracking-tight">
+                                Kelola Peternakan Sapi <br />
                                 <Typewriter text="Jauh Lebih Cerdas." />
                             </h1>
-                            <p className="text-lg text-slate-600 mb-10 max-w-xl mx-auto lg:mx-0 leading-relaxed font-medium">
-                                Efisiensi tanpa batas dengan integrasi IoT. Pantau kesehatan, pakan, dan lingkungan secara terintegrasi. <br/>
-                                <span className="text-primary-700 font-bold mt-2 inline-block">Kini hadir dengan Beranda Publik transparan yang dapat diakses oleh siapa saja!</span>
+                            <p className="text-base sm:text-lg text-slate-600 mb-8 max-w-xl mx-auto lg:mx-0 leading-relaxed font-normal">
+                                Efisiensi tanpa batas dengan integrasi IoT. Pantau kesehatan ternak, manajemen pakan, dan mikroklimat kandang secara terpadu.
+                                <span className="block text-primary-700 font-semibold mt-2 text-sm sm:text-base">
+                                    Kini hadir dengan Beranda Publik transparan yang dapat dipantau oleh siapa saja secara real-time.
+                                </span>
                             </p>
-                            <div className="flex flex-col sm:flex-row gap-5 justify-center lg:justify-start">
-                                <Link to="/dashboard" className="px-8 py-4 bg-primary-700 text-white rounded-xl font-bold hover:bg-primary-800 transition shadow-sm flex items-center justify-center gap-3 group">
-                                    Mulai Sekarang
+                            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                                <Link to="/dashboard" className="px-7 py-3.5 bg-primary-700 text-white rounded-xl font-bold hover:bg-primary-800 transition shadow-sm flex items-center justify-center gap-2.5 group">
+                                    <span>Mulai Sekarang</span>
                                     <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                                 </Link>
-                                <a href="#mobile-app" className="px-8 py-4 bg-white text-slate-700 border border-slate-200 rounded-xl font-bold hover:bg-slate-50 transition shadow-sm flex items-center justify-center gap-3">
+                                <a href="#mobile-app" className="px-7 py-3.5 bg-white text-slate-700 border border-slate-200 rounded-xl font-bold hover:bg-slate-50 transition shadow-sm flex items-center justify-center gap-2.5">
                                     Unduh Aplikasi
                                 </a>
+                            </div>
+
+                            {/* Ringkasan Kapabilitas Utama untuk Mengisi Ruang Visual */}
+                            <div className="mt-10 pt-8 border-t border-slate-100 grid grid-cols-3 gap-4 sm:gap-6 text-center lg:text-left">
+                                <div>
+                                    <div className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Real-Time</div>
+                                    <div className="text-xs text-slate-500 font-medium mt-1">Sensor Lingkungan & IoT</div>
+                                </div>
+                                <div>
+                                    <div className="text-xl sm:text-2xl font-black text-primary-700 tracking-tight">Presisi</div>
+                                    <div className="text-xs text-slate-500 font-medium mt-1">Rekam Medis & Pakan</div>
+                                </div>
+                                <div>
+                                    <div className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Terpadu</div>
+                                    <div className="text-xs text-slate-500 font-medium mt-1">Web & Aplikasi Mobile</div>
+                                </div>
                             </div>
                         </div>
 
@@ -314,15 +340,151 @@ const LandingPage = () => {
                     <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-primary-600/20 to-transparent"></div>
                     <div className="relative z-10 grid lg:grid-cols-2 gap-16 items-center">
                         <div className="order-2 lg:order-1 flex justify-center">
-                            <div className="w-[260px] h-[520px] bg-slate-950 rounded-[3rem] border-[10px] border-slate-800 shadow-[0_0_100px_rgba(37,99,235,0.2)] overflow-hidden">
-                                <div className="h-full w-full bg-white p-6 pt-10">
-                                    <div className="w-12 h-12 bg-primary-600 rounded-xl mb-6"></div>
-                                    <div className="space-y-4">
-                                        <div className="h-4 bg-slate-100 rounded w-3/4"></div>
-                                        <div className="h-24 bg-slate-50 rounded-2xl"></div>
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <div className="h-20 bg-slate-50 rounded-xl"></div>
-                                            <div className="h-20 bg-slate-50 rounded-xl"></div>
+                            {/* Smartphone Container dengan 3D Parallax Hover Effect */}
+                            <div 
+                                onMouseMove={handlePhoneMouseMove}
+                                onMouseLeave={() => setPhoneTilt({ x: 0, y: 0 })}
+                                style={{
+                                    transform: `perspective(1000px) rotateX(${phoneTilt.x}deg) rotateY(${phoneTilt.y}deg) scale3d(1.02, 1.02, 1.02)`,
+                                    transition: 'transform 0.2s ease-out'
+                                }}
+                                className="relative group cursor-pointer"
+                            >
+                                {/* Ambient Glow Aura di belakang smartphone */}
+                                <div className="absolute -inset-4 bg-gradient-to-tr from-emerald-500/25 via-teal-500/15 to-primary-600/20 rounded-[3.5rem] blur-2xl opacity-60 group-hover:opacity-90 transition duration-500 -z-10"></div>
+
+                                {/* Bodi Smartphone Elegan */}
+                                <div className="w-[265px] sm:w-[285px] h-[530px] sm:h-[550px] bg-slate-950 rounded-[3.2rem] border-[9px] border-slate-800 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8),0_0_50px_rgba(16,185,129,0.15)] ring-1 ring-white/10 overflow-hidden relative flex flex-col justify-between">
+                                    
+                                    {/* Dynamic Island / Speaker Pill */}
+                                    <div className="absolute top-2.5 left-1/2 -translate-x-1/2 w-20 h-4 bg-slate-900 rounded-full z-20 flex items-center justify-between px-2.5 shadow-inner border border-slate-800">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-slate-800"></div>
+                                        <div className="w-2 h-2 rounded-full bg-slate-950/80 border border-slate-800 flex items-center justify-center">
+                                            <div className="w-0.5 h-0.5 rounded-full bg-emerald-500/60"></div>
+                                        </div>
+                                    </div>
+
+                                    {/* Layar Aplikasi: Tampilan UI Abstrak Menarik Berdasarkan Tema */}
+                                    <div className="h-full w-full bg-gradient-to-b from-slate-900 via-slate-950 to-slate-900 p-4 pt-8 flex flex-col justify-between select-none relative overflow-hidden text-white">
+                                        
+                                        {/* Radial Aura Halus di Dalam Layar */}
+                                        <div className="absolute -top-10 -right-10 w-28 h-28 bg-emerald-500/10 rounded-full blur-xl pointer-events-none"></div>
+                                        <div className="absolute top-1/2 -left-10 w-28 h-28 bg-teal-500/10 rounded-full blur-xl pointer-events-none"></div>
+
+                                        <div className="space-y-3 relative z-10">
+                                            {/* Header Bar Aplikasi: Logo & Status Live */}
+                                            <div className="flex items-center justify-between pt-1">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-emerald-600 to-teal-400 p-1 shadow-sm shadow-emerald-500/30 flex items-center justify-center">
+                                                        <div className="w-3.5 h-3.5 bg-white rounded-xs opacity-90"></div>
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <div className="w-14 h-2 bg-slate-700/80 rounded-full"></div>
+                                                        <div className="w-9 h-1.5 bg-slate-800 rounded-full"></div>
+                                                    </div>
+                                                </div>
+                                                {/* Status Live Dot */}
+                                                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-500/30 shadow-xs">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                                    <div className="w-6 h-1.5 bg-emerald-400/70 rounded-full"></div>
+                                                </div>
+                                            </div>
+
+                                            {/* Kartu Metrik Utama: Grafis Sparkline Lingkungan & THI */}
+                                            <div className="rounded-2xl p-3 bg-gradient-to-br from-slate-800/90 via-slate-900/90 to-emerald-950/40 border border-emerald-500/20 shadow-sm relative overflow-hidden">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <div className="w-16 h-2 bg-emerald-400/40 rounded-full"></div>
+                                                    <div className="w-4 h-4 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-baseline gap-2 mb-2">
+                                                    <div className="w-16 h-4 bg-gradient-to-r from-emerald-400/90 to-teal-300/90 rounded-md"></div>
+                                                    <div className="w-8 h-2 bg-slate-700 rounded-full"></div>
+                                                </div>
+                                                {/* Gelombang Sensor Abstrak */}
+                                                <div className="h-9 w-full relative pt-1">
+                                                    <svg className="w-full h-full text-emerald-400 overflow-visible" viewBox="0 0 100 28" fill="none">
+                                                        <defs>
+                                                            <linearGradient id="phoneChartGrad" x1="0" y1="0" x2="0" y2="1">
+                                                                <stop offset="0%" stopColor="#10B981" stopOpacity="0.25" />
+                                                                <stop offset="100%" stopColor="#10B981" stopOpacity="0.0" />
+                                                            </linearGradient>
+                                                        </defs>
+                                                        <path 
+                                                            d="M0 20 Q 15 5, 30 16 T 60 10 T 82 4 T 100 12" 
+                                                            stroke="currentColor" 
+                                                            strokeWidth="2.2" 
+                                                            strokeLinecap="round" 
+                                                        />
+                                                        <path 
+                                                            d="M0 20 Q 15 5, 30 16 T 60 10 T 82 4 T 100 12 L 100 28 L 0 28 Z" 
+                                                            fill="url(#phoneChartGrad)" 
+                                                        />
+                                                    </svg>
+                                                </div>
+                                            </div>
+
+                                            {/* Grid Widget Sensor (2 Kotak Abstrak) */}
+                                            <div className="grid grid-cols-2 gap-2">
+                                                {/* Widget A: Vitalitas */}
+                                                <div className="p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/50 flex flex-col justify-between h-[78px]">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="w-4 h-4 rounded-md bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center">
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
+                                                        </div>
+                                                        <div className="w-6 h-1.5 bg-slate-600/70 rounded-full"></div>
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <div className="w-11 h-3 bg-slate-200/90 rounded-xs"></div>
+                                                        <div className="w-7 h-1.5 bg-slate-500/80 rounded-full"></div>
+                                                    </div>
+                                                    <div className="w-full h-1 bg-slate-700 rounded-full overflow-hidden">
+                                                        <div className="w-4/5 h-full bg-emerald-400 rounded-full"></div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Widget B: Suhu & Udara */}
+                                                <div className="p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/50 flex flex-col justify-between h-[78px]">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="w-4 h-4 rounded-md bg-teal-500/20 border border-teal-500/30 flex items-center justify-center">
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-teal-300"></div>
+                                                        </div>
+                                                        <div className="w-6 h-1.5 bg-slate-600/70 rounded-full"></div>
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <div className="w-11 h-3 bg-slate-200/90 rounded-xs"></div>
+                                                        <div className="w-7 h-1.5 bg-slate-500/80 rounded-full"></div>
+                                                    </div>
+                                                    <div className="w-full h-1 bg-slate-700 rounded-full overflow-hidden">
+                                                        <div className="w-3/5 h-full bg-teal-400 rounded-full"></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Notifikasi / Peringatan Cepat (Abstrak) */}
+                                            <div className="p-2.5 rounded-xl bg-slate-800/40 border border-slate-700/40 flex items-center gap-2">
+                                                <div className="w-5 h-5 rounded-md bg-emerald-500/20 border border-emerald-500/30 shrink-0 flex items-center justify-center">
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
+                                                </div>
+                                                <div className="flex-1 space-y-1">
+                                                    <div className="w-20 h-1.5 bg-slate-300/80 rounded-full"></div>
+                                                    <div className="w-28 h-1 bg-slate-600 rounded-full"></div>
+                                                </div>
+                                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
+                                            </div>
+                                        </div>
+
+                                        {/* Bottom Navigation Bar Abstrak */}
+                                        <div className="space-y-2 mt-2">
+                                            <div className="h-9 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center justify-around px-3 shadow-inner">
+                                                <div className="w-3.5 h-3.5 rounded-sm bg-emerald-400 shadow-xs shadow-emerald-400/50"></div>
+                                                <div className="w-3 h-3 rounded-sm bg-slate-700"></div>
+                                                <div className="w-3 h-3 rounded-sm bg-slate-700"></div>
+                                                <div className="w-3 h-3 rounded-sm bg-slate-700"></div>
+                                            </div>
+                                            {/* Home Indicator */}
+                                            <div className="w-20 h-1 bg-slate-700/70 rounded-full mx-auto"></div>
                                         </div>
                                     </div>
                                 </div>

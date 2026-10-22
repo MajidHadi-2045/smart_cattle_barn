@@ -9,9 +9,9 @@ export enum Role {
 }
 
 export class LoginDto {
-  @ApiProperty({ description: 'Email atau Username pengguna', example: 'superadmin@barn.com' })
+  @ApiProperty({ description: 'Email atau Username pengguna', required: false, example: 'superadmin@barn.com' })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   email?: string;
 
   @ApiProperty({ description: 'Username pengguna', required: false, example: 'superadmin' })
@@ -24,10 +24,10 @@ export class LoginDto {
   @IsNotEmpty()
   password!: string;
 
-  @ApiProperty({ description: 'Peran yang digunakan untuk login', enum: Role, example: Role.SUPER_ADMIN })
+  @ApiProperty({ description: 'Peran yang digunakan untuk login (opsional)', enum: Role, required: false, example: Role.SUPER_ADMIN })
+  @IsOptional()
   @IsEnum(Role)
-  @IsNotEmpty()
-  role!: Role;
+  role?: Role;
 
   @ApiProperty({ description: 'Token Push Notification Firebase/Expo', required: false })
   @IsOptional()

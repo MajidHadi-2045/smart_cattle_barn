@@ -10,11 +10,21 @@ const ActivityFeed = () => {
 
     const getUserKey = () => {
         try {
+            const directUserId = localStorage.getItem('userId');
+            if (directUserId && directUserId !== 'undefined' && directUserId !== 'null') {
+                return directUserId;
+            }
             const userStr = localStorage.getItem('user');
             if (userStr) {
                 const u = JSON.parse(userStr);
-                return u.id || u.username || 'default';
+                if (u && (u.id || u.username || u.email)) {
+                    return u.id || u.username || u.email;
+                }
             }
+            const email = localStorage.getItem('userEmail');
+            if (email) return email;
+            const name = localStorage.getItem('userName');
+            if (name) return name;
         } catch (e) {}
         return 'default';
     };

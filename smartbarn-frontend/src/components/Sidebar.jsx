@@ -95,7 +95,17 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
   };
 
   const executeLogout = () => {
-    localStorage.clear();
+    // Hapus sesi autentikasi akun aktif tanpa menghapus riwayat baca atau preferensi per-akun
+    const sessionKeys = [
+      'token',
+      'userId',
+      'user',
+      'userRole',
+      'userName',
+      'userEmail',
+      'userCreatedAt'
+    ];
+    sessionKeys.forEach(k => localStorage.removeItem(k));
     navigate('/login');
   };
 

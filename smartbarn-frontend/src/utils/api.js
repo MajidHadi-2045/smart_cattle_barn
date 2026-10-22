@@ -39,7 +39,16 @@ export const fetchApi = async (endpoint, options = {}) => {
   
   // Jika server mengembalikan 401 Unauthorized (token kedaluwarsa/tidak valid), otomatis logout & redirect ke login
   if (response.status === 401 && !endpoint.includes('/auth/login')) {
-    localStorage.clear();
+    const sessionKeys = [
+      'token',
+      'userId',
+      'user',
+      'userRole',
+      'userName',
+      'userEmail',
+      'userCreatedAt'
+    ];
+    sessionKeys.forEach(k => localStorage.removeItem(k));
     if (window.location.pathname !== '/login') {
       window.location.href = '/login';
     }

@@ -22,6 +22,7 @@ const DashboardLayout = () => {
   }, [isDarkMode]);
 
   const token = localStorage.getItem('token');
+  const currentUserId = localStorage.getItem('userId') || localStorage.getItem('userName') || 'default';
 
   return (
     <div className="relative min-h-screen md:flex bg-slate-50 dark:bg-slate-950 font-sans overflow-hidden transition-colors duration-300">
@@ -43,10 +44,10 @@ const DashboardLayout = () => {
           {/* POJOK KANAN ATAS: Dark Mode & History */}
           <div className="flex items-center gap-2">
             {/* Lonceng Notifikasi */}
-            {token && <NotificationBell />}
+            {token && <NotificationBell key={currentUserId} />}
 
             {/* Activity History Widget */}
-            {token && <ActivityFeed />}
+            {token && <ActivityFeed key={currentUserId} />}
 
             {token && <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1 hidden sm:block"></div>}
 

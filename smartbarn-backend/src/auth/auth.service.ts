@@ -12,9 +12,9 @@ export class AuthService {
   ) {}
 
   // ==========================================
-  // FUNGSI LOGIN DENGAN VALIDASI EKSTRA
+  // FUNGSI LOGIN (OTOMATIS BERDASARKAN AKUN/ROLE DI DATABASE)
   // ==========================================
-  async login(identifier: string, pass: string, role: string, pushToken?: string) {
+  async login(identifier: string, pass: string, role?: string, pushToken?: string) {
     const user = await this.prisma.user.findFirst({
       where: {
         OR: [
@@ -24,8 +24,10 @@ export class AuthService {
       }
     });
     if (!user) throw new UnauthorizedException('Email atau Username tidak ditemukan');
-    // VALIDASI ROLE: Pastikan peran yang dipilih di aplikasi sesuai dengan database
-    if (user.role !== role) {
+
+    // VALIDASI ROLE: Jika role disertakan (misal dari mobile/legacy client), pastikan sesuai.
+    // Jika tidak disertakan (login langsung), role otomatis diambil dari akun user di database.
+    if (role && user.role !== role) {
       throw new UnauthorizedException('Akses ditolak. Email, Password, atau Role Anda salah.');
     }
 

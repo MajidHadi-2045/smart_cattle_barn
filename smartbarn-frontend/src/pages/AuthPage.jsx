@@ -3,66 +3,71 @@ import { useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
 const AuthPage = () => {
-    const [view, setView] = useState('login');
-    const [loginRole, setLoginRole] = useState('');
-
-    // State untuk input form
-    const [email, setEmail] = useState('');
+    // State input form login
+    const [identifier, setIdentifier] = useState('');
     const [password, setPassword] = useState('');
-    const [name, setName] = useState(''); // Khusus register
+    const [showPassword, setShowPassword] = useState(false);
 
-    // State untuk menangani loading dan pesan error
+    // State penanganan status loading dan error
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
 
     const navigate = useNavigate();
 
-    // Mengambil URL API dari file .env
+    // Mengambil URL API dari environment
     const API_URL = import.meta.env.VITE_API_BASE_URL;
 
-    // --- FUNGSI LOGIN DENGAN JALUR TIKUS (BYPASS) ---
+    // --- FUNGSI LOGIN LANGSUNG (OTOMATIS SESUAI ROLE DARI DATABASE) ---
     const handleLogin = async (e) => {
         e.preventDefault();
         setError('');
 
-        if (!loginRole) {
-            setError("Silakan pilih Kategori/Peran Anda terlebih dahulu.");
+        const cleanIdentifier = identifier.trim();
+        if (!cleanIdentifier || !password) {
+            setError("Silakan masukkan Username atau Email dan Kata Sandi Anda.");
             return;
         }
 
         setIsLoading(true);
 
         try {
-            // Mapping role ke Enum Backend
-            const roleMap = {
-                'super_admin': 'SUPER_ADMIN',
-                'veteriner': 'VETERINER',
-                'staff': 'STAFF'
-            };
-            const backendRole = roleMap[loginRole] || 'STAFF';
-
-            // Mencoba menembak API Backend
+            // Kirim username/email dan password ke API backend
             const response = await fetch(`${API_URL}/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password, role: backendRole })
+                body: JSON.stringify({ 
+                    email: cleanIdentifier, 
+                    username: cleanIdentifier, 
+                    password 
+                })
             });
 
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.message || 'Login gagal. Periksa email dan password.');
+                throw new Error(data.message || 'Login gagal. Periksa username/email dan kata sandi Anda.');
             }
 
-            // PENTING: Simpan data sesi ke LocalStorage
+            // Simpan data sesi ke LocalStorage
             localStorage.setItem('token', data.accessToken || data.access_token);
             localStorage.setItem('userId', data.user.id);
             localStorage.setItem('user', JSON.stringify(data.user));
             localStorage.setItem('userRole', data.user.role);
             localStorage.setItem('userName', data.user.name);
-            localStorage.setItem('userEmail', data.user.email || email);
+            localStorage.setItem('userEmail', data.user.email || cleanIdentifier);
             localStorage.setItem('userCreatedAt', data.user.createdAt || new Date().toISOString());
 
+            // Tampilkan notifikasi selamat datang sesuai peran akun
+            const roleLabels = {
+                'SUPER_ADMIN': 'Super Admin',
+                'MANAGER': 'Manajer',
+                'VETERINER': 'Dokter Hewan',
+                'STAFF': 'Staff Operator'
+            };
+            const roleTitle = roleLabels[data.user.role] || data.user.role;
+            toast.success(`Selamat datang, ${data.user.name} (${roleTitle})!`);
+
+            // Otomatis diarahkan ke dashboard pengguna sesuai peran (role) dari akunnya
             navigate('/dashboard');
 
         } catch (err) {
@@ -73,44 +78,30 @@ const AuthPage = () => {
         }
     };
 
-    // --- FUNGSI REGISTRASI ---
-    const handleRegister = async (e) => {
-        e.preventDefault();
-        setError('');
-
-        if (!loginRole) {
-            setError("Silakan pilih Kategori/Peran Anda.");
+    // --- FUNGSI LUPA PASSWORD ---
+    const handleForgotPassword = async () => {
+        const cleanIdentifier = identifier.trim();
+        if (!cleanIdentifier || !cleanIdentifier.includes('@')) {
+            setError('Silakan ketik alamat Email Anda yang valid di kolom atas, lalu klik tombol Lupa Password ini kembali.');
             return;
         }
-
         setIsLoading(true);
-
+        setError('');
         try {
-            // Mapping role ke Enum Backend
-            const roleMap = {
-                'super_admin': 'SUPER_ADMIN',
-                'veteriner': 'VETERINER',
-                'staff': 'STAFF'
-            };
-            const backendRole = roleMap[loginRole] || 'STAFF';
-
-            const response = await fetch(`${API_URL}/auth/register`, {
+            const res = await fetch(`${API_URL}/auth/forgot-password`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, email, password, role: backendRole })
+                body: JSON.stringify({ email: cleanIdentifier })
             });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || 'Registrasi gagal.');
+            const data = await res.json();
+            if (res.ok) {
+                toast.success(data.message || 'Link reset password telah dikirim ke email Anda.', { duration: 4000 });
+            } else {
+                setError(data.message || 'Gagal mengirim email reset.');
             }
-
-            alert("Registrasi berhasil! Silakan login.");
-            setView('login');
-            setPassword(''); // Kosongkan password untuk keamanan
         } catch (err) {
-            setError(err.message || "Gagal mendaftar. Pastikan backend aktif.");
+            console.error("Forgot Password Error:", err);
+            setError('Gagal menghubungi server.');
         } finally {
             setIsLoading(false);
         }
@@ -118,7 +109,7 @@ const AuthPage = () => {
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4 transition-colors duration-300">
-                <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-xl p-5 sm:p-8 border border-slate-200 dark:border-slate-800 relative overflow-hidden">
+            <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-xl p-5 sm:p-8 border border-slate-200 dark:border-slate-800 relative overflow-hidden">
 
                 {/* Accent Top Border */}
                 <div className="absolute top-0 left-0 w-full h-1.5 bg-primary-600"></div>
@@ -154,146 +145,93 @@ const AuthPage = () => {
                     </div>
                 )}
 
-                {/* --- TAMPILAN LOGIN --- */}
+                {/* --- FORM LOGIN LANGSUNG --- */}
                 <div className="animate-fade-in">
                     <form className="space-y-4" onSubmit={handleLogin}>
-                        {/* UBAH METODE PILIH PERAN MENJADI Ubin INTERAKTIF (MOBILE FRIENDLY) */}
                         <div>
-                            <label className="block text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
-                                Pilih Peran / Akses <span className="text-red-500">*</span>
+                            <label className="block text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                                Username atau Email
                             </label>
-                            
-                            <div className="grid grid-cols-3 gap-2">
-                                {/* Role 1: Super Admin */}
-                                <button
-                                    type="button"
-                                    onClick={() => setLoginRole('super_admin')}
-                                    className={`relative flex flex-col items-center justify-center py-3 px-2 rounded-xl border text-center transition-all duration-200 focus:outline-none ${
-                                        loginRole === 'super_admin'
-                                            ? 'border-emerald-600 bg-emerald-50/90 dark:bg-emerald-950/50 text-emerald-900 dark:text-emerald-100 ring-2 ring-emerald-500/30 shadow-sm font-bold scale-[1.02]'
-                                            : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-600 dark:text-slate-400 hover:border-emerald-300 dark:hover:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900/50 font-medium'
-                                    }`}
-                                >
-                                    {loginRole === 'super_admin' && (
-                                        <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-600 text-white text-[10px]">
-                                            ✓
-                                        </span>
-                                    )}
-                                    <span className="text-xs sm:text-sm font-bold leading-tight">Super Admin</span>
-                                    <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 font-normal">Manajer</span>
-                                </button>
-
-                                {/* Role 2: Dokter Hewan */}
-                                <button
-                                    type="button"
-                                    onClick={() => setLoginRole('veteriner')}
-                                    className={`relative flex flex-col items-center justify-center py-3 px-2 rounded-xl border text-center transition-all duration-200 focus:outline-none ${
-                                        loginRole === 'veteriner'
-                                            ? 'border-teal-600 bg-teal-50/90 dark:bg-teal-950/50 text-teal-900 dark:text-teal-100 ring-2 ring-teal-500/30 shadow-sm font-bold scale-[1.02]'
-                                            : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-600 dark:text-slate-400 hover:border-teal-300 dark:hover:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900/50 font-medium'
-                                    }`}
-                                >
-                                    {loginRole === 'veteriner' && (
-                                        <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-teal-600 text-white text-[10px]">
-                                            ✓
-                                        </span>
-                                    )}
-                                    <span className="text-xs sm:text-sm font-bold leading-tight">Dokter Hewan</span>
-                                    <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 font-normal">Veteriner</span>
-                                </button>
-
-                                {/* Role 3: Staff */}
-                                <button
-                                    type="button"
-                                    onClick={() => setLoginRole('staff')}
-                                    className={`relative flex flex-col items-center justify-center py-3 px-2 rounded-xl border text-center transition-all duration-200 focus:outline-none ${
-                                        loginRole === 'staff'
-                                            ? 'border-blue-600 bg-blue-50/90 dark:bg-blue-950/50 text-blue-900 dark:text-blue-100 ring-2 ring-blue-500/30 shadow-sm font-bold scale-[1.02]'
-                                            : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-600 dark:text-slate-400 hover:border-blue-300 dark:hover:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900/50 font-medium'
-                                    }`}
-                                >
-                                    {loginRole === 'staff' && (
-                                        <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-blue-600 text-white text-[10px]">
-                                            ✓
-                                        </span>
-                                    )}
-                                    <span className="text-xs sm:text-sm font-bold leading-tight">Staff Operator</span>
-                                    <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 font-normal">Kandang</span>
-                                </button>
-                            </div>
-                        </div>
-
-                        <div>
-                            <label className="block text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Username atau Email</label>
                             <input
                                 type="text"
-                                value={email}
-                                onChange={(e) => {
-                                    setEmail(e.target.value.replace(/\s/g, ''));
-                                }}
+                                value={identifier}
+                                onChange={(e) => setIdentifier(e.target.value.replace(/\s/g, ''))}
                                 placeholder="budi_123 atau email@domain.com"
-                                className="w-full px-4 py-3 text-base sm:text-sm border border-slate-300 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none transition"
+                                className="w-full px-4 py-3 text-base sm:text-sm border border-slate-300 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-950 text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition"
+                                autoComplete="username"
                                 required
                             />
                         </div>
 
                         <div>
-                            <label className="block text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Kata Sandi</label>
-                            <input
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder="••••••••"
-                                className="w-full px-4 py-3 text-base sm:text-sm border border-slate-300 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none transition"
-                                required
-                            />
+                            <label className="block text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                                Kata Sandi
+                            </label>
+                            <div className="relative">
+                                <input
+                                    type={showPassword ? 'text' : 'password'}
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    placeholder="••••••••"
+                                    className="w-full px-4 py-3 pr-11 text-base sm:text-sm border border-slate-300 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-950 text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition"
+                                    autoComplete="current-password"
+                                    required
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 transition"
+                                    title={showPassword ? 'Sembunyikan Kata Sandi' : 'Tampilkan Kata Sandi'}
+                                    aria-label={showPassword ? 'Sembunyikan Kata Sandi' : 'Tampilkan Kata Sandi'}
+                                >
+                                    {showPassword ? (
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                                        </svg>
+                                    ) : (
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                        </svg>
+                                    )}
+                                </button>
+                            </div>
                         </div>
 
                         <button
                             type="submit"
                             disabled={isLoading}
-                            className={`w-full py-3.5 rounded-xl font-bold text-white transition-all shadow-md active:scale-[0.99] ${isLoading ? 'bg-slate-400 cursor-not-allowed' : 'bg-primary-600 hover:bg-primary-700 shadow-primary-500/20'}`}
+                            className={`w-full py-3.5 rounded-xl font-bold text-white transition-all shadow-md active:scale-[0.99] flex items-center justify-center gap-2 ${
+                                isLoading 
+                                    ? 'bg-slate-400 dark:bg-slate-700 cursor-not-allowed' 
+                                    : 'bg-primary-600 hover:bg-primary-700 shadow-primary-500/20'
+                            }`}
                         >
-                            {isLoading ? 'Memproses...' : 'Masuk Beranda'}
+                            {isLoading ? (
+                                <>
+                                    <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    <span>Memproses...</span>
+                                </>
+                            ) : (
+                                'Masuk Beranda'
+                            )}
                         </button>
 
                         <div className="text-center mt-4">
                             <button
                                 type="button"
-                                onClick={async () => {
-                                    if (!email || !email.includes('@')) {
-                                        setError('Silakan ketik alamat Email Anda yang valid di kolom atas, lalu tekan tombol Lupa Password ini lagi.');
-                                        return;
-                                    }
-                                    setIsLoading(true);
-                                    setError('');
-                                    try {
-                                        const res = await fetch(`${API_URL}/auth/forgot-password`, {
-                                            method: 'POST',
-                                            headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({ email })
-                                        });
-                                        const data = await res.json();
-                                        if (res.ok) {
-                                            toast.success(data.message || 'Link reset password telah dikirim ke email Anda.', { duration: 4000 });
-                                        } else {
-                                            setError(data.message || 'Gagal mengirim email reset.');
-                                        }
-                                    } catch (err) {
-                                        console.error("Forgot Password Error:", err);
-                                        setError('Gagal menghubungi server.');
-                                    } finally {
-                                        setIsLoading(false);
-                                    }
-                                }}
-                                className="text-sm font-semibold text-primary-600 hover:text-primary-700 hover:underline transition"
+                                onClick={handleForgotPassword}
+                                className="text-sm font-semibold text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 hover:underline transition"
                             >
                                 Lupa Password?
                             </button>
                         </div>
                     </form>
 
-                    <p className="mt-6 text-center text-sm text-slate-500 dark:text-slate-450 italic">
+                    <p className="mt-6 text-center text-sm text-slate-500 dark:text-slate-400 italic">
                         Akses baru hanya dapat didaftarkan melalui undangan Admin atau melalui Permintaan Akun dari dalam sistem.
                     </p>
                 </div>
