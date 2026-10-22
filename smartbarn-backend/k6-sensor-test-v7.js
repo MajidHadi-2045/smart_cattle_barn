@@ -7,6 +7,8 @@ import { Trend, Counter } from 'k6/metrics';
 const mqttVitalPublishLatency = new Trend('mqtt_vital_publish_latency');       // Waktu transmisi soket TCP lokal ke Broker MQTT
 const mqttVitalProcessingLatency = new Trend('mqtt_vital_processing_latency'); // Latensi Ingestion Server NestJS (Timestamp Sensor -> Masuk BullMQ Queue)
 const mqttBackendProcLatency = new Trend('mqtt_backend_proc_latency');         // Waktu komputasi murni internal NestJS (performance.now)
+const mqttAckInterArrivalLatency = new Trend('mqtt_ack_inter_arrival_latency'); // Waktu jeda antar kedatangan paket ACK (Inter-arrival jitter)
+const mqttSubscriberDeliveryLatency = new Trend('mqtt_subscriber_delivery_latency'); // Segmen: Broker -> Socket -> Callback
 const mqttVitalSent = new Counter('mqtt_vital_messages_sent');                 // Total pesan dikirim oleh sensor
 const mqttVitalProcessed = new Counter('mqtt_vital_messages_processed');       // Total pesan berhasil masuk ke Queue Backend
 
@@ -15,6 +17,7 @@ const isLocal = __ENV.LOCAL === 'true' || __ENV.TARGET === 'local';
 const MQTT_URL = __ENV.MQTT_URL || (isLocal ? 'mqtt://127.0.0.1:1883' : 'mqtt://77.37.63.21:1883');
 
 const targetVUs = parseInt(__ENV.VUS || '100', 10);
+const clockOffset = parseInt(__ENV.CLOCK_OFFSET || '0', 10);
 
 // =========================================================================
 // OPSI V7: PURE FULL VU DARI DETIK KE-0 (Constant Load Tanpa Ramp-up)
@@ -38,9 +41,17 @@ export default function () {
 
   // VU 1 bertindak sebagai Subscriber Monitoring Utama untuk menangkap ACK latency dari Backend NestJS
   const isMonitor = (vuId === 1);
+  let lastAckTime = 0;
 
   client.on('message', (topic, message) => {
     const now = Date.now();
+    if (isMonitor && lastAckTime > 0) {
+      const delta = now - lastAckTime;
+      if (delta >= 0) {
+        mqttAckInterArrivalLatency.add(delta);
+      }
+    }
+    lastAckTime = now;
     try {
       const data = JSON.parse(String.fromCharCode.apply(null, new Uint8Array(message)));
       let latency = -1;
@@ -64,6 +75,12 @@ export default function () {
 
       if (typeof data.backendProcMs === 'number') {
         mqttBackendProcLatency.add(data.backendProcMs);
+      }
+
+      if (typeof data.ackPublishTs === 'number') {
+        const calibratedNow = now - clockOffset;
+        const delay = calibratedNow - data.ackPublishTs;
+        mqttSubscriberDeliveryLatency.add(delay);
       }
     } catch (e) {}
   });

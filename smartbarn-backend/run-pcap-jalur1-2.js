@@ -27,6 +27,7 @@ const path = require('path');
 const http = require('http');
 const https = require('https');
 const { spawn, execSync } = require('child_process');
+const { measureIperf3Benchmark } = require('./benchmark-network-utils');
 
 // KONFIGURASI TARGET REMOTE VPS
 const BASE_URL = process.env.TARGET_API_URL || 'http://smartcattlebarn.site:4000';
@@ -76,13 +77,17 @@ function parseIterations(str, defaultIter = 1) {
   return { start: 1, end: count, count };
 }
 
-// First pass: extract global flags like --iter, --fast, --resume
+let include200 = false;
+
+// First pass: extract global flags like --iter, --fast, --resume, --200
 for (let i = 0; i < rawArgs.length; i++) {
   const arg = rawArgs[i].toLowerCase();
   if (arg === '--fast' || arg === '-f') {
     isFastMode = true;
   } else if (arg === '--resume' || arg === '-r') {
     isResumeMode = true;
+  } else if (arg === '--200' || arg === '--include-200') {
+    include200 = true;
   } else if (arg.startsWith('--iter=') || arg.startsWith('--iters=')) {
     customIter = parseInt(arg.split('=')[1], 10) || 1;
   } else if (arg === '--iter' || arg === '-i') {
@@ -120,12 +125,16 @@ for (let i = 0; i < rawArgs.length; i++) {
   }
 }
 
-// JIKA TIDAK ADA SKENARIO DITENTUKAN, DEFAULT: JALUR 1 (50 & 100 VU) + JALUR 2 (50 & 100 VU)
+// JIKA TIDAK ADA SKENARIO DITENTUKAN, DEFAULT: JALUR 1 (10, 50, 100 VU) + JALUR 2 (10, 50, 100 VU)
 if (testQueue.length === 0) {
+  testQueue.push({ ...SCENARIO_CONFIG['jalur1'], vus: 10, startIter: 1, endIter: customIter, iterations: customIter });
   testQueue.push({ ...SCENARIO_CONFIG['jalur1'], vus: 50, startIter: 1, endIter: customIter, iterations: customIter });
   testQueue.push({ ...SCENARIO_CONFIG['jalur1'], vus: 100, startIter: 1, endIter: customIter, iterations: customIter });
+  if (include200) testQueue.push({ ...SCENARIO_CONFIG['jalur1'], vus: 200, startIter: 1, endIter: customIter, iterations: customIter });
+  testQueue.push({ ...SCENARIO_CONFIG['jalur2'], vus: 10, startIter: 1, endIter: customIter, iterations: customIter });
   testQueue.push({ ...SCENARIO_CONFIG['jalur2'], vus: 50, startIter: 1, endIter: customIter, iterations: customIter });
   testQueue.push({ ...SCENARIO_CONFIG['jalur2'], vus: 100, startIter: 1, endIter: customIter, iterations: customIter });
+  if (include200) testQueue.push({ ...SCENARIO_CONFIG['jalur2'], vus: 200, startIter: 1, endIter: customIter, iterations: customIter });
 }
 
 function ensureDirectories() {
@@ -136,13 +145,19 @@ function ensureDirectories() {
   if (!fs.existsSync(CSV_FILE)) {
     const header = [
       'Session_ID', 'Jalur', 'Beban_VUs', 'Iterasi', 'Timestamp',
-      'K6_Total_Reqs', 'Throughput_RPS', 'Latency_Avg_ms', 'Latency_P95_ms', 'TTFB_Avg_ms',
-      'Checks_Pass_Percent', 'Error_Rate_Percent', 'Peak_CPU_Percent', 'Peak_RAM_MB',
-      'PCAP_File', 'PCAP_Size_Bytes', 'PCAP_Avg_Delta_ms', 'PCAP_Renggang_Pct'
+      'Pre_Ping_Avg_ms', 'Pre_Jitter_ms', 'Pre_Loss_Percent', 'Pre_Down_Mbps', 'Pre_Up_Mbps',
+      'Baseline_CPU_Percent', 'Baseline_RAM_MB', 'Baseline_RAM_Redis',
+      'K6_Total_Reqs', 'Throughput_RPS',
+      'Latency_Min_ms', 'Latency_Med_ms', 'Latency_Avg_ms', 'Latency_P90_ms', 'Latency_P95_ms', 'Latency_Max_ms',
+      'TTFB_Avg_ms', 'Checks_Pass_Percent', 'Error_Rate_Percent',
+      'Peak_CPU_Percent', 'Peak_RAM_MB', 'Peak_RAM_Redis',
+      'Post_Ping_Avg_ms', 'Post_Jitter_ms', 'Post_Loss_Percent', 'Post_Down_Mbps', 'Post_Up_Mbps',
+      'PCAP_File', 'PCAP_Size_Bytes'
     ].join(',') + '\n';
     fs.writeFileSync(CSV_FILE, header, 'utf-8');
   }
 }
+
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -318,12 +333,15 @@ function executeK6(scenario, vus) {
     const k6Args = [
       'run',
       '-e', `VUS=${vus}`,
+      '-e', 'FULL_VU=true',
+      '-e', 'INTERVAL_MS=1000',
       '-e', 'TARGET=remote',
       '-e', 'LOCAL=false',
       '-e', `MQTT_URL=${MQTT_URL}`,
       '-e', `BASE_URL=${BASE_URL}/api`,
       scenario.script
     ];
+
 
     console.log(`\n[K6 EXECUTE] ${k6Binary} ${k6Args.join(' ')}\n`);
 
@@ -365,12 +383,33 @@ function executeK6(scenario, vus) {
 }
 
 function parseK6Metrics(output, scenarioId) {
-  const parsed = { totalReqs: 0, rps: 0, avgLatency: 0, p95Latency: 0, ttfbAvg: 0, checksPass: 100, errorRate: 0 };
+  const parsed = {
+    totalReqs: 0,
+    rps: 0,
+    minLatency: 0,
+    medLatency: 0,
+    avgLatency: 0,
+    p90Latency: 0,
+    p95Latency: 0,
+    maxLatency: 0,
+    ttfbAvg: 0,
+    checksPass: 100,
+    errorRate: 0
+  };
   try {
-    const latMatch = output.match(/mqtt_(?:vital|env)_processing_latency[^\n]+?avg=([0-9.]+)[^\n]+?p\(95\)=([0-9.]+)/);
+    const latMatch = output.match(/mqtt_(?:vital|env)_processing_latency[^\n]+?avg=([0-9.]+)[^\n]+?min=([0-9.]+)[^\n]+?med=([0-9.]+)[^\n]+?max=([0-9.]+)[^\n]+?p\(90\)=([0-9.]+)[^\n]+?p\(95\)=([0-9.]+)/);
     if (latMatch) {
       parsed.avgLatency = parseFloat(latMatch[1]);
-      parsed.p95Latency = parseFloat(latMatch[2]);
+      parsed.minLatency = parseFloat(latMatch[2]);
+      parsed.medLatency = parseFloat(latMatch[3]);
+      parsed.maxLatency = parseFloat(latMatch[4]);
+      parsed.p90Latency = parseFloat(latMatch[5]);
+      parsed.p95Latency = parseFloat(latMatch[6]);
+    } else {
+      const avgM = output.match(/mqtt_(?:vital|env)_processing_latency[^\n]+?avg=([0-9.]+)/);
+      if (avgM) parsed.avgLatency = parseFloat(avgM[1]);
+      const p95M = output.match(/p\(95\)=([0-9.]+)/);
+      if (p95M) parsed.p95Latency = parseFloat(p95M[1]);
     }
 
     const ttfbMatch = output.match(/mqtt_(?:vital|env)_publish_latency[^\n]+?avg=([0-9.]+)/);
@@ -384,6 +423,7 @@ function parseK6Metrics(output, scenarioId) {
   } catch (e) {}
   return parsed;
 }
+
 
 // ANALISIS CEPAT PCAP MENGGUNAKAN PYTHON SCRATCH
 function analyzePcapQuick(pcapPath) {
@@ -421,7 +461,10 @@ async function main() {
   const clientIp = await detectClientIp();
   console.log(` [IP: ${clientIp || 'Semua Host'}]`);
 
+  const allSessionStats = [];
+
   for (let qIdx = 0; qIdx < testQueue.length; qIdx++) {
+
     const item = testQueue[qIdx];
     console.log(`\n=====================================================================`);
     console.log(`>>> MEMULAI SKENARIO [${qIdx + 1}/${testQueue.length}]: ${item.name} (${item.vus} VU) <<<`);
@@ -446,39 +489,50 @@ async function main() {
       console.log(`---------------------------------------------------------------------`);
 
       // 1. Restart PM2 & Flush Redis
-      console.log('[STEP 1/6] Me-restart PM2 & Mengosongkan Cache Redis VPS...');
+      console.log('\n[STEP 1/7] Me-restart PM2 & Mengosongkan Cache Redis VPS...');
       await apiRequest('/api/system/restart', 'POST', { processName: 'smartbarn-api-4000' });
       await apiRequest('/api/system/flush-redis', 'POST');
-      await sleep(10000);
+      await sleep(isFastMode ? 5000 : 10000);
 
-      // 2. Dynamic Warm-up
-      console.log('[STEP 2/6] DYNAMIC WARM-UP: Pendinginan CPU Server...');
+      // 2. Pre-Test Network Benchmark
+      console.log('\n[STEP 2/7] PRE-TEST JARINGAN (iPerf3 & ICMP): Mengukur Ping, Jitter, Loss & Bandwidth...');
+      const iperfDur = isFastMode ? 1 : 2;
+      const preNet = await measureIperf3Benchmark(TARGET_HOST, { duration: iperfDur, udpBitrate: '10M' });
+      console.log(`  > Pre-Network : Ping=${preNet.pingAvgMs} ms | Jitter=${preNet.jitterMs} ms | Loss=${preNet.packetLossPercent}% | Down=${preNet.downloadMbps} Mbps | Up=${preNet.uploadMbps} Mbps`);
+      await sleep(isFastMode ? 2000 : 5000);
+
+      // 3. Dynamic Warm-up
+      console.log('\n[STEP 3/7] DYNAMIC WARM-UP: Pendinginan CPU Server...');
       const baseline = await dynamicWarmup(3.0);
 
-      // 3. Start Remote PCAP on VPS
-      console.log('\n[STEP 3/6] MENGAKTIFKAN TCPDUMP DI VPS...');
+      // 4. Start Remote PCAP on VPS
+      console.log('\n[STEP 4/7] MENGAKTIFKAN TCPDUMP DI VPS...');
       await startRemotePcap(sessionId);
       await sleep(1000);
 
-      // 4. Eksekusi K6 Load Test
-      console.log(`[STEP 4/6] EKSEKUSI K6 LOAD TEST (${item.vus} VUs, ${TEST_DURATION})...`);
+      // 5. Eksekusi K6 Load Test
+      console.log(`\n[STEP 5/7] EKSEKUSI K6 LOAD TEST (${item.vus} VUs, ${TEST_DURATION})...`);
       const { terminalOutput, metricsLog } = await executeK6(item, item.vus);
 
-      // 5. Stop Remote PCAP on VPS
-      console.log('\n[STEP 5/6] MENGHENTIKAN TCPDUMP DI VPS...');
+      // 6. Stop Remote PCAP on VPS & Download File PCAP
+      console.log('\n[STEP 6/7] MENGHENTIKAN TCPDUMP DI VPS & MENGUNDUH PCAP...');
       const stopRes = await stopRemotePcap();
-      await sleep(2000);
-
-      // 6. Download File PCAP ke Laptop
-      console.log('\n[STEP 6/6] MENGUNDUH FILE PCAP DARI VPS...');
+      await sleep(1000);
       const downloaded = await downloadPcapFile(pcapFilename, localPcapPath);
 
-      // Hitung Resource
+      // 7. Post-Test Network Benchmark
+      console.log('\n[STEP 7/7] POST-TEST JARINGAN (iPerf3 & ICMP): Mengukur Ping, Jitter, Loss & Bandwidth...');
+      const postNet = await measureIperf3Benchmark(TARGET_HOST, { duration: iperfDur, udpBitrate: '10M' });
+      console.log(`  > Post-Network: Ping=${postNet.pingAvgMs} ms | Jitter=${postNet.jitterMs} ms | Loss=${postNet.packetLossPercent}% | Down=${postNet.downloadMbps} Mbps | Up=${postNet.uploadMbps} Mbps`);
+
+      // Hitung Peak Resource
       let peakCpu = baseline.cpu;
       let peakRam = baseline.memoryMb;
+      let peakRedis = baseline.redisMemory;
       for (const m of metricsLog) {
         if (m.cpu > peakCpu) peakCpu = m.cpu;
         if (m.memoryMb > peakRam) peakRam = m.memoryMb;
+        if (m.redisMemory && m.redisMemory !== 'N/A') peakRedis = m.redisMemory;
       }
 
       const k6Stats = parseK6Metrics(terminalOutput, item.id);
@@ -486,37 +540,119 @@ async function main() {
       // Simpan log k6
       fs.writeFileSync(k6LogPath, terminalOutput, 'utf-8');
 
-      // Catat ke CSV
+      // Simpan log Resource System per detik
+      const sysLogFile = path.join(SYS_DIR, `system_${sessionId}.log`);
+      const sysLogContent = [
+        `=====================================================================`,
+        `LOG RESOURCE SERVER - ${sessionId.toUpperCase()}`,
+        `Scenario: ${item.name} | VUs: ${item.vus} | Iterasi: ${it}`,
+        `Timestamp: ${new Date().toISOString()}`,
+        `---------------------------------------------------------------------`,
+        `PRE-NETWORK:  Ping=${preNet.pingAvgMs}ms | Jitter=${preNet.jitterMs}ms | Loss=${preNet.packetLossPercent}% | Down=${preNet.downloadMbps} Mbps | Up=${preNet.uploadMbps} Mbps`,
+        `BASELINE:     CPU=${baseline.cpu}% | RAM=${baseline.memoryMb} MB | Redis=${baseline.redisMemory}`,
+        `PEAK:         CPU=${peakCpu}% | RAM=${peakRam} MB | Redis=${peakRedis}`,
+        `POST-NETWORK: Ping=${postNet.pingAvgMs}ms | Jitter=${postNet.jitterMs}ms | Loss=${postNet.packetLossPercent}% | Down=${postNet.downloadMbps} Mbps | Up=${postNet.uploadMbps} Mbps`,
+        `---------------------------------------------------------------------`,
+        `DETIL METRIK PER DETIK:`,
+        ...metricsLog.map(m => `CPU: ${m.cpu}% | RAM: ${m.memoryMb} MB | Redis: ${m.redisMemory}`),
+        `=====================================================================`
+      ].join('\n');
+      fs.writeFileSync(sysLogFile, sysLogContent, 'utf-8');
+
+      // Catat ke CSV (Lengkap dengan Metrik Jaringan Pre & Post)
       const pcapSizeBytes = downloaded && fs.existsSync(localPcapPath) ? fs.statSync(localPcapPath).size : 0;
       const csvLine = [
-        sessionId, `"${item.name}"`, item.vus, it, new Date().toISOString(),
-        k6Stats.totalReqs, k6Stats.rps, k6Stats.avgLatency, k6Stats.p95Latency, k6Stats.ttfbAvg,
-        k6Stats.checksPass, k6Stats.errorRate, peakCpu, peakRam,
-        pcapFilename, pcapSizeBytes, '-', '-'
+        sessionId, `"${item.name}"`, item.vus, it, `"${new Date().toISOString()}"`,
+        preNet.pingAvgMs, preNet.jitterMs, preNet.packetLossPercent, preNet.downloadMbps, preNet.uploadMbps,
+        baseline.cpu, baseline.memoryMb, `"${baseline.redisMemory}"`,
+        k6Stats.totalReqs, k6Stats.rps,
+        k6Stats.minLatency, k6Stats.medLatency, k6Stats.avgLatency, k6Stats.p90Latency, k6Stats.p95Latency, k6Stats.maxLatency,
+        k6Stats.ttfbAvg, k6Stats.checksPass, k6Stats.errorRate,
+        peakCpu, peakRam, `"${peakRedis}"`,
+        postNet.pingAvgMs, postNet.jitterMs, postNet.packetLossPercent, postNet.downloadMbps, postNet.uploadMbps,
+        pcapFilename, pcapSizeBytes
       ].join(',') + '\n';
       fs.appendFileSync(CSV_FILE, csvLine, 'utf-8');
 
       console.log(`\n---------------------------------------------------------------------`);
       console.log(`[HASIL SESI ${sessionId.toUpperCase()}]`);
-      console.log(`  > Throughput : ${k6Stats.rps} RPS (Total: ${k6Stats.totalReqs} pesan)`);
-      console.log(`  > Latensi Avg: ${k6Stats.avgLatency} ms | P95: ${k6Stats.p95Latency} ms`);
-      console.log(`  > File PCAP  : ${localPcapPath} (${(pcapSizeBytes / 1024).toFixed(1)} KB)`);
+      console.log(`  > Pre-Network : Ping ${preNet.pingAvgMs} ms, Jitter ${preNet.jitterMs} ms, Loss ${preNet.packetLossPercent}%`);
+      console.log(`  > Throughput  : ${k6Stats.rps} RPS (Total: ${k6Stats.totalReqs} pesan)`);
+      console.log(`  > Latensi Min : ${k6Stats.minLatency} ms | Med: ${k6Stats.medLatency} ms | Avg: ${k6Stats.avgLatency} ms`);
+      console.log(`  > Latensi P95 : ${k6Stats.p95Latency} ms | Max: ${k6Stats.maxLatency} ms`);
+      console.log(`  > Post-Network: Ping ${postNet.pingAvgMs} ms, Jitter ${postNet.jitterMs} ms, Loss ${postNet.packetLossPercent}%`);
+      console.log(`  > File PCAP   : ${localPcapPath} (${(pcapSizeBytes / 1024).toFixed(1)} KB)`);
       console.log(`---------------------------------------------------------------------`);
 
+      allSessionStats.push({
+        scenario: item.name,
+        vus: item.vus,
+        iteration: it,
+        rps: k6Stats.rps,
+        totalReqs: k6Stats.totalReqs,
+        min: k6Stats.minLatency,
+        med: k6Stats.medLatency,
+        avg: k6Stats.avgLatency,
+        p90: k6Stats.p90Latency,
+        p95: k6Stats.p95Latency,
+        max: k6Stats.maxLatency,
+        prePing: preNet.pingAvgMs,
+        postPing: postNet.pingAvgMs
+      });
+
       if (it < item.endIter || qIdx < testQueue.length - 1) {
-        console.log(`  > Jeda Cooldown 15 detik sebelum iterasi berikutnya...`);
-        await sleep(15000);
+        const cooldownWait = isFastMode ? 5000 : 15000;
+        console.log(`  > Jeda Cooldown ${cooldownWait / 1000} detik sebelum iterasi berikutnya...`);
+        await sleep(cooldownWait);
       }
     }
   }
 
+  // AGREGASI STATISTIK PER SKENARIO
+  const groups = {};
+  allSessionStats.forEach(s => {
+    const key = `${s.scenario} (${s.vus} VU)`;
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(s);
+  });
+
+  let aggText = `\n========================================================================================================\n` +
+    `📊 RANGKUMAN AGREGASI HASIL PENGUJIAN FULL VU + PCAP (${customIter} ITERASI)\n` +
+    `========================================================================================================\n` +
+    `| Skenario Pengujian                 | Beban  | Throughput (RPS) | Latensi Med | Latensi Avg (±Std) | Latensi P95 | Latensi Max |\n` +
+    `| :--------------------------------- | :----: | :--------------: | :---------: | :----------------: | :---------: | :---------: |\n`;
+
+  Object.keys(groups).forEach(key => {
+    const arr = groups[key];
+    const vus = arr[0].vus;
+    const meanRps = arr.reduce((acc, x) => acc + x.rps, 0) / arr.length;
+    const meanMed = arr.reduce((acc, x) => acc + x.med, 0) / arr.length;
+    const meanAvg = arr.reduce((acc, x) => acc + x.avg, 0) / arr.length;
+    const meanP95 = arr.reduce((acc, x) => acc + x.p95, 0) / arr.length;
+    const meanMax = arr.reduce((acc, x) => acc + x.max, 0) / arr.length;
+    const stdAvg = arr.length > 1
+      ? Math.sqrt(arr.reduce((acc, x) => acc + Math.pow(x.avg - meanAvg, 2), 0) / (arr.length - 1))
+      : 0;
+
+    const stdStr = arr.length > 1 ? ` (±${stdAvg.toFixed(1)})` : '';
+    aggText += `| ${arr[0].scenario.padEnd(35, ' ')} | ${String(vus).padStart(4)} VU | ${meanRps.toFixed(1).padStart(12)} msg/s | ${meanMed.toFixed(1).padStart(9)} ms | ${(meanAvg.toFixed(2) + stdStr).padStart(16)} ms | ${meanP95.toFixed(1).padStart(9)} ms | ${meanMax.toFixed(1).padStart(9)} ms |\n`;
+  });
+  aggText += `========================================================================================================\n`;
+
+  console.log(aggText);
+  try {
+    fs.writeFileSync(path.join(LOGS_DIR, 'summary_results_pcap_aggregated.txt'), aggText, 'utf-8');
+  } catch (e) {}
+
   console.log(`\n=====================================================================`);
   console.log(`🎉 SELURUH PENGUJIAN PCAP JALUR 1 & JALUR 2 SELESAI DENGAN SUKSES!`);
   console.log(`  • Seluruh File PCAP tersimpan di : ${PCAP_DIR}`);
-  console.log(`  • Ringkasan CSV tersimpan di     : ${CSV_FILE}`);
+  console.log(`  • Detail Tiap Sesi (CSV)         : ${CSV_FILE}`);
+  console.log(`  • Rangkuman Agregasi (TXT)       : ${path.join(LOGS_DIR, 'summary_results_pcap_aggregated.txt')}`);
   console.log(`=====================================================================\n`);
 }
 
 main().catch(err => {
   console.error('Fatal Runner Error:', err);
 });
+

@@ -58,6 +58,10 @@ $ npx prisma generate
 $ npm run build
 #Membangunkan / Menyalakan Backend
 $ pm2 start smartbarn-api-4000
+# 1. Simpan daftar proses aktif ke harddisk VPS
+pm2 save
+# 2. Daftarkan PM2 ke systemd Linux agar otomatis hidup saat VPS reboot
+pm2 startup
 #Menidurkan / Mematikan Backend
 $ pm2 stop smartbarn-api-4000
 #Restart Backend (Wajib dilakukan setiap habis npm run build)
@@ -230,3 +234,127 @@ sudo setcap cap_net_raw,cap_net_admin=eip $(which tcpdump)
 node run-pcap-jalur1-2.js jalur1:50:1 jalur1:100:1
 node run-pcap-jalur1-2.js jalur2:50:1 jalur2:100:1
 node run-pcap-jalur1-2.js --iter=3
+
+# ============================================================================
+# EKSPERIMEN 1: MATRIKS EKUIVALENSI SILANG THROUGHPUT & BEBAN (PACING MATRIX HINGGA 500 VU)
+# ============================================================================
+# Matriks Iso-Throughput (Menguji 10 VU s.d. 500 VU):
+#  1. 10 VU  : 1000ms (~10 msg/s), 200ms (Setara 50), 100ms (Setara 100), 50ms (Setara 200), 33ms (Setara 300)
+#  2. 50 VU  : 5000ms (Setara 10), 1000ms (~50 msg/s), 500ms (Setara 100), 250ms (Setara 200), 167ms (Setara 300)
+#  3. 100 VU : 10000ms (Setara 10), 2000ms (Setara 50), 1000ms (~100 msg/s), 500ms (Setara 200), 333ms (Setara 300)
+#  4. 200 VU : 20000ms (Setara 10), 4000ms (Setara 50), 2000ms (Setara 100), 1000ms (~200 msg/s), 667ms (Setara 300)
+#  5. 300 VU : 30000ms (Setara 10), 6000ms (Setara 50), 3000ms (Setara 100), 1500ms (Setara 200), 1000ms (~300 msg/s)
+#  6. 400 VU : 40000ms (Setara 10), 8000ms (Setara 50), 4000ms (Setara 100), 2000ms (Setara 200), 1333ms (Setara 300), 1000ms (~400 msg/s)
+#  7. 500 VU : 50000ms (Setara 10), 10000ms (Setara 50), 5000ms (Setara 100), 2500ms (Setara 200), 1667ms (Setara 300), 1000ms (~500 msg/s)
+#
+# ============================================================================
+# 1. PENGUJIAN STANDAR (BIASA - TANPA TELEMETRI TAMBAHAN)
+# ============================================================================
+# Mode Full VU v7 (Beban penuh dari detik ke-0):
+node run-experiment-1-pacing.js --iter=6
+# Mode Full VU dengan RESUME (melanjutkan jika sempat terhenti):
+node run-experiment-1-pacing.js --resume --iter=6
+# Mode Stage VUs v7_0_stage (Ramp-up bertahap):
+node run-experiment-1-pacing.js --stage --iter=6
+node run-experiment-1-pacing.js --stage --resume --iter=6
+# Khusus 400 VU & 500 VU Baseline Normal:
+node run-experiment-1-pacing.js 400vu 500vu normal --stage --resume --iter=6
+
+# ============================================================================
+# 2. PENGUJIAN MONITORED: VERSI STAGE VUs (RAM VPS + PING + JITTER + SPEEDTEST)
+# Output CSV: experiment_1_pacing_stage_monitored_summary.csv & details.csv
+# Mendukung checkpoint & resume otomatis dengan flag '--resume'
+# ============================================================================
+# A. UJI KHUSUS BASELINE NORMAL 400 VU & 500 VU (Paling Direkomendasikan & Cepat):
+#    (Hanya menjalankan 400VU@1s & 500VU@1s, 2 skenario x 2 jalur x 6 iterasi = 24 sesi)
+node run-experiment-1-pacing-stage-monitored.js 400vu 500vu normal --resume --iter=6
+
+# B. UJI LENGKAP SEMUA SKENARIO 400 VU & 500 VU (Pacing Matrix + Normal):
+node run-experiment-1-pacing-stage-monitored.js 400vu 500vu --resume --iter=6
+
+# C. UJI KHUSUS 400 VU SAJA:
+#    - Hanya Normal 400 VU (@1000ms):
+node run-experiment-1-pacing-stage-monitored.js 400vu normal --resume --iter=6
+#    - Seluruh Skenario 400 VU (T10, T50, T100, T200, T300, Normal T400):
+node run-experiment-1-pacing-stage-monitored.js 400vu --resume --iter=6
+
+# D. UJI KHUSUS 500 VU SAJA:
+#    - Hanya Normal 500 VU (@1000ms):
+node run-experiment-1-pacing-stage-monitored.js 500vu normal --resume --iter=6
+#    - Seluruh Skenario 500 VU (T10, T50, T100, T200, T300, Normal T500):
+node run-experiment-1-pacing-stage-monitored.js 500vu --resume --iter=6
+
+# E. FILTER PER JALUR (Contoh: Jalur 1 Saja):
+node run-experiment-1-pacing-stage-monitored.js jalur1 400vu 500vu normal --resume --iter=6
+
+# F. Uji Kolom Iso-Throughput Target ~300 msg/s:
+node run-experiment-1-pacing-stage-monitored.js target300 --resume --iter=6
+
+# ============================================================================
+# 3. PENGUJIAN MONITORED: VERSI FULL VUs (RAM VPS + PING + JITTER + SPEEDTEST)
+# Output CSV: experiment_1_pacing_full_monitored_summary.csv & details.csv
+# Mendukung checkpoint & resume otomatis dengan flag '--resume'
+# ============================================================================
+# A. Jalankan Seluruh Matriks 4x4 (Jalur 1 & 2 x 16 Skenario x 6 Iterasi):
+node run-experiment-1-pacing-full-monitored.js --iter=6
+# MELANJUTKAN jika sempat terhenti di tengah jalan:
+node run-experiment-1-pacing-full-monitored.js --resume --iter=6
+
+# B. Filter Per Jalur:
+node run-experiment-1-pacing-full-monitored.js jalur1 --iter=6
+node run-experiment-1-pacing-full-monitored.js jalur1 --resume --iter=6
+node run-experiment-1-pacing-full-monitored.js jalur2 --iter=6
+node run-experiment-1-pacing-full-monitored.js jalur2 --resume --iter=6
+
+# C. Filter Kelompok Beban Tertentu:
+node run-experiment-1-pacing-full-monitored.js 10vu --iter=6
+node run-experiment-1-pacing-full-monitored.js 50vu --iter=6
+node run-experiment-1-pacing-full-monitored.js 100vu --iter=6
+node run-experiment-1-pacing-full-monitored.js 200vu --iter=6
+node run-experiment-1-pacing-full-monitored.js normal --iter=6
+node run-experiment-1-pacing-full-monitored.js jalur1 200vu --iter=6
+node run-experiment-1-pacing-full-monitored.js jalur2 200vu --iter=6
+node run-experiment-1-pacing-full-monitored.js --dry-run
+
+# ============================================================================
+# 4. EKSPERIMEN 2 & 3 DENGAN FITUR RESUME
+# ============================================================================
+# Eksperimen 2: TCP Delayed ACK Elimination
+node run-experiment-2-delayed-ack.js --iter=6
+node run-experiment-2-delayed-ack.js --resume --iter=6
+node run-experiment-2-delayed-ack.js --stage --resume --iter=6
+
+# Eksperimen 3: Distributed Multi-Subscriber
+node run-experiment-3-distributed.js --iter=6
+node run-experiment-3-distributed.js --resume --iter=6
+node run-experiment-3-distributed.js --stage --resume --iter=6
+
+
+#ACK delay step 
+EKSPERIMEN 2: Eliminasi TCP Delayed ACK Windows Registry
+Menguji pengaruh timer penundaan konfirmasi TCP Delayed ACK bawaan Windows pada 3 level beban (10, 50, 100 VU) di Jalur 1 dan Jalur 2.
+
+#Langkah 1 (PowerShell Administrator - Matikan Delayed ACK):
+powershell -ExecutionPolicy Bypass -File .\toggle-delayed-ack.ps1 -DisableDelayedAck
+#Langkah 2 (Jalankan Uji 3 Beban x 2 Jalur x 6 Iterasi):
+#Mode Full VU v7 (Default):
+node run-experiment-2-delayed-ack.js --iter=6
+#Mode Staged Ramp-up v7_0_stage:
+node run-experiment-2-delayed-ack.js --stage --iter=6
+#Langkah 3 (Kembalikan Registry Windows ke Standar Pabrik):
+powershell -ExecutionPolicy Bypass -File .\toggle-delayed-ack.ps1 -RestoreDefault
+
+# ============================================================================
+# PENGUJIAN FULL VU SEJAK AWAL DI LOKAL VPS (SSH VPS)
+# ============================================================================
+# 1. Menggunakan Suite Lengkap Otomatis (Rekomendasi Skripsi: Jalur 1 & 2 x 6 Iterasi):
+# node auto-benchmark-local.js jalur1,jalur2 --v7 --iter 6 --reset
+
+# 2. Menggunakan Runner Cepat Full VU:
+# node run-full-vu-test.js local
+# node run-full-vu-test.js local jalur1
+# node run-full-vu-test.js local jalur2
+
+# 3. Menjalankan Langsung binary K6 Linux (Uji Instan 30s):
+# ./k6-linux-mqtt run -e VUS=50 -e LOCAL=true -e TARGET=local -e MQTT_URL=mqtt://127.0.0.1:1883 k6-sensor-test-v7.js
+# ./k6-linux-mqtt run -e VUS=50 -e LOCAL=true -e TARGET=local -e MQTT_URL=mqtt://127.0.0.1:1883 k6-env-test-v7.js

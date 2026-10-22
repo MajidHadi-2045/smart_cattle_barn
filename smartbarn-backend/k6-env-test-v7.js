@@ -7,6 +7,7 @@ import { Trend, Counter } from 'k6/metrics';
 const mqttEnvPublishLatency = new Trend('mqtt_env_publish_latency');       // Waktu transmisi soket TCP lokal ke Broker MQTT
 const mqttEnvProcessingLatency = new Trend('mqtt_env_processing_latency'); // Latensi Ingestion Server NestJS (Timestamp Sensor -> Masuk RAM/Redis Buffer)
 const mqttEnvBackendProcLatency = new Trend('mqtt_env_backend_proc_latency'); // Waktu komputasi murni internal NestJS (performance.now)
+const mqttAckInterArrivalLatency = new Trend('mqtt_ack_inter_arrival_latency'); // Waktu jeda antar kedatangan paket ACK
 const mqttEnvSent = new Counter('mqtt_env_messages_sent');                 // Total pesan dikirim
 const mqttEnvProcessed = new Counter('mqtt_env_messages_processed');       // Total pesan berhasil diproses
 
@@ -34,11 +35,19 @@ export default function () {
   const zoneId = 1;
   const isWind = (vuId % 3 === 0); // Rasio: 1/3 Anemometer, 2/3 Mikroklimat
   const isMonitor = (vuId === 1);  // VU 1 bertindak sebagai Monitor Utama
+  let lastAckTime = 0;
 
   const client = new Client();
 
   client.on('message', (topic, message) => {
     const now = Date.now();
+    if (isMonitor && lastAckTime > 0) {
+      const delta = now - lastAckTime;
+      if (delta >= 0) {
+        mqttAckInterArrivalLatency.add(delta);
+      }
+    }
+    lastAckTime = now;
     try {
       const data = JSON.parse(String.fromCharCode.apply(null, new Uint8Array(message)));
       let latency = -1;

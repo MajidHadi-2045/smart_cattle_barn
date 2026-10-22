@@ -102,6 +102,8 @@ benchmark_logs*/
 **/benchmark_logs*/
 *.csv
 **/*.csv
+*.bak*
+**/*.bak*
 k6-mqtt.exe
 k6-linux-mqtt
 checkpoint.json
@@ -110,6 +112,17 @@ iperf3.exe
 **/iperf3.exe
 cygwin1.dll
 **/cygwin1.dll
+*.ps1
+**/*.ps1
+run-*.js
+**/run-*.js
+k6-*.js
+**/k6-*.js
+auto-benchmark*.js
+**/auto-benchmark*.js
+repair-quick-csv.js
+recalculate-summary.js
+
 # Reports & Python Generator Scripts
 Laporan_*.md
 *.py
@@ -135,6 +148,7 @@ METODOLOGI_*.md
 **/METODOLOGI_*.md
 *REVIEWER*.md
 **/*REVIEWER*.md
+PANDUAN_EKSEKUSI_3_EKSPERIMEN.md
 
 # Packet Captures & Network Dumps (Excluded from Git)
 *.pcap

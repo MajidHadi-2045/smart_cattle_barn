@@ -74,6 +74,16 @@ checkpoint.json
 iperf3.exe
 cygwin1.dll
 ar51an.iPerf3_Microsoft.Winget.Source_8wekyb3d8bbwe.db
+*.bak*
+
+# Benchmark Runner Scripts & Tools
+run-*.js
+k6-*.js
+*.ps1
+auto-benchmark*.js
+repair-quick-csv.js
+recalculate-summary.js
+
 # Reports & Python Generator Scripts
 Laporan_*.md
 *.py
