@@ -358,3 +358,50 @@ powershell -ExecutionPolicy Bypass -File .\toggle-delayed-ack.ps1 -RestoreDefaul
 # 3. Menjalankan Langsung binary K6 Linux (Uji Instan 30s):
 # ./k6-linux-mqtt run -e VUS=50 -e LOCAL=true -e TARGET=local -e MQTT_URL=mqtt://127.0.0.1:1883 k6-sensor-test-v7.js
 # ./k6-linux-mqtt run -e VUS=50 -e LOCAL=true -e TARGET=local -e MQTT_URL=mqtt://127.0.0.1:1883 k6-env-test-v7.js
+
+# ============================================================================
+# PENGUJIAN ISOLASI PURE ECHO BROKER (TANPA BACKEND)
+# ============================================================================
+# Menguji transmisi bolak-balik (Half-RTT) langsung di level broker Mosquitto 
+# dengan mematikan total NestJS API, PostgreSQL, dan Redis untuk mengisolasi 
+# pengaruh komputasi backend terhadap latensi jaringan WAN.
+#
+# Di Terminal SSH VPS:
+# 1. Matikan backend NestJS:
+pm2 stop smartbarn-api-4000
+# 2. Jalankan Echo Worker ringan:
+node mqtt_echo_worker.js
+# 3. Kembalikan backend setelah selesai pengujian:
+pm2 start smartbarn-api-4000
+
+# ============================================================================
+# PENGUJIAN VALIDASI TCP KERNEL: CWND (CONGESTION WINDOW) & KERNEL RTT
+# ============================================================================
+# Menguji hipotesis lapisan transport: apakah peningkatan laju paket pada 100 VU 
+# memicu ekspansi TCP Congestion Window (cwnd) di kernel Linux VPS sehingga 
+# aliran paket lebih efisien dan latensi turun.
+#
+# Metrik yang Diukur dari Kernel Linux (`ss -tin sport = :1883`):
+# - cwnd   : Ukuran jendela kongesti (kelipatan MSS ~1448 byte)
+# - rtt    : Smoothed Round-Trip Time murni dari algoritma TCP CUBIC kernel
+# - retrans: Jumlah retransmisi paket TCP yang hilang
+#
+# --- CARA PENGUJIAN OTOMATIS (REKOMENDASI) ---
+#
+# Langkah 1 (Di Terminal SSH VPS):
+# Matikan backend dan jalankan daemon pengukur kernel + echo responder:
+pm2 stop smartbarn-api-4000
+node auto_cwnd_vps.js
+#
+# Langkah 2 (Di Terminal CMD/PowerShell Laptop):
+# Jalankan master runner (otomatis mengeksekusi 50 VU & 100 VU dan merekap hasil):
+node scratch/run_cwnd_suite.js
+#
+# Langkah 3 (Setelah Pengujian Selesai):
+# Hentikan daemon di VPS (Ctrl + C), lalu hidupkan kembali backend NestJS:
+pm2 start smartbarn-api-4000
+#
+# --- CARA PENGUJIAN MANUAL (OPSIONAL) ---
+# Di VPS:
+# ss -tin sport = :1883
+# ss -ti | grep -A 5 ESTAB

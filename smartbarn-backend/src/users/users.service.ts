@@ -92,7 +92,10 @@ export class UsersService {
     try {
       await this.redis.del('users:staff-list');
     } catch (err) {}
-    return newStaff;
+    
+    // Pastikan password (meski sudah di-hash) tidak ikut dikembalikan di payload response
+    const { password, ...staffWithoutPassword } = newStaff;
+    return staffWithoutPassword;
   }
 
   async getUserProfile(id: string) {

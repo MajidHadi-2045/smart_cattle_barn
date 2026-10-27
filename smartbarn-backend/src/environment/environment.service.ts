@@ -1,16 +1,21 @@
-// src/environment/environment.service.ts
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
-export class EnvironmentService {
+export class EnvironmentService implements OnModuleDestroy {
   private envBatch: any[] = [];
   private windBatch: any[] = [];
   private isFlushing = false;
+  private flushTimer: NodeJS.Timeout;
 
   constructor(private prisma: PrismaService) {
     // Jalankan pembersihan batch setiap 10 detik
-    setInterval(() => this.flushAllBatches(), 10000);
+    this.flushTimer = setInterval(() => this.flushAllBatches(), 10000);
+  }
+
+  async onModuleDestroy() {
+    if (this.flushTimer) clearInterval(this.flushTimer);
+    await this.flushAllBatches();
   }
 
   // Mengambil 1 data sensor terbaru langsung dari PostgreSQL (Bypass Cache)

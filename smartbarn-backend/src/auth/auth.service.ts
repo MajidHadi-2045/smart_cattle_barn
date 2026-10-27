@@ -92,7 +92,7 @@ export class AuthService {
     const tempId = `REQ_${Date.now()}`; // ID sementara untuk pendaftaran mandiri
     const upperRole = (data.role || 'STAFF').toUpperCase();
 
-    return this.prisma.user.create({
+    const newUser = await this.prisma.user.create({
       data: {
         id: tempId,
         email: data.email,
@@ -103,6 +103,10 @@ export class AuthService {
         status: 'MENUNGGU_KONFIRMASI'
       },
     });
+
+    // Pastikan password (meski sudah di-hash) tidak ikut dikembalikan di payload response
+    const { password, ...userWithoutPassword } = newUser;
+    return userWithoutPassword;
   }
 
   // ==========================================
